@@ -16,10 +16,11 @@ const startServer = async () => {
     process.stderr.write('[server] ' + line);
   });
   cp.stderr.on('data', (data) => {
+    const msg = Buffer.isBuffer(data) ? data.toString() : String(data)
     // tslint:disable-next-line no-console
-    console.error('Could not start server');
+    console.error('Could not start server', msg);
     started.reject(data);
-    process.stderr.write('ERROR: [server] ' + String(data));
+    process.stderr.write('ERROR: [server] ' + msg);
   });
   cp.on('close', (code) => {
     exitCode.resolve(code || 0);
