@@ -23,6 +23,7 @@ jobs:
           cache: yarn
       - run: yarn install --frozen-lockfile
       - run: yarn test:ci --ci
+      - run: yarn test:e2e
   lint-and-co:
     runs-on: ubuntu-latest
     strategy:

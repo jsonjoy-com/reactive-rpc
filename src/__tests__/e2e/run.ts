@@ -4,7 +4,7 @@ import {Defer} from '../../util/Defer';
 const startServer = async () => {
   const started = new Defer<void>();
   const exitCode = new Defer<number>();
-  const cp = spawn('yarn', ['demo:reactive-rpc:server'], {
+  const cp = spawn('yarn', ['demo:e2e:server'], {
     shell: true,
   });
   process.on('exit', (code) => {
@@ -35,7 +35,7 @@ const startServer = async () => {
 
 const runTests = async () => {
   const exitCode = new Defer<number>();
-  const cp = spawn('yarn', ['test:reactive-rpc:jest'], {
+  const cp = spawn('yarn', ['test:e2e:jest'], {
     env: {
       ...process.env,
       TEST_E2E: '1',
