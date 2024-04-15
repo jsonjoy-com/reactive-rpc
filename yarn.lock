@@ -570,7 +570,7 @@
   resolved "https://registry.yarnpkg.com/@jsonjoy.com/base64/-/base64-1.1.1.tgz#a717fd8840f7bad49c7fe66cc65db8bcfc4c4dc5"
   integrity sha512-LnFjVChaGY8cZVMwAIMjvA1XwQjZ/zIXHyh28IyJkyNkzof4Dkm1+KN9UIm3lHhREH4vs7XwZ0NpkZKnwOtEfg==
 
-"@jsonjoy.com/json-pack@^1.0.0", "@jsonjoy.com/json-pack@^1.0.2":
+"@jsonjoy.com/json-pack@^1.0.2":
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/@jsonjoy.com/json-pack/-/json-pack-1.0.2.tgz#d7c8c284db828b29eebb9082134251a8216ec5cc"
   integrity sha512-4KMApTgb1Hvjz9Ue7unziJ1xNy3k6d2erp0hz1iXryXsf6LEM3KwN6YrfbqT0vqkUO8Tu+CSnvMia9cWX6YGVw==
