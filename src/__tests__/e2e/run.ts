@@ -16,7 +16,7 @@ const startServer = async () => {
     process.stderr.write('[server] ' + line);
   });
   cp.stderr.on('data', (data) => {
-    const msg = Buffer.isBuffer(data) ? data.toString() : String(data)
+    const msg = Buffer.isBuffer(data) ? data.toString() : String(data);
     // tslint:disable-next-line no-console
     console.error('Could not start server', msg);
     started.reject(data);
