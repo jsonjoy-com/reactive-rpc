@@ -4,7 +4,7 @@ import {Defer} from '../../util/Defer';
 const startServer = async () => {
   const started = new Defer<void>();
   const exitCode = new Defer<number>();
-  const cp = spawn('yarn', ['demo:reactive-rpc:server'], {
+  const cp = spawn('yarn', ['demo:e2e:server'], {
     shell: true,
   });
   process.on('exit', (code) => {
@@ -16,10 +16,11 @@ const startServer = async () => {
     process.stderr.write('[server] ' + line);
   });
   cp.stderr.on('data', (data) => {
+    const msg = Buffer.isBuffer(data) ? data.toString() : String(data);
     // tslint:disable-next-line no-console
-    console.error('Could not start server');
+    console.error('Could not start server', msg);
     started.reject(data);
-    process.stderr.write('ERROR: [server] ' + String(data));
+    process.stderr.write('ERROR: [server] ' + msg);
   });
   cp.on('close', (code) => {
     exitCode.resolve(code || 0);
@@ -34,7 +35,7 @@ const startServer = async () => {
 
 const runTests = async () => {
   const exitCode = new Defer<number>();
-  const cp = spawn('yarn', ['test:reactive-rpc:jest'], {
+  const cp = spawn('yarn', ['test:e2e:jest'], {
     env: {
       ...process.env,
       TEST_E2E: '1',
