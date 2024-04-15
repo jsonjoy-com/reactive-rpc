@@ -2,8 +2,8 @@ import {memfs} from 'memfs';
 import {NodeCrud} from 'memfs/lib/node-to-crud';
 import {Locks} from 'thingies/es2020/Locks';
 import {LocalHistoryCrud} from '../LocalHistoryCrud';
-import {Log} from '../../json-crdt-server/log/Log';
-import {Model} from '../../json-crdt-server/model';
+import {Model} from 'json-joy/lib/json-crdt';
+import {Log} from 'json-joy/lib/json-crdt/log/Log';
 
 const setup = async () => {
   const {fs, vol} = memfs();

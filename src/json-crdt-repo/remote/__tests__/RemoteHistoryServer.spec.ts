@@ -1,6 +1,6 @@
-import {Model} from '../../../json-crdt-server/model';
-import {buildE2eClient} from '../../../reactive-rpc/common/testing/buildE2eClient';
-import {createCaller} from '../../../server/routes/index';
+import {Model} from 'json-joy/lib/json-crdt';
+import {buildE2eClient} from '../../../common/testing/buildE2eClient';
+import {createCaller} from '../../../json-crdt-server/routes';
 import {RemoteHistoryDemoServer} from '../RemoteHistoryDemoServer';
 
 const setup = () => {

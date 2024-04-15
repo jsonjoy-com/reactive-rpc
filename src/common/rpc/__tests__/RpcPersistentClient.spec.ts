@@ -1,12 +1,12 @@
+import {until} from 'thingies';
+import {Codecs} from '@jsonjoy.com/json-pack/lib/codecs/Codecs';
+import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 import {WebSocketChannel} from '../../channel';
 import {RpcPersistentClient} from '../RpcPersistentClient';
 import {createWebSocketMock} from '../../channel/mock';
 import {RequestCompleteMessage} from '../..';
-import {until} from '../../../../__tests__/util';
 import {RpcValue} from '../../messages/Value';
 import {RpcCodec} from '../../codec/RpcCodec';
-import {Codecs} from '@jsonjoy.com/json-pack/lib/codecs/Codecs';
-import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 import {RpcMessageCodecs} from '../../codec/RpcMessageCodecs';
 
 test('on remote method execution, sends message over WebSocket only once', async () => {

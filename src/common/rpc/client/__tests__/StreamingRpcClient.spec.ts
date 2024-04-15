@@ -10,7 +10,7 @@ import {
   ResponseErrorMessage,
 } from '../../../messages';
 import {firstValueFrom, Subject} from 'rxjs';
-import {until} from '../../../../../__tests__/util';
+import {until} from 'thingies';
 import {RpcValue} from '../../../messages/Value';
 
 test('can create client', async () => {

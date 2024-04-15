@@ -1,5 +1,5 @@
 import {RpcMessageStreamProcessor, RpcMessageStreamProcessorOptions} from '../RpcMessageStreamProcessor';
-import {RpcError, RpcErrorCodes} from '../caller';
+import {RpcError} from '../caller';
 import {of, from, Subject, Observable, Subscriber} from 'rxjs';
 import {map, switchMap, take} from 'rxjs/operators';
 import {ApiRpcCaller, ApiRpcCallerOptions} from '../caller/ApiRpcCaller';
@@ -12,9 +12,9 @@ import {
   ResponseErrorMessage,
   ResponseUnsubscribeMessage,
 } from '../../messages';
-import {until} from '../../../../__tests__/util';
+import {until} from 'thingies';
 import {RpcValue} from '../../messages/Value';
-import {t} from '../../../../json-type';
+import {t} from 'json-joy/lib/json-type';
 import {Defer} from '../../../util/Defer';
 
 const setup = (
@@ -728,8 +728,9 @@ describe('pre-call checks', () => {
         server.onMessage(new RequestDataMessage(1, 'test', val({a: '11'})), {foo: 'bar'});
         await new Promise((r) => setTimeout(r, 1));
         expect(send).toHaveBeenCalledTimes(1);
-        expect(send.mock.calls[0][0][0]).toBeInstanceOf(ResponseErrorMessage);
-        expect(send.mock.calls[0][0][0].value.data.message).toBe('BUFFER_OVERFLOW');
+        const errorValue = send.mock.calls[0][0][0];
+        expect(errorValue).toBeInstanceOf(ResponseErrorMessage);
+        expect(errorValue.value.data.message).toBe('BUFFER_OVERFLOW');
       });
 
       test('buffer size can be set to 5 for the whole server', async () => {

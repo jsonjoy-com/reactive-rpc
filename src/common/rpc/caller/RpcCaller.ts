@@ -1,9 +1,9 @@
 import {firstValueFrom, from, Observable, Subject} from 'rxjs';
 import {catchError, finalize, first, map, mergeWith, share, switchMap, take, tap} from 'rxjs/operators';
-import {BufferSubject} from 'json-joy/lib/util/rx/BufferSubject';
 import {RpcError, RpcErrorCodes, RpcErrorValue} from './error';
 import {RpcValue} from '../../messages/Value';
 import {StaticRpcMethod} from '../methods/StaticRpcMethod';
+import {BufferSubject} from '../../../util/rx/BufferSubject';
 import type {Call} from './types';
 import type {RpcMethod} from '../types';
 import type {StreamingRpcMethod} from '../methods/StreamingRpcMethod';
