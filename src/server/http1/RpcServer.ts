@@ -10,10 +10,10 @@ import {
   RpcMessageBatchProcessor,
   RpcMessageStreamProcessor,
 } from '../../common';
-import {ConnectionContext} from '../context';
 import {WsConnectionContext} from './context';
 import type {RpcCaller} from '../../common/rpc/caller/RpcCaller';
 import type {ServerLogger} from './types';
+import {ConnectionContext} from '../types';
 
 const DEFAULT_MAX_PAYLOAD = 4 * 1024 * 1024;
 

@@ -1,4 +1,4 @@
-import {PayloadTooLarge} from './errors';
+import {PayloadTooLarge} from '../errors';
 import type {ConnectionContext} from '../types';
 import type * as http from 'http';
 import type {RpcCodecs} from '../../common/codec/RpcCodecs';
