@@ -1,4 +1,4 @@
-import {buildE2eClient} from '../../common/testing/buildE2eClient';
+import {buildE2eClient} from '../../../common/testing/buildE2eClient';
 import {createCaller} from '../routes';
 import {Services} from '../services/Services';
 

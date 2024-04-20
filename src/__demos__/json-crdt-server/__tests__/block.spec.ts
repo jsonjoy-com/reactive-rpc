@@ -1,5 +1,5 @@
 import {Model} from 'json-joy/lib/json-crdt';
-import {RpcErrorCodes} from '../../common/rpc/caller';
+import {RpcErrorCodes} from '../../../common/rpc/caller';
 import {setup} from './setup';
 import {tick, until} from 'thingies';
 
