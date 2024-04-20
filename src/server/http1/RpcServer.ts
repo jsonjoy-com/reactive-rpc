@@ -1,7 +1,6 @@
 import * as http from 'http';
-import {Printable} from 'json-joy/lib/util/print/types';
-// TODO: switch to sonic-forest
-import {printTree} from 'json-joy/lib/util/print/printTree';
+import {Printable} from 'sonic-forest/lib/print/types';
+import {printTree} from 'sonic-forest/lib/print/printTree';
 import {Http1Server} from './Http1Server';
 import {RpcError} from '../../common/rpc/caller';
 import {

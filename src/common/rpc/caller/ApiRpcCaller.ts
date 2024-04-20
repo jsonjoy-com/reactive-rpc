@@ -1,7 +1,7 @@
 import {StaticRpcMethod} from '../methods/StaticRpcMethod';
 import {StreamingRpcMethod} from '../methods/StreamingRpcMethod';
 import {RpcCaller, RpcApiCallerOptions} from './RpcCaller';
-import {printTree} from 'json-joy/lib/util/print/printTree';
+import {printTree} from 'sonic-forest/lib/print/printTree';
 import type {IStaticRpcMethod, IStreamingRpcMethod} from '../types';
 import type {RpcApiMap} from './types';
 

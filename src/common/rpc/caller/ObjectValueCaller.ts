@@ -1,7 +1,7 @@
 import {RpcError} from './error';
 import {RpcCaller, type RpcApiCallerOptions} from './RpcCaller';
 import {type AbstractType, FunctionStreamingType, FunctionType} from 'json-joy/lib/json-type/type/classes';
-import {printTree} from 'json-joy/lib/util/print/printTree';
+import {printTree} from 'sonic-forest/lib/print/printTree';
 import {StaticRpcMethod, type StaticRpcMethodOptions} from '../methods/StaticRpcMethod';
 import {StreamingRpcMethod, type StreamingRpcMethodOptions} from '../methods/StreamingRpcMethod';
 import {
@@ -13,7 +13,7 @@ import {
   SchemaOf,
   Type,
 } from 'json-joy/lib/json-type';
-import {Printable} from 'json-joy/lib/util/print/types';
+import type {Printable} from 'sonic-forest/lib/print/types';
 import type {ObjectValue, UnObjectType, UnObjectValue} from 'json-joy/lib/json-type-value/ObjectValue';
 import type {Value} from 'json-joy/lib/json-type-value/Value';
 import type {Observable} from 'rxjs';

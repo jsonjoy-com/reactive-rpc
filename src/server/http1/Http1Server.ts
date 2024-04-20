@@ -5,8 +5,8 @@ import {Codecs} from '@jsonjoy.com/json-pack/lib/codecs/Codecs';
 import {WsServerConnection} from '../ws/server/WsServerConnection';
 import {WsFrameEncoder} from '../ws/codec/WsFrameEncoder';
 import {Router, RouteMatcher} from '@jsonjoy.com/jit-router';
-import {Printable} from 'json-joy/lib/util/print/types';
-import {printTree} from 'json-joy/lib/util/print/printTree';
+import {Printable} from 'sonic-forest/lib/print/types';
+import {printTree} from 'sonic-forest/lib/print/printTree';
 import {PayloadTooLarge} from '../errors';
 import {setCodecs} from './util';
 import {findTokenInText} from '../util';
@@ -167,6 +167,16 @@ export class Http1Server implements Printable {
 
   private readonly onWsUpgrade = (req: http.IncomingMessage, socket: net.Socket) => {
     // TODO: Check "Upgrade: websocket" header is present.
+    // console.log(req.headers);
+    // {
+    //   'sec-websocket-version': '13',
+    //   'sec-websocket-key': 'udiJousKhNSPO6cyjgbKCg==',
+    //   connection: 'Upgrade',
+    //   upgrade: 'websocket',
+    //   'sec-websocket-extensions': 'permessage-deflate; client_max_window_bits',
+    //   'sec-websocket-protocol': 'rpc.json2.verbose.msgpack-cbor',
+    //   host: 'localhost:9999'
+    // }
     const url = req.url ?? '';
     const queryStartIndex = url.indexOf('?');
     let path = url;
