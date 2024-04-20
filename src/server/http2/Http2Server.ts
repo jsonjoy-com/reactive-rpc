@@ -74,11 +74,9 @@ export class Http2Server implements Printable {
     const server = this.server;
     this.httpMatcher = this.httpRouter.compile();
     // this.wsMatcher = this.wsRouter.compile();
-    console.log('starting');
     server.on('stream', this.onStream);
     // server.on('upgrade', this.onWsUpgrade);
     server.on('sessionError', (error: Error, session: http2.Http2Session) => {
-      console.error('HTTP2 session error:', error);
       session.close();
     });
   }
@@ -116,7 +114,6 @@ export class Http2Server implements Printable {
   }
 
   private readonly onStream = async (stream: http2.Http2Stream, headers: http2.IncomingHttpHeaders, flags: number) => {
-    console.log('on stream');
     stream.end('Hello, World!');
     // try {
     //   res.sendDate = false;

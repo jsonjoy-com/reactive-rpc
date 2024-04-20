@@ -13,4 +13,5 @@ const server = RpcServer.startWithDefaults({
   logger: console,
 });
 
+// tslint:disable-next-line:no-console
 console.log(server + '');

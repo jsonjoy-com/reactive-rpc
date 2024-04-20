@@ -14,5 +14,7 @@ export const setup = () => {
   });
   const call = client.call.bind(client);
   const call$ = client.call$.bind(client);
-  return {services, caller, client, call, call$};
+  return {call, call$};
 };
+
+export type TestSetup = ReturnType<typeof setup>;
