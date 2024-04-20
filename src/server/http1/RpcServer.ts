@@ -196,9 +196,12 @@ export class RpcServer implements Printable {
   // ---------------------------------------------------------------- Printable
 
   public toString(tab: string = ''): string {
-    return `${this.constructor.name}` + printTree(tab, [
-      (tab) => this.http1.toString(tab),
-      (tab) => (this.opts.caller as unknown as Printable).toString(tab),
-    ]);
+    return (
+      `${this.constructor.name}` +
+      printTree(tab, [
+        (tab) => this.http1.toString(tab),
+        (tab) => (this.opts.caller as unknown as Printable).toString(tab),
+      ])
+    );
   }
 }

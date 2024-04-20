@@ -12,16 +12,19 @@ export interface ApiRpcCallerOptions<Api extends RpcApiMap<Ctx>, Ctx = unknown>
 }
 
 export class ApiRpcCaller<
-  Api extends RpcApiMap<Ctx>,
-  Ctx = unknown,
-  Methods = {
-    [K in keyof Api]: Api[K] extends IStaticRpcMethod<infer Ctx, infer Req, infer Res>
-      ? StaticRpcMethod<Ctx, Req, Res>
-      : Api[K] extends IStreamingRpcMethod<infer Ctx, infer Req, infer Res>
-        ? StreamingRpcMethod<Ctx, Req, Res>
-        : never;
-  },
-> extends RpcCaller<Ctx> implements Printable {
+    Api extends RpcApiMap<Ctx>,
+    Ctx = unknown,
+    Methods = {
+      [K in keyof Api]: Api[K] extends IStaticRpcMethod<infer Ctx, infer Req, infer Res>
+        ? StaticRpcMethod<Ctx, Req, Res>
+        : Api[K] extends IStreamingRpcMethod<infer Ctx, infer Req, infer Res>
+          ? StreamingRpcMethod<Ctx, Req, Res>
+          : never;
+    },
+  >
+  extends RpcCaller<Ctx>
+  implements Printable
+{
   protected readonly methods = new Map<string, StaticRpcMethod | StreamingRpcMethod>();
 
   constructor({api, ...rest}: ApiRpcCallerOptions<Api, Ctx>) {
@@ -42,8 +45,16 @@ export class ApiRpcCaller<
   // ---------------------------------------------------------------- Printable
 
   public toString(tab: string = ''): string {
-    return `${this.constructor.name}` + printTree(tab, [...this.methods.entries()].map(([name, method]) =>
-      (tab) => `${name}${method.isStreaming ? ' (streaming)' : ''}`
-    ));
+    return (
+      `${this.constructor.name}` +
+      printTree(
+        tab,
+        [...this.methods.entries()].map(
+          ([name, method]) =>
+            (tab) =>
+              `${name}${method.isStreaming ? ' (streaming)' : ''}`,
+        ),
+      )
+    );
   }
 }

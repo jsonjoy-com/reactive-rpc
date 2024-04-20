@@ -3,12 +3,12 @@ import {Defer} from '../../util/Defer';
 import {parseArgs} from 'util';
 
 const {
-  values: { server },
+  values: {server},
 } = parseArgs({
   options: {
     server: {
-      type: "string",
-      short: "s",
+      type: 'string',
+      short: 's',
       default: 'http1',
     },
   },

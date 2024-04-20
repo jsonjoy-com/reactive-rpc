@@ -50,7 +50,10 @@ export interface ObjectValueCallerOptions<V extends ObjectValue<ObjectType<any>>
   router: V;
 }
 
-export class ObjectValueCaller<V extends ObjectValue<ObjectType<any>>, Ctx = unknown> extends RpcCaller<Ctx> implements Printable {
+export class ObjectValueCaller<V extends ObjectValue<ObjectType<any>>, Ctx = unknown>
+  extends RpcCaller<Ctx>
+  implements Printable
+{
   protected readonly router: V;
   protected readonly system: TypeSystem;
   protected readonly methods = new Map<string, StaticRpcMethod<Ctx> | StreamingRpcMethod<Ctx>>();
@@ -131,9 +134,15 @@ export class ObjectValueCaller<V extends ObjectValue<ObjectType<any>>, Ctx = unk
   // ---------------------------------------------------------------- Printable
 
   public toString(tab: string = ''): string {
-    return `${this.constructor.name}` + printTree(tab, this.router.keys().map(key => {
-      const value = this.router.get(key);
-      return (tab: string) => `${key}: ${(value?.type as Type).getOptions().title || ''}`;
-    }));
+    return (
+      `${this.constructor.name}` +
+      printTree(
+        tab,
+        this.router.keys().map((key) => {
+          const value = this.router.get(key);
+          return (tab: string) => `${key}: ${(value?.type as Type).getOptions().title || ''}`;
+        }),
+      )
+    );
   }
 }
