@@ -17,7 +17,7 @@ const {
 const startServer = async () => {
   const started = new Defer<void>();
   const exitCode = new Defer<number>();
-  const cp = spawn('yarn', ['demo:e2e:server:' + server], {
+  const cp = spawn('yarn', ['demo:e2e:sample-api:' + server], {
     shell: true,
   });
   process.on('exit', (code) => {

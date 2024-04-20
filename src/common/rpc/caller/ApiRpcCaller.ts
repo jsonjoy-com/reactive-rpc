@@ -4,6 +4,7 @@ import {RpcCaller, RpcApiCallerOptions} from './RpcCaller';
 import {printTree} from 'sonic-forest/lib/print/printTree';
 import type {IStaticRpcMethod, IStreamingRpcMethod} from '../types';
 import type {RpcApiMap} from './types';
+import type {Printable} from 'sonic-forest/lib/print/types';
 
 export interface ApiRpcCallerOptions<Api extends RpcApiMap<Ctx>, Ctx = unknown>
   extends Omit<RpcApiCallerOptions<Ctx>, 'getMethod'> {
@@ -20,7 +21,7 @@ export class ApiRpcCaller<
         ? StreamingRpcMethod<Ctx, Req, Res>
         : never;
   },
-> extends RpcCaller<Ctx> {
+> extends RpcCaller<Ctx> implements Printable {
   protected readonly methods = new Map<string, StaticRpcMethod | StreamingRpcMethod>();
 
   constructor({api, ...rest}: ApiRpcCallerOptions<Api, Ctx>) {
