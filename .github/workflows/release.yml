@@ -23,7 +23,8 @@ jobs:
       - run: yarn prettier:check
       - run: yarn lint
       - run: yarn test:ci --ci
-      - run: yarn test:e2e
+      - run: yarn test:e2e --server=http1
+      - run: yarn test:e2e --server=uws
       - run: yarn build
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@v4

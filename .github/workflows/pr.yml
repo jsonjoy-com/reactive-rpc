@@ -40,7 +40,7 @@ jobs:
       - run: yarn lint
       - run: yarn prettier:check
       - run: yarn typedoc
-  e2e-rx-rpc:
+  e2e-http1:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -53,4 +53,18 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: yarn
       - run: yarn install --frozen-lockfile
-      - run: yarn test:e2e
+      - run: yarn test:e2e --server=http1
+  e2e-uws:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20.x]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn test:e2e --server=uws
