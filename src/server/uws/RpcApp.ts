@@ -2,7 +2,7 @@ import {Codecs} from '@jsonjoy.com/json-pack/lib/codecs/Codecs';
 import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 import {copy} from '@jsonjoy.com/util/lib/buffers/copy';
 import {enableCors} from './util';
-import {Match, Router} from '../../util/router';
+import {Match, Router} from '@jsonjoy.com/jit-router';
 import {IncomingBatchMessage, RpcMessageBatchProcessor} from '../../common/rpc/RpcMessageBatchProcessor';
 import {RpcError, RpcErrorCodes, RpcErrorType} from '../../common/rpc/caller/error';
 import {ConnectionContext} from '../context';
