@@ -52,6 +52,8 @@
     "test:e2e:jest": "TEST_E2E=1 jest --maxWorkers 1 --no-cache src/__tests__/e2e/",
     "demo:e2e:sample-api:http1": "ts-node src/__demos__/sample-api/main-http1.ts",
     "demo:e2e:sample-api:uws": "ts-node src/__demos__/sample-api/main-uws.ts",
+    "demo:e2e:json-joy-server:http1": "ts-node src/__demos__/json-crdt-server/main-http1.ts",
+    "demo:e2e:json-joy-server:uws": "ts-node src/__demos__/json-crdt-server/main-uws.ts",
     "coverage": "yarn test --collectCoverage",
     "typedoc": "typedoc",
     "build:pages": "rimraf gh-pages && mkdir -p gh-pages && cp -r typedocs/* gh-pages && cp -r coverage gh-pages/coverage",

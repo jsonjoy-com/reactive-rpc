@@ -12,3 +12,5 @@ const server = RpcServer.startWithDefaults({
   caller: createCaller(new Services()).caller,
   logger: console,
 });
+
+console.log(server + '');

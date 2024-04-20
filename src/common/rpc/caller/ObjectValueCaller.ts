@@ -131,8 +131,9 @@ export class ObjectValueCaller<V extends ObjectValue<ObjectType<any>>, Ctx = unk
   // ---------------------------------------------------------------- Printable
 
   public toString(tab: string = ''): string {
-    return `${this.constructor.name}` + printTree(tab, [
-      (tab) => this.router.system.toString(tab),
-    ]);
+    return `${this.constructor.name}` + printTree(tab, this.router.keys().map(key => {
+      const value = this.router.get(key);
+      return (tab: string) => `${key}: ${(value?.type as Type).getOptions().title || ''}`;
+    }));
   }
 }
