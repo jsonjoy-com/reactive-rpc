@@ -10,7 +10,8 @@ import {
   RpcMessageBatchProcessor,
   RpcMessageStreamProcessor,
 } from '../../common';
-import {ConnectionContext, WsConnectionContext} from './context';
+import {ConnectionContext} from '../context';
+import {WsConnectionContext} from './context';
 import type {RpcCaller} from '../../common/rpc/caller/RpcCaller';
 import type {ServerLogger} from './types';
 

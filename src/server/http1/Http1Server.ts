@@ -7,8 +7,9 @@ import {WsFrameEncoder} from '../ws/codec/WsFrameEncoder';
 import {Router, RouteMatcher} from '@jsonjoy.com/jit-router';
 import {Printable} from 'json-joy/lib/util/print/types';
 import {printTree} from 'json-joy/lib/util/print/printTree';
-import {PayloadTooLarge} from './errors';
-import {findTokenInText, setCodecs} from './util';
+import {PayloadTooLarge} from '../errors';
+import {setCodecs} from './util';
+import {findTokenInText} from '../util';
 import {Http1ConnectionContext, WsConnectionContext} from './context';
 import {RpcCodecs} from '../../common/codec/RpcCodecs';
 import {RpcMessageCodecs} from '../../common/codec/RpcMessageCodecs';
@@ -44,7 +45,7 @@ export interface WsEndpointDefinition {
   path: string;
   maxIncomingMessage?: number;
   maxOutgoingBackpressure?: number;
-  onUpgrade?(req: http.IncomingMessage, connection: WsServerConnection): void;
+  onWsUpgrade?(req: http.IncomingMessage, connection: WsServerConnection): void;
   handler(ctx: WsConnectionContext, req: http.IncomingMessage): void;
 }
 
@@ -165,6 +166,7 @@ export class Http1Server implements Printable {
   protected wsMatcher: RouteMatcher<WsEndpointDefinition> = () => undefined;
 
   private readonly onWsUpgrade = (req: http.IncomingMessage, socket: net.Socket) => {
+    // TODO: Check "Upgrade: websocket" header is present.
     const url = req.url ?? '';
     const queryStartIndex = url.indexOf('?');
     let path = url;
@@ -183,7 +185,7 @@ export class Http1Server implements Printable {
     const connection = new WsServerConnection(this.wsEncoder, socket as net.Socket);
     connection.maxIncomingMessage = def.maxIncomingMessage ?? 2 * 1024 * 1024;
     connection.maxBackpressure = def.maxOutgoingBackpressure ?? 2 * 1024 * 1024;
-    if (def.onUpgrade) def.onUpgrade(req, connection);
+    if (def.onWsUpgrade) def.onWsUpgrade(req, connection);
     else {
       const secWebSocketKey = headers['sec-websocket-key'] ?? '';
       const secWebSocketProtocol = headers['sec-websocket-protocol'] ?? '';
