@@ -1,6 +1,7 @@
 import {StaticRpcMethod} from '../methods/StaticRpcMethod';
 import {StreamingRpcMethod} from '../methods/StreamingRpcMethod';
 import {RpcCaller, RpcApiCallerOptions} from './RpcCaller';
+import {printTree} from 'json-joy/lib/util/print/printTree';
 import type {IStaticRpcMethod, IStreamingRpcMethod} from '../types';
 import type {RpcApiMap} from './types';
 
@@ -35,5 +36,13 @@ export class ApiRpcCaller<
 
   protected get<K extends keyof Methods>(name: K): Methods[K] | undefined {
     return <Methods[K] | undefined>this.methods.get(<string>name);
+  }
+
+  // ---------------------------------------------------------------- Printable
+
+  public toString(tab: string = ''): string {
+    return `${this.constructor.name}` + printTree(tab, [...this.methods.entries()].map(([name, method]) =>
+      (tab) => `${name}${method.isStreaming ? ' (streaming)' : ''}`
+    ));
   }
 }

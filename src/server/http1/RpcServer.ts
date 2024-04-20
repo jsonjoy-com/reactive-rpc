@@ -1,5 +1,6 @@
 import * as http from 'http';
 import {Printable} from 'json-joy/lib/util/print/types';
+// TODO: switch to sonic-forest
 import {printTree} from 'json-joy/lib/util/print/printTree';
 import {Http1Server} from './Http1Server';
 import {RpcError} from '../../common/rpc/caller';
@@ -196,6 +197,9 @@ export class RpcServer implements Printable {
   // ---------------------------------------------------------------- Printable
 
   public toString(tab: string = ''): string {
-    return `${this.constructor.name}` + printTree(tab, [(tab) => this.http1.toString(tab)]);
+    return `${this.constructor.name}` + printTree(tab, [
+      (tab) => this.http1.toString(tab),
+      (tab) => (this.opts.caller as unknown as Printable).toString(tab),
+    ]);
   }
 }
