@@ -67,6 +67,7 @@
     }
   },
   "dependencies": {
+    "@jsonjoy.com/jit-router": "^1.0.1",
     "@jsonjoy.com/json-pack": "^1.0.2",
     "@jsonjoy.com/util": "^1.0.0",
     "json-joy": "^14.2.0",
@@ -77,7 +78,6 @@
     "@types/jest": "^29.5.12",
     "@types/ws": "^8.5.10",
     "benchmark": "^2.1.4",
-    "find-my-way": "^8.1.0",
     "jest": "^29.7.0",
     "prettier": "^3.2.5",
     "rimraf": "^5.0.5",
@@ -99,9 +99,6 @@
     "testEnvironmentOptions": {
       "url": "http://localhost/"
     },
-    "setupFiles": [
-      "<rootDir>/src/__tests__/setup.js"
-    ],
     "moduleFileExtensions": [
       "ts",
       "js"
