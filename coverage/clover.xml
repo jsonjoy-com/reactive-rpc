@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1713615301670" clover="3.2.0">
-  <project timestamp="1713615301670" name="All files">
-    <metrics statements="2693" coveredstatements="2265" conditionals="823" coveredconditionals="532" methods="682" coveredmethods="514" elements="4198" coveredelements="3311" complexity="0" loc="2693" ncloc="2693" packages="36" files="92" classes="92"/>
+<coverage generated="1713617766876" clover="3.2.0">
+  <project timestamp="1713617766876" name="All files">
+    <metrics statements="2478" coveredstatements="2067" conditionals="705" coveredconditionals="439" methods="616" coveredmethods="474" elements="3799" coveredelements="2980" complexity="0" loc="2478" ncloc="2478" packages="34" files="87" classes="87"/>
     <package name="common">
       <metrics statements="4" coveredstatements="4" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
       <file name="index.ts" path="/home/runner/work/reactive-rpc/reactive-rpc/src/common/index.ts">
@@ -229,18 +229,18 @@
         <line num="9" count="28" type="stmt"/>
         <line num="10" count="28" type="stmt"/>
         <line num="13" count="0" type="stmt"/>
-        <line num="17" count="208" type="stmt"/>
+        <line num="17" count="207" type="stmt"/>
         <line num="18" count="390" type="stmt"/>
-        <line num="22" count="209" type="stmt"/>
-        <line num="23" count="209" type="stmt"/>
-        <line num="24" count="209" type="stmt"/>
-        <line num="25" count="209" type="stmt"/>
-        <line num="26" count="209" type="stmt"/>
-        <line num="27" count="209" type="stmt"/>
+        <line num="22" count="208" type="stmt"/>
+        <line num="23" count="208" type="stmt"/>
+        <line num="24" count="208" type="stmt"/>
+        <line num="25" count="208" type="stmt"/>
+        <line num="26" count="208" type="stmt"/>
+        <line num="27" count="208" type="stmt"/>
         <line num="28" count="392" type="stmt"/>
         <line num="29" count="392" type="stmt"/>
-        <line num="31" count="209" type="stmt"/>
-        <line num="32" count="209" type="stmt"/>
+        <line num="31" count="208" type="stmt"/>
+        <line num="32" count="208" type="stmt"/>
         <line num="33" count="392" type="stmt"/>
         <line num="34" count="392" type="stmt"/>
         <line num="35" count="392" type="cond" truecount="1" falsecount="0"/>
@@ -249,12 +249,12 @@
         <line num="38" count="368" type="cond" truecount="2" falsecount="0"/>
         <line num="39" count="368" type="cond" truecount="2" falsecount="0"/>
         <line num="40" count="336" type="stmt"/>
-        <line num="43" count="209" type="stmt"/>
-        <line num="47" count="174" type="stmt"/>
-        <line num="48" count="174" type="stmt"/>
-        <line num="49" count="174" type="stmt"/>
-        <line num="50" count="174" type="stmt"/>
-        <line num="51" count="174" type="stmt"/>
+        <line num="43" count="208" type="stmt"/>
+        <line num="47" count="173" type="stmt"/>
+        <line num="48" count="173" type="stmt"/>
+        <line num="49" count="173" type="stmt"/>
+        <line num="50" count="173" type="stmt"/>
+        <line num="51" count="173" type="stmt"/>
       </file>
       <file name="decode.ts" path="/home/runner/work/reactive-rpc/reactive-rpc/src/common/codec/binary/decode.ts">
         <metrics statements="62" coveredstatements="53" conditionals="24" coveredconditionals="22" methods="1" coveredmethods="1"/>
@@ -902,7 +902,7 @@
         <line num="76" count="4" type="cond" truecount="1" falsecount="1"/>
         <line num="77" count="4" type="cond" truecount="2" falsecount="0"/>
         <line num="78" count="3" type="cond" truecount="1" falsecount="0"/>
-        <line num="88" count="121" type="stmt"/>
+        <line num="88" count="118" type="stmt"/>
         <line num="89" count="127" type="stmt"/>
         <line num="93" count="0" type="stmt"/>
         <line num="94" count="0" type="stmt"/>
@@ -1541,7 +1541,7 @@
         <line num="84" count="182" type="stmt"/>
         <line num="85" count="182" type="stmt"/>
         <line num="95" count="4" type="stmt"/>
-        <line num="104" count="130" type="stmt"/>
+        <line num="104" count="132" type="stmt"/>
         <line num="105" count="148" type="stmt"/>
         <line num="114" count="148" type="cond" truecount="2" falsecount="0"/>
         <line num="115" count="55" type="cond" truecount="2" falsecount="0"/>
@@ -1669,15 +1669,15 @@
         <line num="66" count="24" type="stmt"/>
         <line num="67" count="24" type="stmt"/>
         <line num="77" count="24" type="stmt"/>
-        <line num="80" count="62" type="stmt"/>
-        <line num="81" count="62" type="stmt"/>
-        <line num="82" count="62" type="stmt"/>
-        <line num="83" count="62" type="stmt"/>
+        <line num="80" count="64" type="stmt"/>
+        <line num="81" count="64" type="stmt"/>
+        <line num="82" count="64" type="stmt"/>
+        <line num="83" count="64" type="stmt"/>
         <line num="89" count="24" type="stmt"/>
-        <line num="91" count="67" type="stmt"/>
-        <line num="92" count="67" type="stmt"/>
-        <line num="93" count="67" type="stmt"/>
-        <line num="94" count="67" type="stmt"/>
+        <line num="91" count="64" type="stmt"/>
+        <line num="92" count="64" type="stmt"/>
+        <line num="93" count="64" type="stmt"/>
+        <line num="94" count="64" type="stmt"/>
         <line num="100" count="24" type="stmt"/>
         <line num="101" count="24" type="stmt"/>
       </file>
@@ -1694,17 +1694,17 @@
         <line num="22" count="368" type="stmt"/>
         <line num="25" count="424" type="stmt"/>
         <line num="26" count="424" type="cond" truecount="1" falsecount="0"/>
-        <line num="27" count="87" type="stmt"/>
-        <line num="28" count="87" type="stmt"/>
-        <line num="30" count="337" type="cond" truecount="1" falsecount="0"/>
+        <line num="27" count="90" type="stmt"/>
+        <line num="28" count="90" type="stmt"/>
+        <line num="30" count="334" type="cond" truecount="1" falsecount="0"/>
         <line num="31" count="311" type="stmt"/>
-        <line num="32" count="286" type="stmt"/>
-        <line num="38" count="379" type="stmt"/>
-        <line num="39" count="379" type="stmt"/>
-        <line num="40" count="379" type="cond" truecount="1" falsecount="0"/>
-        <line num="41" count="379" type="stmt"/>
-        <line num="42" count="379" type="cond" truecount="1" falsecount="0"/>
-        <line num="43" count="379" type="stmt"/>
+        <line num="32" count="282" type="stmt"/>
+        <line num="38" count="378" type="stmt"/>
+        <line num="39" count="378" type="stmt"/>
+        <line num="40" count="378" type="cond" truecount="1" falsecount="0"/>
+        <line num="41" count="378" type="stmt"/>
+        <line num="42" count="378" type="cond" truecount="1" falsecount="0"/>
+        <line num="43" count="378" type="stmt"/>
       </file>
       <file name="microtask.ts" path="/home/runner/work/reactive-rpc/reactive-rpc/src/common/util/microtask.ts">
         <metrics statements="4" coveredstatements="3" conditionals="6" coveredconditionals="4" methods="1" coveredmethods="0"/>
@@ -2245,9 +2245,9 @@
       </file>
     </package>
     <package name="json-crdt-server.services.blocks">
-      <metrics statements="133" coveredstatements="121" conditionals="41" coveredconditionals="17" methods="30" coveredmethods="24"/>
+      <metrics statements="133" coveredstatements="115" conditionals="41" coveredconditionals="16" methods="30" coveredmethods="22"/>
       <file name="BlocksServices.ts" path="/home/runner/work/reactive-rpc/reactive-rpc/src/json-crdt-server/services/blocks/BlocksServices.ts">
-        <metrics statements="84" coveredstatements="77" conditionals="23" coveredconditionals="12" methods="17" coveredmethods="14"/>
+        <metrics statements="84" coveredstatements="73" conditionals="23" coveredconditionals="11" methods="17" coveredmethods="13"/>
         <line num="1" count="5" type="stmt"/>
         <line num="2" count="5" type="stmt"/>
         <line num="3" count="5" type="stmt"/>
@@ -2326,15 +2326,15 @@
         <line num="137" count="10" type="cond" truecount="1" falsecount="0"/>
         <line num="138" count="10" type="stmt"/>
         <line num="145" count="1" type="stmt"/>
-        <line num="149" count="22" type="cond" truecount="1" falsecount="0"/>
-        <line num="150" count="1" type="stmt"/>
+        <line num="149" count="22" type="cond" truecount="0" falsecount="1"/>
+        <line num="150" count="0" type="stmt"/>
         <line num="152" count="0" type="stmt"/>
-        <line num="157" count="1" type="stmt"/>
-        <line num="158" count="1" type="stmt"/>
-        <line num="159" count="1" type="stmt"/>
+        <line num="157" count="0" type="stmt"/>
+        <line num="158" count="0" type="stmt"/>
+        <line num="159" count="0" type="stmt"/>
       </file>
       <file name="MemoryStore.ts" path="/home/runner/work/reactive-rpc/reactive-rpc/src/json-crdt-server/services/blocks/MemoryStore.ts">
-        <metrics statements="49" coveredstatements="44" conditionals="18" coveredconditionals="5" methods="13" coveredmethods="10"/>
+        <metrics statements="49" coveredstatements="42" conditionals="18" coveredconditionals="5" methods="13" coveredmethods="9"/>
         <line num="1" count="5" type="stmt"/>
         <line num="4" count="5" type="stmt"/>
         <line num="6" count="5" type="stmt"/>
@@ -2382,8 +2382,8 @@
         <line num="73" count="0" type="stmt"/>
         <line num="78" count="0" type="stmt"/>
         <line num="79" count="0" type="cond" truecount="0" falsecount="1"/>
-        <line num="83" count="1" type="stmt"/>
-        <line num="84" count="1" type="cond" truecount="0" falsecount="1"/>
+        <line num="83" count="0" type="stmt"/>
+        <line num="84" count="0" type="cond" truecount="0" falsecount="1"/>
       </file>
     </package>
     <package name="server">
@@ -2813,242 +2813,6 @@
         <line num="16" count="26" type="stmt"/>
         <line num="17" count="26" type="stmt"/>
         <line num="18" count="26" type="stmt"/>
-      </file>
-    </package>
-    <package name="util.router">
-      <metrics statements="213" coveredstatements="190" conditionals="118" coveredconditionals="92" methods="66" coveredmethods="38"/>
-      <file name="codegen.ts" path="/home/runner/work/reactive-rpc/reactive-rpc/src/util/router/codegen.ts">
-        <metrics statements="10" coveredstatements="10" conditionals="1" coveredconditionals="1" methods="4" coveredmethods="3"/>
-        <line num="1" count="6" type="stmt"/>
-        <line num="2" count="6" type="stmt"/>
-        <line num="7" count="6" type="stmt"/>
-        <line num="11" count="7" type="stmt"/>
-        <line num="19" count="6" type="stmt"/>
-        <line num="21" count="151" type="stmt"/>
-        <line num="22" count="151" type="stmt"/>
-        <line num="23" count="151" type="cond" truecount="1" falsecount="0"/>
-        <line num="27" count="144" type="stmt"/>
-        <line num="28" count="144" type="stmt"/>
-      </file>
-      <file name="router.ts" path="/home/runner/work/reactive-rpc/reactive-rpc/src/util/router/router.ts">
-        <metrics statements="66" coveredstatements="57" conditionals="30" coveredconditionals="24" methods="24" coveredmethods="11"/>
-        <line num="1" count="6" type="stmt"/>
-        <line num="2" count="6" type="stmt"/>
-        <line num="4" count="6" type="stmt"/>
-        <line num="5" count="6" type="stmt"/>
-        <line num="6" count="6" type="stmt"/>
-        <line num="13" count="6" type="stmt"/>
-        <line num="14" count="7" type="stmt"/>
-        <line num="16" count="7" type="cond" truecount="1" falsecount="0"/>
-        <line num="19" count="81" type="stmt"/>
-        <line num="20" count="81" type="stmt"/>
-        <line num="24" count="0" type="stmt"/>
-        <line num="28" count="7" type="stmt"/>
-        <line num="29" count="7" type="stmt"/>
-        <line num="30" count="81" type="stmt"/>
-        <line num="31" count="82" type="stmt"/>
-        <line num="34" count="7" type="stmt"/>
-        <line num="38" count="7" type="stmt"/>
-        <line num="39" count="7" type="stmt"/>
-        <line num="40" count="7" type="stmt"/>
-        <line num="41" count="7" type="stmt"/>
-        <line num="42" count="7" type="stmt"/>
-        <line num="46" count="0" type="stmt"/>
-        <line num="50" count="0" type="stmt"/>
-        <line num="53" count="0" type="stmt"/>
-        <line num="55" count="0" type="stmt"/>
-        <line num="56" count="0" type="stmt"/>
-        <line num="62" count="6" type="stmt"/>
-        <line num="64" count="93" type="cond" truecount="2" falsecount="0"/>
-        <line num="65" count="93" type="stmt"/>
-        <line num="71" count="93" type="stmt"/>
-        <line num="72" count="93" type="stmt"/>
-        <line num="74" count="93" type="stmt"/>
-        <line num="78" count="0" type="stmt"/>
-        <line num="84" count="0" type="stmt"/>
-        <line num="90" count="6" type="stmt"/>
-        <line num="92" count="94" type="stmt"/>
-        <line num="93" count="94" type="stmt"/>
-        <line num="94" count="94" type="stmt"/>
-        <line num="95" count="94" type="cond" truecount="4" falsecount="0"/>
-        <line num="96" count="109" type="stmt"/>
-        <line num="97" count="109" type="cond" truecount="1" falsecount="0"/>
-        <line num="98" count="109" type="stmt"/>
-        <line num="99" count="109" type="stmt"/>
-        <line num="101" count="94" type="cond" truecount="1" falsecount="0"/>
-        <line num="102" count="94" type="stmt"/>
-        <line num="103" count="94" type="stmt"/>
-        <line num="104" count="94" type="stmt"/>
-        <line num="105" count="252" type="stmt"/>
-        <line num="106" count="252" type="cond" truecount="2" falsecount="0"/>
-        <line num="107" count="252" type="cond" truecount="2" falsecount="0"/>
-        <line num="108" count="109" type="stmt"/>
-        <line num="109" count="109" type="cond" truecount="2" falsecount="1"/>
-        <line num="110" count="109" type="cond" truecount="4" falsecount="0"/>
-        <line num="111" count="98" type="stmt"/>
-        <line num="112" count="98" type="cond" truecount="4" falsecount="0"/>
-        <line num="114" count="11" type="stmt"/>
-        <line num="117" count="143" type="stmt"/>
-        <line num="120" count="94" type="stmt"/>
-        <line num="123" count="94" type="stmt"/>
-        <line num="126" count="12" type="stmt"/>
-        <line num="127" count="31" type="stmt"/>
-        <line num="128" count="12" type="stmt"/>
-        <line num="132" count="0" type="stmt"/>
-        <line num="136" count="6" type="stmt"/>
-        <line num="138" count="93" type="stmt"/>
-        <line num="139" count="93" type="stmt"/>
-      </file>
-      <file name="steps.ts" path="/home/runner/work/reactive-rpc/reactive-rpc/src/util/router/steps.ts">
-        <metrics statements="15" coveredstatements="15" conditionals="8" coveredconditionals="5" methods="6" coveredmethods="6"/>
-        <line num="1" count="6" type="stmt"/>
-        <line num="2" count="143" type="stmt"/>
-        <line num="5" count="17" type="stmt"/>
-        <line num="9" count="6" type="stmt"/>
-        <line num="11" count="98" type="stmt"/>
-        <line num="12" count="98" type="stmt"/>
-        <line num="16" count="8" type="cond" truecount="1" falsecount="1"/>
-        <line num="17" count="8" type="stmt"/>
-        <line num="21" count="6" type="stmt"/>
-        <line num="23" count="11" type="stmt"/>
-        <line num="24" count="11" type="stmt"/>
-        <line num="25" count="11" type="stmt"/>
-        <line num="29" count="6" type="cond" truecount="2" falsecount="2"/>
-        <line num="30" count="6" type="cond" truecount="2" falsecount="0"/>
-        <line num="31" count="6" type="stmt"/>
-      </file>
-      <file name="tree.ts" path="/home/runner/work/reactive-rpc/reactive-rpc/src/util/router/tree.ts">
-        <metrics statements="122" coveredstatements="108" conditionals="79" coveredconditionals="62" methods="32" coveredmethods="18"/>
-        <line num="1" count="6" type="stmt"/>
-        <line num="2" count="6" type="stmt"/>
-        <line num="4" count="6" type="stmt"/>
-        <line num="7" count="6" type="stmt"/>
-        <line num="8" count="6" type="stmt"/>
-        <line num="10" count="6" type="stmt"/>
-        <line num="11" count="78" type="stmt"/>
-        <line num="14" count="6" type="stmt"/>
-        <line num="15" count="121" type="stmt"/>
-        <line num="16" count="121" type="stmt"/>
-        <line num="17" count="121" type="stmt"/>
-        <line num="18" count="121" type="stmt"/>
-        <line num="22" count="221" type="stmt"/>
-        <line num="23" count="221" type="stmt"/>
-        <line num="24" count="221" type="cond" truecount="2" falsecount="0"/>
-        <line num="25" count="126" type="cond" truecount="2" falsecount="0"/>
-        <line num="26" count="35" type="cond" truecount="4" falsecount="0"/>
-        <line num="27" count="35" type="stmt"/>
-        <line num="28" count="35" type="stmt"/>
-        <line num="30" count="91" type="stmt"/>
-        <line num="31" count="91" type="cond" truecount="2" falsecount="0"/>
-        <line num="33" count="53" type="stmt"/>
-        <line num="34" count="53" type="stmt"/>
-        <line num="35" count="53" type="stmt"/>
-        <line num="38" count="95" type="cond" truecount="2" falsecount="0"/>
-        <line num="39" count="90" type="stmt"/>
-        <line num="40" count="45" type="cond" truecount="3" falsecount="0"/>
-        <line num="42" count="90" type="cond" truecount="3" falsecount="0"/>
-        <line num="43" count="59" type="stmt"/>
-        <line num="44" count="59" type="stmt"/>
-        <line num="46" count="90" type="cond" truecount="2" falsecount="0"/>
-        <line num="47" count="45" type="stmt"/>
-        <line num="49" count="45" type="stmt"/>
-        <line num="51" count="5" type="cond" truecount="1" falsecount="0"/>
-        <line num="52" count="5" type="cond" truecount="2" falsecount="0"/>
-        <line num="53" count="2" type="stmt"/>
-        <line num="55" count="3" type="stmt"/>
-        <line num="57" count="2" type="cond" truecount="4" falsecount="0"/>
-        <line num="62" count="3" type="cond" truecount="4" falsecount="0"/>
-        <line num="63" count="1" type="stmt"/>
-        <line num="65" count="2" type="stmt"/>
-        <line num="66" count="2" type="stmt"/>
-        <line num="67" count="2" type="stmt"/>
-        <line num="74" count="90" type="stmt"/>
-        <line num="75" count="90" type="cond" truecount="1" falsecount="0"/>
-        <line num="76" count="16" type="cond" truecount="2" falsecount="0"/>
-        <line num="77" count="3" type="stmt"/>
-        <line num="79" count="9" type="stmt"/>
-        <line num="82" count="9" type="stmt"/>
-        <line num="85" count="18" type="stmt"/>
-        <line num="86" count="18" type="stmt"/>
-        <line num="93" count="13" type="stmt"/>
-        <line num="94" count="17" type="stmt"/>
-        <line num="95" count="17" type="stmt"/>
-        <line num="96" count="17" type="stmt"/>
-        <line num="98" count="17" type="stmt"/>
-        <line num="104" count="90" type="cond" truecount="1" falsecount="0"/>
-        <line num="105" count="7" type="stmt"/>
-        <line num="107" count="90" type="stmt"/>
-        <line num="108" count="151" type="stmt"/>
-        <line num="109" count="151" type="stmt"/>
-        <line num="110" count="151" type="stmt"/>
-        <line num="111" count="151" type="cond" truecount="2" falsecount="0"/>
-        <line num="112" count="151" type="stmt"/>
-        <line num="113" count="61" type="stmt"/>
-        <line num="115" count="151" type="stmt"/>
-        <line num="116" count="151" type="cond" truecount="1" falsecount="0"/>
-        <line num="117" count="53" type="stmt"/>
-        <line num="120" count="151" type="cond" truecount="2" falsecount="0"/>
-        <line num="121" count="61" type="stmt"/>
-        <line num="122" count="90" type="stmt"/>
-        <line num="124" count="90" type="stmt"/>
-        <line num="125" count="90" type="cond" truecount="1" falsecount="0"/>
-        <line num="126" count="52" type="stmt"/>
-        <line num="127" count="59" type="cond" truecount="4" falsecount="0"/>
-        <line num="128" count="7" type="stmt"/>
-        <line num="129" count="7" type="cond" truecount="1" falsecount="0"/>
-        <line num="130" count="7" type="stmt"/>
-        <line num="135" count="52" type="stmt"/>
-        <line num="136" count="52" type="cond" truecount="1" falsecount="0"/>
-        <line num="137" count="38" type="stmt"/>
-        <line num="138" count="38" type="stmt"/>
-        <line num="139" count="38" type="cond" truecount="1" falsecount="0"/>
-        <line num="140" count="38" type="stmt"/>
-        <line num="143" count="52" type="cond" truecount="1" falsecount="0"/>
-        <line num="149" count="28" type="stmt"/>
-        <line num="150" count="28" type="cond" truecount="1" falsecount="0"/>
-        <line num="151" count="28" type="stmt"/>
-        <line num="152" count="28" type="cond" truecount="1" falsecount="0"/>
-        <line num="158" count="90" type="cond" truecount="1" falsecount="0"/>
-        <line num="159" count="3" type="stmt"/>
-        <line num="160" count="4" type="stmt"/>
-        <line num="161" count="4" type="stmt"/>
-        <line num="162" count="4" type="cond" truecount="2" falsecount="0"/>
-        <line num="163" count="4" type="stmt"/>
-        <line num="164" count="4" type="stmt"/>
-        <line num="165" count="4" type="cond" truecount="2" falsecount="0"/>
-        <line num="166" count="2" type="stmt"/>
-        <line num="167" count="2" type="stmt"/>
-        <line num="168" count="2" type="stmt"/>
-        <line num="169" count="2" type="cond" truecount="0" falsecount="1"/>
-        <line num="170" count="2" type="stmt"/>
-        <line num="173" count="2" type="stmt"/>
-        <line num="174" count="2" type="stmt"/>
-        <line num="175" count="2" type="stmt"/>
-        <line num="176" count="2" type="cond" truecount="1" falsecount="0"/>
-        <line num="177" count="2" type="stmt"/>
-        <line num="178" count="2" type="cond" truecount="1" falsecount="0"/>
-        <line num="186" count="0" type="stmt"/>
-        <line num="192" count="0" type="stmt"/>
-        <line num="197" count="0" type="stmt"/>
-        <line num="198" count="0" type="stmt"/>
-        <line num="203" count="0" type="stmt"/>
-        <line num="204" count="0" type="stmt"/>
-        <line num="211" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="212" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="216" count="0" type="stmt"/>
-        <line num="221" count="0" type="stmt"/>
-        <line num="222" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="228" count="0" type="stmt"/>
-        <line num="233" count="0" type="stmt"/>
-        <line num="234" count="0" type="cond" truecount="0" falsecount="2"/>
-      </file>
-    </package>
-    <package name="util.router.__bench__">
-      <metrics statements="2" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
-      <file name="routes.ts" path="/home/runner/work/reactive-rpc/reactive-rpc/src/util/router/__bench__/routes.ts">
-        <metrics statements="2" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
-        <line num="5" count="1" type="stmt"/>
-        <line num="65" count="1" type="stmt"/>
       </file>
     </package>
     <package name="util.rx">
