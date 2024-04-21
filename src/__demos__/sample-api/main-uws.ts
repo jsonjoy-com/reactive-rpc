@@ -8,6 +8,7 @@ import {RpcApp} from '../../server/uws/RpcApp';
 const app = new RpcApp({
   uws: App({}),
   caller: createCaller(),
+  port: +(process.env.PORT || 9999),
 });
 
 app.startWithDefaults();

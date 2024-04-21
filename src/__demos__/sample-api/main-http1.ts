@@ -5,7 +5,7 @@ import {createCaller} from '../../common/rpc/__tests__/sample-api';
 import {RpcServer} from '../../server/http1/RpcServer';
 
 const server = RpcServer.startWithDefaults({
-  port: 9999,
+  port: +(process.env.PORT || 9999),
   caller: createCaller(),
   logger: console,
 });

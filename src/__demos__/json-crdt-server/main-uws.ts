@@ -12,5 +12,6 @@ export type JsonJoyDemoRpcCaller = ReturnType<typeof createCaller>['caller'];
 const app = new RpcApp<MyCtx>({
   uws: App({}),
   caller: createCaller(new Services()).caller,
+  port: +(process.env.PORT || 9999),
 });
 app.startWithDefaults();

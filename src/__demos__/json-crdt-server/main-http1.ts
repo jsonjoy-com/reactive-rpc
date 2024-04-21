@@ -8,7 +8,7 @@ import {RpcServer} from '../../server/http1/RpcServer';
 export type JsonJoyDemoRpcCaller = ReturnType<typeof createCaller>['caller'];
 
 const server = RpcServer.startWithDefaults({
-  port: 9999,
+  port: +(process.env.PORT || 9999),
   caller: createCaller(new Services()).caller,
   logger: console,
 });
