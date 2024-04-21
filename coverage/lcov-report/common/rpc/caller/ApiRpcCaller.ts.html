@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">82.35% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>13/13</span>
+                <span class='fraction'>14/17</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">40% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>2/2</span>
+                <span class='fraction'>2/5</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">50% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>3/3</span>
+                <span class='fraction'>3/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">81.25% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>12/12</span>
+                <span class='fraction'>13/16</span>
             </div>
         
             
@@ -102,9 +102,32 @@
 <a name='L37'></a><a href='#L37'>37</a>
 <a name='L38'></a><a href='#L38'>38</a>
 <a name='L39'></a><a href='#L39'>39</a>
-<a name='L40'></a><a href='#L40'>40</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">9x</span>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">9x</span>
 <span class="cline-any cline-yes">9x</span>
 <span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -114,6 +137,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -139,13 +165,31 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">461x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import {StaticRpcMethod} from '../methods/StaticRpcMethod';
 import {StreamingRpcMethod} from '../methods/StreamingRpcMethod';
 import {RpcCaller, RpcApiCallerOptions} from './RpcCaller';
+import {printTree} from 'sonic-forest/lib/print/printTree';
 import type {IStaticRpcMethod, IStreamingRpcMethod} from '../types';
 import type {RpcApiMap} from './types';
+import type {Printable} from 'sonic-forest/lib/print/types';
 &nbsp;
 export interface ApiRpcCallerOptions&lt;Api extends RpcApiMap&lt;Ctx&gt;, Ctx = unknown&gt;
   extends Omit&lt;RpcApiCallerOptions&lt;Ctx&gt;, 'getMethod'&gt; {
@@ -153,16 +197,19 @@ export interface ApiRpcCallerOptions&lt;Api extends RpcApiMap&lt;Ctx&gt;, Ctx = 
 }
 &nbsp;
 export class ApiRpcCaller&lt;
-  Api extends RpcApiMap&lt;Ctx&gt;,
-  Ctx = unknown,
-  Methods = {
-    [K in keyof Api]: Api[K] extends IStaticRpcMethod&lt;infer Ctx, infer Req, infer Res&gt;
-      ? StaticRpcMethod&lt;Ctx, Req, Res&gt;
-      : Api[K] extends IStreamingRpcMethod&lt;infer Ctx, infer Req, infer Res&gt;
-        ? StreamingRpcMethod&lt;Ctx, Req, Res&gt;
-        : never;
-  },
-&gt; extends RpcCaller&lt;Ctx&gt; {
+    Api extends RpcApiMap&lt;Ctx&gt;,
+    Ctx = unknown,
+    Methods = {
+      [K in keyof Api]: Api[K] extends IStaticRpcMethod&lt;infer Ctx, infer Req, infer Res&gt;
+        ? StaticRpcMethod&lt;Ctx, Req, Res&gt;
+        : Api[K] extends IStreamingRpcMethod&lt;infer Ctx, infer Req, infer Res&gt;
+          ? StreamingRpcMethod&lt;Ctx, Req, Res&gt;
+          : never;
+    },
+  &gt;
+  extends RpcCaller&lt;Ctx&gt;
+  implements Printable
+{
   protected readonly methods = new Map&lt;string, StaticRpcMethod | StreamingRpcMethod&gt;();
 &nbsp;
   constructor({api, ...rest}: ApiRpcCallerOptions&lt;Api, Ctx&gt;) {
@@ -179,6 +226,22 @@ export class ApiRpcCaller&lt;
   protected get&lt;K extends keyof Methods&gt;(name: K): Methods[K] | undefined {
     return &lt;Methods[K] | undefined&gt;this.methods.get(&lt;string&gt;name);
   }
+&nbsp;
+  // ---------------------------------------------------------------- Printable
+&nbsp;
+  public <span class="fstat-no" title="function not covered" >toString(</span>tab: string = <span class="branch-0 cbranch-no" title="branch not covered" >'')</span>: string {
+<span class="cstat-no" title="statement not covered" >    return (</span>
+      `${this.constructor.name}` +
+      printTree(
+        tab,
+        [...this.methods.entries()].map(
+<span class="fstat-no" title="function not covered" >          ([</span>name, method]) =&gt;
+<span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >            (t</span>ab) =&gt;</span>
+<span class="cstat-no" title="statement not covered" >              `${name}${method.isStreaming ? ' (streaming)' : ''}`,</span>
+        ),
+      )
+    );
+  }
 }
 &nbsp;</pre></td></tr></table></pre>
 
@@ -187,7 +250,7 @@ export class ApiRpcCaller&lt;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2024-04-20T12:56:06.802Z
+                at 2024-04-21T15:19:13.515Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
