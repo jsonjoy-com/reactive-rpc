@@ -1,37 +1,17 @@
-import {type ResolveType} from 'json-joy/lib/json-type';
 import {t} from '../system';
 
-export type TBlockId = ResolveType<typeof BlockId>;
 export const BlockId = t.str.options({
   title: 'Block ID',
   min: 6,
   max: 40,
 });
-
-export type TBlockSeq = ResolveType<typeof BlockSeq>;
 export const BlockSeq = t.num.options({
   title: 'Block Sequence Number',
   gte: 0,
   format: 'i32',
 });
 
-export type TBlock = ResolveType<typeof Block>;
-
-// prettier-ignore
-export const BlockPartial = t.Object(
-  t.prop('blob', t.bin),
-);
-
-export const BlockPartialReturn = t.Object(
-  t.prop('id', t.Ref<typeof BlockId>('BlockId')),
-  t.prop('seq', t.Ref<typeof BlockSeq>('BlockSeq')),
-  t.prop('created', t.num),
-  t.prop('updated', t.num),
-);
-
-export const Block = BlockPartial.extend(BlockPartialReturn);
-
-export type TBlockPatch = ResolveType<typeof BlockPatch>;
+// ---------------------------------------------------------------------- Patch
 
 // prettier-ignore
 export const BlockPatchPartial = t.Object(
@@ -40,7 +20,6 @@ export const BlockPatchPartial = t.Object(
     description: 'The binary data of the patch. The format of the data is defined by the patch type.',
   }),
 );
-
 // prettier-ignore
 export const BlockPatchPartialReturn = t.Object(
   t.prop('seq', t.num).options({
@@ -56,5 +35,41 @@ export const BlockPatchPartialReturn = t.Object(
       'information in the patch blob itself.',
   }),
 );
-
 export const BlockPatch = BlockPatchPartial.extend(BlockPatchPartialReturn);
+
+// ------------------------------------------------------------------- Snapshot
+
+export const BlockSnapshot = t.Object(
+  t.prop('blob', t.bin)
+    .options({
+      title: 'Snapshot Blob',
+      description: 'A serialized JSON CRDT model.',
+    }),
+  t.prop('cur', t.num)
+    .options({
+      title: 'Snapshot Cursor',
+      description: 'The cursor of the snapshot, representing the position in the history.',
+    }),
+  t.prop('ts', t.num)
+    .options({
+      title: 'Snapshot Creation Time',
+      description: 'The time when the snapshot was created, in milliseconds since the Unix epoch.',
+    }),
+).options({
+  title: 'Block Snapshot',
+  description: 'A snapshot of the block\'s state at a certain point in time.',
+});
+
+// ---------------------------------------------------------------------- Block
+
+// prettier-ignore
+export const BlockPartial = t.Object(
+  t.prop('blob', t.bin),
+);
+export const BlockPartialReturn = t.Object(
+  t.prop('id', t.Ref<typeof BlockId>('BlockId')),
+  t.prop('ts', t.num),
+  t.prop('data', t.Ref<typeof BlockSnapshot>('BlockSnapshot')),
+  t.prop('tip', t.Array(t.Ref<typeof BlockPatch>('BlockPatch'))),
+);
+export const Block = BlockPartial.extend(BlockPartialReturn);
