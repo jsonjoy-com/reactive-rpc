@@ -1,6 +1,6 @@
 import {NullObject} from '@jsonjoy.com/util/lib/NullObject';
 import {copy} from '@jsonjoy.com/util/lib/buffers/copy';
-import {listToUint8} from '@jsonjoy.com/util/lib/buffers/concat';
+import {concatList} from '@jsonjoy.com/util/lib/buffers/concat';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
 import type {RpcMessageCodec} from '../common/codec/types';
 import type {RpcApp} from './uws/RpcApp';
@@ -195,12 +195,12 @@ export class ConnectionContext<Meta = Record<string, unknown>> {
 
   public async requestBody(max: number): Promise<Uint8Array> {
     const parts = await this.requestBodyParts(max);
-    return listToUint8(parts);
+    return concatList(parts);
   }
 
   public async requestBodyJson(max: number): Promise<unknown> {
     const parts = await this.requestBodyParts(max);
-    const bodyUint8 = listToUint8(parts);
+    const bodyUint8 = concatList(parts);
     return this.reqCodec.decoder.read(bodyUint8);
   }
 
