@@ -9,9 +9,12 @@ type IFetch = typeof fetch;
 
 export interface FetchRpcClientOptions extends StaticRpcClientOptions {
   url: string;
+
+  // TODO: unify these 3 under `codec` option.
   msgCodec: RpcMessageCodec;
   reqCodec: JsonValueCodec;
   resCodec?: JsonValueCodec;
+
   fetch?: IFetch;
 }
 
