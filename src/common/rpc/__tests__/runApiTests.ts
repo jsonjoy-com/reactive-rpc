@@ -3,8 +3,8 @@ import {StreamingRpcClient} from '../client/StreamingRpcClient';
 import {of} from '../../util/of';
 import {RpcError} from '../caller';
 
-export interface ApiTestSetupResult {
-  client: Pick<StreamingRpcClient, 'call$' | 'stop'>;
+export interface ApiTestSetupResult extends Pick<StreamingRpcClient, 'call' | 'call$' | 'stop'> {
+  client: Pick<StreamingRpcClient, 'call' | 'call$' | 'stop'>;
 }
 
 export type ApiTestSetup = () => ApiTestSetupResult | Promise<ApiTestSetupResult>;

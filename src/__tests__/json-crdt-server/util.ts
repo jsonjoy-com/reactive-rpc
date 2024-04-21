@@ -1,6 +1,9 @@
-import {TestSetup} from "../../__demos__/json-crdt-server/__tests__/setup";
+import type {JsonCrdtTestSetup} from "../../__demos__/json-crdt-server/__tests__/setup";
+import type {ApiTestSetup} from "../../common/rpc/__tests__/runApiTests";
 
-export const runUtilTests = (setup: () => TestSetup) => {
+export const runUtilTests = (_setup: ApiTestSetup, params: {staticOnly?: true} = {}) => {
+  const setup = _setup as JsonCrdtTestSetup;
+
   describe('util.*', () => {
     describe('util.ping', () => {
       test('returns pong', async () => {
