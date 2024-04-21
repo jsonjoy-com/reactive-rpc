@@ -55,8 +55,30 @@ const setup = () => {
   return {server, client};
 };
 
-const setup1: ApiTestSetup = () => ({client: setup().client});
-const setup2: ApiTestSetup = () => ({client: setup().server});
+const setup1: ApiTestSetup = () => {
+  const client = setup().client;
+  const call = client.call.bind(client);
+  const call$ = client.call$.bind(client);
+  const stop = client.stop.bind(client);
+  return {
+    call,
+    call$,
+    stop,
+    client: {call, call$, stop},
+  };
+};
+const setup2: ApiTestSetup = () => {
+  const client = setup().server;
+  const call = client.call.bind(client);
+  const call$ = client.call$.bind(client);
+  const stop = client.stop.bind(client);
+  return {
+    call,
+    call$,
+    stop,
+    client: {call, call$, stop},
+  };
+};
 
 describe('duplex 1', () => {
   runApiTests(setup1);
