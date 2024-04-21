@@ -7,29 +7,32 @@ export const runUtilTests = (_setup: ApiTestSetup, params: {staticOnly?: true} =
   describe('util.*', () => {
     describe('util.ping', () => {
       test('returns pong', async () => {
-        const {call} = await setup();
+        const {call, stop} = await setup();
         const res = await call('util.ping', {});
         expect(res).toBe('pong');
+        stop();
       });
     });
 
     describe('util.echo', () => {
       test('returns strings', async () => {
-        const {call} = await setup();
+        const {call, stop} = await setup();
         const res = await call('util.echo', 'hello world');
         expect(res).toBe('hello world');
+        stop();
       });
 
       test('returns objects', async () => {
-        const {call} = await setup();
+        const {call, stop} = await setup();
         const res = await call('util.echo', {foo: 'bar'});
         expect(res).toStrictEqual({foo: 'bar'});
+        stop();
       });
     });
 
     describe('util.info', () => {
       test('returns stats object', async () => {
-        const {call} = await setup();
+        const {call, stop} = await setup();
         const res = await call('util.info', {});
         expect(res).toMatchObject({
           now: expect.any(Number),
@@ -49,6 +52,7 @@ export const runUtilTests = (_setup: ApiTestSetup, params: {staticOnly?: true} =
             },
           },
         });
+        stop();
       });
     });
   });

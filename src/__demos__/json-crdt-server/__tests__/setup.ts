@@ -14,7 +14,8 @@ export const setup = async () => {
   });
   const call = client.call.bind(client);
   const call$ = client.call$.bind(client);
-  return {call, call$};
+  const stop = () => {};
+  return {call, call$, stop};
 };
 
 export type JsonCrdtTestSetup = typeof setup;

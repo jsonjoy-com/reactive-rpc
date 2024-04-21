@@ -14,7 +14,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
   describe('block.*', () => {
     describe('block.new', () => {
       test('can create an empty block', async () => {
-        const {call} = await setup();
+        const {call, stop} = await setup();
         const id = getId();
         await call('block.new', {id, patches: []});
         const {model} = await call('block.get', {id});
@@ -27,10 +27,11 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         });
         const model2 = Model.fromBinary(model.blob);
         expect(model2.view()).toBe(undefined);
+        stop();
       });
 
       test('can create a block with value', async () => {
-        const {call} = await setup();
+        const {call, stop} = await setup();
         const model = Model.withLogicalClock();
         const id = getId();
         model.api.root({
@@ -66,12 +67,13 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
           name: 'Super Woman',
           age: 26,
         });
+        stop();
       });
     });
 
     describe('block.remove', () => {
       test('can remove an existing block', async () => {
-        const {call} = await setup();
+        const {call, stop} = await setup();
         const id = getId();
         await call('block.new', {id, patches: []});
         const {model} = await call('block.get', {id});
@@ -83,12 +85,13 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         } catch (err: any) {
           expect(err.errno).toBe(RpcErrorCodes.NOT_FOUND);
         }
+        stop();
       });
     });
 
     describe('block.upd', () => {
       test('can edit a document sequentially', async () => {
-        const {call} = await setup();
+        const {call, stop} = await setup();
         const id = getId();
         const model = Model.withLogicalClock();
         model.api.root({
@@ -149,10 +152,11 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         expect(Model.fromBinary(block3.model.blob).view()).toStrictEqual({
           text: 'Hello, World!',
         });
+        stop();
       });
 
       test('can edit a document concurrently', async () => {
-        const {call} = await setup();
+        const {call, stop} = await setup();
         const id = getId();
 
         // User 1
@@ -215,10 +219,11 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         const block4 = await call('block.get', {id});
         const model4 = Model.fromBinary(block4.model.blob).fork();
         expect(model4.view()).not.toStrictEqual({text: 'Hell yeah!'});
+        stop();
       });
 
       test('returns patches that happened concurrently', async () => {
-        const {call} = await setup();
+        const {call, stop} = await setup();
         const id = getId();
 
         // User 1
@@ -278,13 +283,14 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         expect(patches[2].seq).toBe(3);
         expect(patches[1].blob).toStrictEqual(patch2.toBinary());
         expect(patches[2].blob).toStrictEqual(patch3.toBinary());
+        stop();
       });
     });
 
     if (!params.staticOnly) {
       describe('block.listen', () => {
         test('can listen for block changes', async () => {
-          const {call, call$} = await setup();
+          const {call, call$, stop} = await setup();
           const id = getId();
           await call('block.new', {id, patches: []});
           await tick(11);
@@ -321,10 +327,11 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
           expect(emits[1][0]).toBe('upd');
           expect(emits[1][1].patches.length).toBe(1);
           expect(emits[1][1].patches[0].seq).toBe(1);
+          stop();
         });
 
         test('can subscribe before block is created', async () => {
-          const {call, call$} = await setup();
+          const {call, call$, stop} = await setup();
           const emits: any[] = [];
           const id = getId();
           call$('block.listen', {id}).subscribe((data) => emits.push(data));
@@ -349,10 +356,11 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
           expect(emits[0][1].patches.length).toBe(1);
           expect(emits[0][1].patches[0].seq).toBe(0);
           expect(emits[0][1].patches[0].blob).toStrictEqual(patch1.toBinary());
+          stop();
         });
 
         test('can receive deletion events', async () => {
-          const {call, call$} = await setup();
+          const {call, call$, stop} = await setup();
           const emits: any[] = [];
           const id = getId();
           call$('block.listen', {id}).subscribe((data) => {
@@ -365,13 +373,14 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
           await call('block.del', {id});
           await until(() => emits.length === 2);
           expect(emits[1][0]).toBe('del');
+          stop();
         });
       });
     }
 
     describe('block.scan', () => {
       test('can retrieve change history', async () => {
-        const {call} = await setup();
+        const {call, stop} = await setup();
         const id = getId();
         const model = Model.withLogicalClock();
         model.api.root({
@@ -428,12 +437,13 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
             },
           ],
         });
+        stop();
       });
     });
 
     describe('block.get', () => {
       test('returns whole history when block is loaded', async () => {
-        const {call} = await setup();
+        const {call, stop} = await setup();
         const id = getId();
         const model = Model.withLogicalClock();
         model.api.root({
@@ -496,6 +506,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
             },
           ],
         });
+        stop();
       });
     });
   });

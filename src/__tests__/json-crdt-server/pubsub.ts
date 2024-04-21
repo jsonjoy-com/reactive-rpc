@@ -7,7 +7,7 @@ export const runPubsubTests = (_setup: ApiTestSetup, params: {staticOnly?: true}
 
   describe('pubsub', () => {
     test('throws error on invalid input', async () => {
-      const {call} = await setup();
+      const {call, stop} = await setup();
       try {
         await call('pubsub.publish', {
           channel2: 'INVALID KEY',
@@ -17,11 +17,12 @@ export const runPubsubTests = (_setup: ApiTestSetup, params: {staticOnly?: true}
       } catch (err: any) {
         expect(err.meta.path).toStrictEqual(['channel2']);
       }
+      stop();
     });
 
     if (!params.staticOnly) {
       test('can subscribe and receive published messages', async () => {
-        const {call, call$} = await setup();
+        const {call, call$, stop} = await setup();
         const emits: any[] = [];
         const subscription = call$('pubsub.listen', {channel: 'my-channel'}).subscribe((res) => {
           emits.push(res.message);
@@ -33,10 +34,11 @@ export const runPubsubTests = (_setup: ApiTestSetup, params: {staticOnly?: true}
         await until(() => emits.length === 1);
         expect(emits).toStrictEqual(['hello world']);
         subscription.unsubscribe();
+        stop();
       });
 
       test('does not receive messages after un-subscription', async () => {
-        const {call, call$} = await setup();
+        const {call, call$, stop} = await setup();
         const emits: any[] = [];
         const sub = call$('pubsub.listen', {channel: 'my-channel'}).subscribe((res) => {
           emits.push(res.message);
@@ -59,10 +61,11 @@ export const runPubsubTests = (_setup: ApiTestSetup, params: {staticOnly?: true}
         await tick(50);
         expect(emits.indexOf('msg1') > -1).toBe(true);
         expect(emits.indexOf('msg2') > -1).toBe(true);
+        stop();
       });
 
       test('multiple multiple subscribers can subscribe to multiple channels', async () => {
-        const {call, call$} = await setup();
+        const {call, call$, stop} = await setup();
         const user1: any[] = [];
         const user2: any[] = [];
         const user3: any[] = [];
@@ -112,6 +115,7 @@ export const runPubsubTests = (_setup: ApiTestSetup, params: {staticOnly?: true}
         expect(user3.indexOf('msg1') > -1).toBe(true);
         expect(user3.indexOf('msg2') > -1).toBe(true);
         expect(user3.indexOf('msg3') > -1).toBe(true);
+        stop();
       });
     }
   });
