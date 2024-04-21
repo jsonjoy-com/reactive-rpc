@@ -105,17 +105,21 @@ describe('streaming calls', () => {
 describe('smoke tests', () => {
   runApiTests(() => {
     const {caller} = setup();
+    const call$ = (name: any, request: any) =>
+      caller.call$(name, Rx.isObservable(request) ? request : Rx.of(request), {}).pipe(
+        Rx.map((value) => value.data),
+        catchError((error) => {
+          throw error.data;
+        }),
+      );
+    const client = {
+      call$,
+      call: (name: any, request: any) => Rx.firstValueFrom(call$(name, request)),
+      stop: () => {},
+    };
     return {
-      client: {
-        call$: (name: any, request: any) =>
-          caller.call$(name, Rx.isObservable(request) ? request : Rx.of(request), {}).pipe(
-            Rx.map((value) => value.data),
-            catchError((error) => {
-              throw error.data;
-            }),
-          ),
-        stop: () => {},
-      },
+      ...client,
+      client,
     };
   });
 });

@@ -1,6 +1,7 @@
 import {RpcError} from './error';
 import {RpcCaller, type RpcApiCallerOptions} from './RpcCaller';
 import {type AbstractType, FunctionStreamingType, FunctionType} from 'json-joy/lib/json-type/type/classes';
+import {printTree} from 'sonic-forest/lib/print/printTree';
 import {StaticRpcMethod, type StaticRpcMethodOptions} from '../methods/StaticRpcMethod';
 import {StreamingRpcMethod, type StreamingRpcMethodOptions} from '../methods/StreamingRpcMethod';
 import {
@@ -12,6 +13,7 @@ import {
   SchemaOf,
   Type,
 } from 'json-joy/lib/json-type';
+import type {Printable} from 'sonic-forest/lib/print/types';
 import type {ObjectValue, UnObjectType, UnObjectValue} from 'json-joy/lib/json-type-value/ObjectValue';
 import type {Value} from 'json-joy/lib/json-type-value/Value';
 import type {Observable} from 'rxjs';
@@ -48,7 +50,10 @@ export interface ObjectValueCallerOptions<V extends ObjectValue<ObjectType<any>>
   router: V;
 }
 
-export class ObjectValueCaller<V extends ObjectValue<ObjectType<any>>, Ctx = unknown> extends RpcCaller<Ctx> {
+export class ObjectValueCaller<V extends ObjectValue<ObjectType<any>>, Ctx = unknown>
+  extends RpcCaller<Ctx>
+  implements Printable
+{
   protected readonly router: V;
   protected readonly system: TypeSystem;
   protected readonly methods = new Map<string, StaticRpcMethod<Ctx> | StreamingRpcMethod<Ctx>>();
@@ -124,5 +129,20 @@ export class ObjectValueCaller<V extends ObjectValue<ObjectType<any>>, Ctx = unk
     ctx: Ctx,
   ): Observable<RpcValue<MethodRes<ObjectValueToTypeMap<V>[K]>>> {
     return super.call$(id as string, request, ctx) as any;
+  }
+
+  // ---------------------------------------------------------------- Printable
+
+  public toString(tab: string = ''): string {
+    return (
+      `${this.constructor.name}` +
+      printTree(
+        tab,
+        this.router.keys().map((key) => {
+          const value = this.router.get(key);
+          return (tab: string) => `${key}: ${(value?.type as Type).getOptions().title || ''}`;
+        }),
+      )
+    );
   }
 }

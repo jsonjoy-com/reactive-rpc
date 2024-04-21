@@ -1,10 +1,26 @@
 import {spawn} from 'child_process';
 import {Defer} from '../../util/Defer';
+import {parseArgs} from 'util';
+
+const {
+  values: {server, suite},
+} = parseArgs({
+  options: {
+    server: {
+      type: 'string',
+      default: 'http1',
+    },
+    suite: {
+      type: 'string',
+      default: 'sample-api',
+    },
+  },
+});
 
 const startServer = async () => {
   const started = new Defer<void>();
   const exitCode = new Defer<number>();
-  const cp = spawn('yarn', ['demo:e2e:server'], {
+  const cp = spawn('yarn', [`demo:e2e:${suite}:${server}`], {
     shell: true,
   });
   process.on('exit', (code) => {
@@ -35,7 +51,7 @@ const startServer = async () => {
 
 const runTests = async () => {
   const exitCode = new Defer<number>();
-  const cp = spawn('yarn', ['test:e2e:jest'], {
+  const cp = spawn('yarn', [`test:e2e:jest:${suite}`], {
     env: {
       ...process.env,
       TEST_E2E: '1',

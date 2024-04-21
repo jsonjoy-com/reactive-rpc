@@ -31,10 +31,10 @@ export class EncodedStaticRpcClient implements RpcClient {
   }
 
   public async call(method: string, request: unknown): Promise<unknown> {
-    return this.call(method, request);
+    return this.client.call(method, request);
   }
 
   public notify(method: string, data: undefined | unknown): void {
-    this.notify(method, data);
+    this.client.notify(method, data);
   }
 }

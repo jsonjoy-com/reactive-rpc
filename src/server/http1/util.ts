@@ -1,5 +1,5 @@
-import {PayloadTooLarge} from './errors';
-import type {ConnectionContext} from './context';
+import {PayloadTooLarge} from '../errors';
+import type {ConnectionContext} from '../types';
 import type * as http from 'http';
 import type {RpcCodecs} from '../../common/codec/RpcCodecs';
 
@@ -25,14 +25,6 @@ export const getBody = (request: http.IncomingMessage, max: number): Promise<Buf
       resolve(chunks);
     });
   });
-};
-
-const REGEX_AUTH_TOKEN_SPECIFIER = /tkn\.([a-zA-Z0-9\-_]+)(?:[^a-zA-Z0-9\-_]|$)/;
-
-export const findTokenInText = (text: string): string => {
-  const match = REGEX_AUTH_TOKEN_SPECIFIER.exec(text);
-  if (!match) return '';
-  return match[1] || '';
 };
 
 const REGEX_CODECS_SPECIFIER = /rpc\.(\w{0,32})\.(\w{0,32})\.(\w{0,32})(?:\-(\w{0,32}))?/;

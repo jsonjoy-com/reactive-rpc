@@ -24,4 +24,15 @@ const setup = () => {
   };
 };
 
-runApiTests(() => ({client: setup().client}));
+runApiTests(() => {
+  const client = setup().client;
+  const call = client.call.bind(client);
+  const call$ = client.call$.bind(client);
+  const stop = client.stop.bind(client);
+  return {
+    call,
+    call$,
+    stop,
+    client: {call, call$, stop},
+  };
+});

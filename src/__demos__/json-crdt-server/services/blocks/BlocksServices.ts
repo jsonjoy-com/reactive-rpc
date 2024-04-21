@@ -1,5 +1,5 @@
 import {MemoryStore} from './MemoryStore';
-import {RpcError, RpcErrorCodes} from '../../../common/rpc/caller';
+import {RpcError, RpcErrorCodes} from '../../../../common/rpc/caller';
 import {Model, Patch} from 'json-joy/lib/json-crdt';
 import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
 import type {StoreModel, StorePatch} from './types';

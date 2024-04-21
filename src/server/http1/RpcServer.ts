@@ -1,6 +1,6 @@
 import * as http from 'http';
-import {Printable} from 'json-joy/lib/util/print/types';
-import {printTree} from 'json-joy/lib/util/print/printTree';
+import {Printable} from 'sonic-forest/lib/print/types';
+import {printTree} from 'sonic-forest/lib/print/printTree';
 import {Http1Server} from './Http1Server';
 import {RpcError} from '../../common/rpc/caller';
 import {
@@ -10,9 +10,10 @@ import {
   RpcMessageBatchProcessor,
   RpcMessageStreamProcessor,
 } from '../../common';
-import {ConnectionContext, WsConnectionContext} from './context';
+import {WsConnectionContext} from './context';
 import type {RpcCaller} from '../../common/rpc/caller/RpcCaller';
 import type {ServerLogger} from './types';
+import {ConnectionContext} from '../types';
 
 const DEFAULT_MAX_PAYLOAD = 4 * 1024 * 1024;
 
@@ -195,6 +196,12 @@ export class RpcServer implements Printable {
   // ---------------------------------------------------------------- Printable
 
   public toString(tab: string = ''): string {
-    return `${this.constructor.name}` + printTree(tab, [(tab) => this.http1.toString(tab)]);
+    return (
+      `${this.constructor.name}` +
+      printTree(tab, [
+        (tab) => this.http1.toString(tab),
+        (tab) => (this.opts.caller as unknown as Printable).toString(tab),
+      ])
+    );
   }
 }

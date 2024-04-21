@@ -5,10 +5,11 @@ import {Codecs} from '@jsonjoy.com/json-pack/lib/codecs/Codecs';
 import {WsServerConnection} from '../ws/server/WsServerConnection';
 import {WsFrameEncoder} from '../ws/codec/WsFrameEncoder';
 import {Router, RouteMatcher} from '@jsonjoy.com/jit-router';
-import {Printable} from 'json-joy/lib/util/print/types';
-import {printTree} from 'json-joy/lib/util/print/printTree';
-import {PayloadTooLarge} from './errors';
-import {findTokenInText, setCodecs} from './util';
+import {Printable} from 'sonic-forest/lib/print/types';
+import {printTree} from 'sonic-forest/lib/print/printTree';
+import {PayloadTooLarge} from '../errors';
+import {setCodecs} from './util';
+import {findTokenInText} from '../util';
 import {Http1ConnectionContext, WsConnectionContext} from './context';
 import {RpcCodecs} from '../../common/codec/RpcCodecs';
 import {RpcMessageCodecs} from '../../common/codec/RpcMessageCodecs';
@@ -44,7 +45,7 @@ export interface WsEndpointDefinition {
   path: string;
   maxIncomingMessage?: number;
   maxOutgoingBackpressure?: number;
-  onUpgrade?(req: http.IncomingMessage, connection: WsServerConnection): void;
+  onWsUpgrade?(req: http.IncomingMessage, connection: WsServerConnection): void;
   handler(ctx: WsConnectionContext, req: http.IncomingMessage): void;
 }
 
@@ -77,7 +78,7 @@ export class Http1Server implements Printable {
     this.httpMatcher = this.httpRouter.compile();
     this.wsMatcher = this.wsRouter.compile();
     server.on('request', this.onRequest);
-    server.on('upgrade', this.onWsUpgrade);
+    server.on('upgrade', this.onUpgrade);
     server.on('clientError', (err, socket) => {
       socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
     });
@@ -164,6 +165,13 @@ export class Http1Server implements Printable {
   protected readonly wsRouter = new Router<WsEndpointDefinition>();
   protected wsMatcher: RouteMatcher<WsEndpointDefinition> = () => undefined;
 
+  private readonly onUpgrade = (req: http.IncomingMessage, socket: net.Socket) => {
+    if (req.headers.upgrade === 'websocket') {
+      this.onWsUpgrade(req, socket);
+    } else {
+    }
+  };
+
   private readonly onWsUpgrade = (req: http.IncomingMessage, socket: net.Socket) => {
     const url = req.url ?? '';
     const queryStartIndex = url.indexOf('?');
@@ -183,7 +191,7 @@ export class Http1Server implements Printable {
     const connection = new WsServerConnection(this.wsEncoder, socket as net.Socket);
     connection.maxIncomingMessage = def.maxIncomingMessage ?? 2 * 1024 * 1024;
     connection.maxBackpressure = def.maxOutgoingBackpressure ?? 2 * 1024 * 1024;
-    if (def.onUpgrade) def.onUpgrade(req, connection);
+    if (def.onWsUpgrade) def.onWsUpgrade(req, connection);
     else {
       const secWebSocketKey = headers['sec-websocket-key'] ?? '';
       const secWebSocketProtocol = headers['sec-websocket-protocol'] ?? '';

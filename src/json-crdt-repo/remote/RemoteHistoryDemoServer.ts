@@ -1,5 +1,5 @@
 import {CallerToMethods, TypedRpcClient} from '../../common';
-import type {JsonJoyDemoRpcCaller} from '../../json-crdt-server';
+import type {JsonJoyDemoRpcCaller} from '../../__demos__/json-crdt-server';
 import type {RemoteHistory, RemoteModel, RemotePatch} from './types';
 
 type Methods = CallerToMethods<JsonJoyDemoRpcCaller>;

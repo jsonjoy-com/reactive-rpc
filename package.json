@@ -49,8 +49,12 @@
     "test": "jest --maxWorkers 7",
     "test:ci": "yarn jest --maxWorkers 3 --no-cache",
     "test:e2e": "node -r ts-node/register/transpile-only src/__tests__/e2e/run.ts",
-    "test:e2e:jest": "TEST_E2E=1 jest --maxWorkers 1 --no-cache src/__tests__/e2e/",
-    "demo:e2e:server": "ts-node src/__demos__/server.ts",
+    "test:e2e:jest:sample-api": "TEST_E2E=1 jest --maxWorkers 1 --no-cache src/__tests__/e2e/sample-api/",
+    "test:e2e:jest:json-crdt-server": "TEST_E2E=1 jest --maxWorkers 1 --no-cache src/__tests__/e2e/json-crdt-server/",
+    "demo:e2e:sample-api:http1": "ts-node src/__demos__/sample-api/main-http1.ts",
+    "demo:e2e:sample-api:uws": "ts-node src/__demos__/sample-api/main-uws.ts",
+    "demo:e2e:json-crdt-server:http1": "ts-node src/__demos__/json-crdt-server/main-http1.ts",
+    "demo:e2e:json-crdt-server:uws": "ts-node src/__demos__/json-crdt-server/main-uws.ts",
     "coverage": "yarn test --collectCoverage",
     "typedoc": "typedoc",
     "build:pages": "rimraf gh-pages && mkdir -p gh-pages && cp -r typedocs/* gh-pages && cp -r coverage gh-pages/coverage",
@@ -71,7 +75,8 @@
     "@jsonjoy.com/json-pack": "^1.0.2",
     "@jsonjoy.com/util": "^1.0.0",
     "json-joy": "^14.2.0",
-    "memfs": "^4.8.1"
+    "memfs": "^4.8.1",
+    "sonic-forest": "^1.0.0"
   },
   "devDependencies": {
     "@types/benchmark": "^2.1.5",

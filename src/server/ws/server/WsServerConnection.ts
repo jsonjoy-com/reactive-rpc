@@ -49,7 +49,7 @@ export class WsServerConnection {
     const handleData = (data: Uint8Array): void => {
       try {
         decoder.push(data);
-        main: while (true) {
+        MAIN: while (true) {
           if (currentFrameHeader instanceof WsFrameHeader) {
             const length = currentFrameHeader.length;
             if (length > this.maxIncomingMessage) {
@@ -76,16 +76,16 @@ export class WsServerConnection {
           if (!frame) break;
           if (frame instanceof WsPingFrame) {
             this.onping(frame.data);
-            continue main;
+            continue MAIN;
           }
           if (frame instanceof WsPongFrame) {
             this.onpong(frame.data);
-            continue main;
+            continue MAIN;
           }
           if (frame instanceof WsCloseFrame) {
             decoder.readCloseFrameData(frame);
             this.onClose(frame.code, frame.reason);
-            continue main;
+            continue MAIN;
           }
           if (frame instanceof WsFrameHeader) {
             if (fragmentStartFrameHeader) {
@@ -98,10 +98,10 @@ export class WsServerConnection {
             if (frame.fin === 0) {
               fragmentStartFrameHeader = frame;
               currentFrameHeader = frame;
-              continue main;
+              continue MAIN;
             }
             currentFrameHeader = frame;
-            continue main;
+            continue MAIN;
           }
         }
       } catch (error) {
@@ -114,6 +114,12 @@ export class WsServerConnection {
     };
     socket.on('data', handleData);
     socket.on('close', handleClose);
+    socket.on('error', (err: Error) => {
+      // TODO: Improve error handling.
+      // tslint:disable-next-line:no-console
+      console.log('SOCKET ERROR:', err);
+      this.onClose(0, '');
+    });
   }
 
   public close(): void {
