@@ -1,12 +1,12 @@
 import {Model} from 'json-joy/lib/json-crdt';
 import {buildE2eClient} from '../../../common/testing/buildE2eClient';
 import {createCaller} from '../../../__demos__/json-crdt-server/routes';
-import {RemoteHistoryDemoServer} from '../RemoteHistoryDemoServer';
+import {DemoServerRemoteHistory} from '../DemoServerRemoteHistory';
 
 const setup = () => {
   const {caller, router} = createCaller();
   const {client} = buildE2eClient(caller);
-  const remote = new RemoteHistoryDemoServer(client);
+  const remote = new DemoServerRemoteHistory(client);
 
   return {
     router,

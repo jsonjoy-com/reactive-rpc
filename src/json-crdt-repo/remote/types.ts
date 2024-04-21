@@ -1,3 +1,5 @@
+import type {Observable} from "rxjs";
+
 /**
  * A history of patches that have been applied to a model, stored in the
  * "remote" location, i.e. requires network communication to access. Can be
@@ -27,12 +29,17 @@
  * The higher levels should treat the cursor as `unknown` and only pass it to the
  * `RemoteHistory` methods without modifying it.
  */
-export interface RemoteHistory<Cursor, M extends RemoteSnapshot = RemoteSnapshot, P extends RemotePatch = RemotePatch> {
+export interface RemoteHistory<
+  Cursor,
+  B extends RemoteBlock<Cursor>,
+  S extends RemoteSnapshot<Cursor> = RemoteSnapshot<Cursor>,
+  P extends RemotePatch<Cursor> = RemotePatch<Cursor>
+> {
   /**
    * Load the latest snapshot of the block, and any unmerged "tip" of patches
    * it might have.
    */
-  read(id: string): Promise<{cursor: Cursor; model: M; patches: P[]}>;
+  read(id: string): Promise<{block: B}>;
 
   /**
    * Load block history going forward from the given cursor. This method is
@@ -42,7 +49,7 @@ export interface RemoteHistory<Cursor, M extends RemoteSnapshot = RemoteSnapshot
    * @param id ID of the block.
    * @param cursor The cursor to start scanning from.
    */
-  scanFwd(id: string, cursor: Cursor): Promise<{cursor: Cursor; patches: P[]}>;
+  scanFwd(id: string, cursor: Cursor): Promise<{patches: P[]}>;
 
   /**
    * Load past history of the block going backwards from the given cursor.
@@ -52,7 +59,7 @@ export interface RemoteHistory<Cursor, M extends RemoteSnapshot = RemoteSnapshot
    * @param id ID of the block.
    * @param cursor The cursor until which to scan.
    */
-  scanBwd(id: string, cursor: Cursor): Promise<{cursor: Cursor; model: M; patches: P[]}>;
+  scanBwd(id: string, cursor: Cursor): Promise<{snapshot: S; patches: P[]}>;
 
   /**
    * Create a new block with the given patches.
@@ -60,7 +67,11 @@ export interface RemoteHistory<Cursor, M extends RemoteSnapshot = RemoteSnapshot
    * @param id A unique ID for the block.
    * @param patches A list of patches, which constitute the initial state of the block.
    */
-  create(id: string, patches: RemotePatch[]): Promise<void>;
+  create(id: string, patches: Pick<P, 'blob'>[]): Promise<{
+    block: Omit<B, 'data' | 'tip'>,
+    snapshot: Omit<S, 'blob'>,
+    patches: Omit<P, 'blob'>[],
+  }>;
 
   /**
    * Update the block with the given patches.
@@ -69,10 +80,12 @@ export interface RemoteHistory<Cursor, M extends RemoteSnapshot = RemoteSnapshot
    * @param cursor The cursor of the last known model state of the block.
    * @param patches A list of patches to apply to the block.
    */
-  update(id: string, cursor: Cursor, patches: RemotePatch[]): Promise<{cursor: Cursor; patches: P[]}>;
+  update(id: string, cursor: Cursor, patches: Pick<P, 'blob'>[]): Promise<{patches: Omit<P, 'blob'>[]}>;
 
   /**
-   * Delete the block.
+   * Delete the block. If not implemented, means that the protocol does not
+   * support deletion of blocks. For example, it may be possible to delete
+   * a block on a central server, but not on a peer-to-peer network.
    *
    * @param id ID of the block.
    */
@@ -83,20 +96,73 @@ export interface RemoteHistory<Cursor, M extends RemoteSnapshot = RemoteSnapshot
    *
    * @param callback
    */
-  listen(id: string, cursor: Cursor, callback: (patches: P[]) => void): void;
+  listen(id: string, cursor: Cursor): Observable<{patches: P[]}>;
 }
 
-export interface RemoteBlock {
+/**
+ * A block is a collaboratively edited document, which is a JSON-like object
+ * that can be edited by multiple clients, it has a globally unique ID.
+ */
+export interface RemoteBlock<Cursor> {
+  /**
+   * A unique ID for the block.
+   */
   id: string;
-  created: number;
-  latest: RemoteSnapshot;
-  tip: RemotePatch[];
+
+  /**
+   * Unix timestamp when the block was created.
+   */
+  ts?: number;
+
+  /**
+   * The latest snapshot of the block.
+   */
+  data: RemoteSnapshot<Cursor>;
+
+  /**
+   * The latest patches that have been stored, but not yet applied to the the
+   * latest snapshot. The client should apply these patches to the snapshot
+   * to get the latest state of the block.
+   */
+  tip: RemotePatch<Cursor>[];
 }
 
-export interface RemoteSnapshot {
+/**
+ * A snapshot of the block's state at a certain point in time.
+ */
+export interface RemoteSnapshot<Cursor> {
+  /**
+   * The content of the snapshot.
+   */
   blob: Uint8Array;
+
+  /**
+   * The cursor of the snapshot, representing the position in the history.
+   */
+  cur: Cursor;
+
+  /**
+   * Unix timestamp when the snapshot was created.
+   */
+  ts?: number;
 }
 
-export interface RemotePatch {
+/**
+ * A patch is a change to the block's state.
+ */
+export interface RemotePatch<Cursor> {
+  /**
+   * The content of the patch.
+   */
   blob: Uint8Array;
+
+  /**
+   * The cursor of the patch, representing the position in the history.
+   */
+  cur?: Cursor;
+
+  /**
+   * Unix timestamp when the patch was created.
+   */
+  ts?: number;
 }
