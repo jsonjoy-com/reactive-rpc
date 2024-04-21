@@ -1,22 +1,21 @@
 import {CallerToMethods, TypedRpcClient} from '../../common';
 import type {JsonJoyDemoRpcCaller} from '../../__demos__/json-crdt-server';
-import type {RemoteHistory, RemoteModel, RemotePatch} from './types';
+import type {RemoteHistory, RemoteSnapshot, RemotePatch} from './types';
 
 type Methods = CallerToMethods<JsonJoyDemoRpcCaller>;
 
 export type Cursor = number;
 
-export interface RemoteServerModel extends RemoteModel {
+export interface DemoServerSnapshot extends RemoteSnapshot {
   seq: number;
   created: number;
-  updated: number;
 }
 
-export interface RemoteServerPatch extends RemotePatch {
+export interface DemoServerPatch extends RemotePatch {
   seq: number;
 }
 
-export class RemoteHistoryDemoServer implements RemoteHistory<Cursor, RemoteServerModel, RemoteServerPatch> {
+export class RemoteHistoryDemoServer implements RemoteHistory<Cursor, DemoServerSnapshot, DemoServerPatch> {
   constructor(protected readonly client: TypedRpcClient<Methods>) {}
 
   public async create(id: string, patches: RemotePatch[]): Promise<void> {
@@ -32,7 +31,7 @@ export class RemoteHistoryDemoServer implements RemoteHistory<Cursor, RemoteServ
    * Load latest state of the model, and any unmerged "tip" of patches
    * it might have.
    */
-  public async read(id: string): Promise<{cursor: Cursor; model: RemoteServerModel; patches: RemoteServerPatch[]}> {
+  public async read(id: string): Promise<{cursor: Cursor; model: DemoServerSnapshot; patches: DemoServerPatch[]}> {
     const {model, patches} = await this.client.call('block.get', {id});
     return {
       cursor: model.seq,
@@ -41,7 +40,7 @@ export class RemoteHistoryDemoServer implements RemoteHistory<Cursor, RemoteServ
     };
   }
 
-  public async scanFwd(id: string, cursor: Cursor): Promise<{cursor: Cursor; patches: RemoteServerPatch[]}> {
+  public async scanFwd(id: string, cursor: Cursor): Promise<{cursor: Cursor; patches: DemoServerPatch[]}> {
     const limit = 100;
     const res = await this.client.call('block.scan', {
       id,
@@ -63,15 +62,21 @@ export class RemoteHistoryDemoServer implements RemoteHistory<Cursor, RemoteServ
   public async scanBwd(
     id: string,
     cursor: Cursor,
-  ): Promise<{cursor: Cursor; model: RemoteServerModel; patches: RemoteServerPatch[]}> {
+  ): Promise<{cursor: Cursor; model: DemoServerSnapshot; patches: DemoServerPatch[]}> {
     throw new Error('The "blocks.history" should be able to return starting model.');
+    const res = await this.client.call('block.scan', {
+      id,
+      seq: cursor,
+      limit: -100,
+      model: true,
+    });
   }
 
   public async update(
     id: string,
     cursor: Cursor,
     patches: RemotePatch[],
-  ): Promise<{cursor: Cursor; patches: RemoteServerPatch[]}> {
+  ): Promise<{cursor: Cursor; patches: DemoServerPatch[]}> {
     const res = await this.client.call('block.upd', {
       id,
       patches: patches.map((patch, seq) => ({
@@ -94,7 +99,7 @@ export class RemoteHistoryDemoServer implements RemoteHistory<Cursor, RemoteServ
    * Subscribe to the latest changes to the model.
    * @param callback
    */
-  public listen(id: string, cursor: Cursor, callback: (changes: RemoteServerPatch[]) => void): void {
+  public listen(id: string, cursor: Cursor, callback: (changes: DemoServerPatch[]) => void): void {
     throw new Error('Method not implemented.');
   }
 }
