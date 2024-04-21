@@ -28,7 +28,7 @@ export class FetchRpcClient implements RpcClient {
     const {msgCodec, reqCodec, resCodec = reqCodec, url} = options;
     let contentType = `application/x.rpc.${msgCodec.id}.${reqCodec.id}`;
     if (reqCodec.id !== resCodec.id) contentType += `-${resCodec.id}`;
-    const myFetch = options.fetch || fetch;
+    const currentFetch = options.fetch || fetch;
     this.client = new EncodedStaticRpcClient({
       client: new StaticRpcClient({
         bufferSize: options.bufferSize,
@@ -38,7 +38,7 @@ export class FetchRpcClient implements RpcClient {
       reqCodec,
       resCodec,
       send: async (body) => {
-        const response = await myFetch(url, {
+        const response = await currentFetch(url, {
           method: 'POST',
           headers: {
             'Content-Type': contentType,
@@ -56,11 +56,11 @@ export class FetchRpcClient implements RpcClient {
   }
 
   public async call(method: string, request: unknown): Promise<unknown> {
-    return this.call(method, request);
+    return this.client.call(method, request);
   }
 
   public notify(method: string, data: undefined | unknown): void {
-    this.notify(method, data);
+    this.client.notify(method, data);
   }
 
   public stop() {}

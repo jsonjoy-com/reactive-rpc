@@ -20,18 +20,19 @@ if (process.env.TEST_E2E) {
     }
   });
 
-  // describe('RpcPersistentClient', () => {
-  //   const {list} = setupCodecs();
-  //   for (const codec of list) {
-  //     const setup: ApiTestSetup = async () => setupFetchRpcClient(codec);
-  //     describe(`protocol: application/x.${codec.specifier()}`, () => {
-  //       runUtilTests(setup, {staticOnly: true});
-  //       runPubsubTests(setup, {staticOnly: true});
-  //       runPresenceTests(setup, {staticOnly: true});
-  //       runBlockTests(setup, {staticOnly: true});
-  //     });
-  //   }
-  // });
+  describe('RpcPersistentClient', () => {
+    const {list} = setupCodecs();
+    for (const codec of list) {
+      const setup: ApiTestSetup = async () => setupFetchRpcClient(codec);
+      describe(`protocol: application/x.${codec.specifier()}`, () => {
+        runUtilTests(setup, {staticOnly: true});
+        runPubsubTests(setup, {staticOnly: true});
+        runPresenceTests(setup, {staticOnly: true});
+        runBlockTests(setup, {staticOnly: true});
+      });
+      break;
+    }
+  });
 
   describe('FetchRpcClient', () => {
     const {list} = setupCodecs();
