@@ -78,7 +78,7 @@ export class Http1Server implements Printable {
     this.httpMatcher = this.httpRouter.compile();
     this.wsMatcher = this.wsRouter.compile();
     server.on('request', this.onRequest);
-    server.on('upgrade', this.onWsUpgrade);
+    server.on('upgrade', this.onUpgrade);
     server.on('clientError', (err, socket) => {
       socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
     });
@@ -165,18 +165,15 @@ export class Http1Server implements Printable {
   protected readonly wsRouter = new Router<WsEndpointDefinition>();
   protected wsMatcher: RouteMatcher<WsEndpointDefinition> = () => undefined;
 
+  private readonly onUpgrade = (req: http.IncomingMessage, socket: net.Socket) => {
+      if (req.headers['upgrade'] === 'websocket') {
+        this.onWsUpgrade(req, socket);
+      } else {
+
+      }
+  };
+
   private readonly onWsUpgrade = (req: http.IncomingMessage, socket: net.Socket) => {
-    // TODO: Check "Upgrade: websocket" header is present.
-    // console.log(req.headers);
-    // {
-    //   'sec-websocket-version': '13',
-    //   'sec-websocket-key': 'udiJousKhNSPO6cyjgbKCg==',
-    //   connection: 'Upgrade',
-    //   upgrade: 'websocket',
-    //   'sec-websocket-extensions': 'permessage-deflate; client_max_window_bits',
-    //   'sec-websocket-protocol': 'rpc.json2.verbose.msgpack-cbor',
-    //   host: 'localhost:9999'
-    // }
     const url = req.url ?? '';
     const queryStartIndex = url.indexOf('?');
     let path = url;
