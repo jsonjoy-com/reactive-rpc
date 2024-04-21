@@ -17,4 +17,4 @@ export const setup = async () => {
   return {call, call$};
 };
 
-export type TestSetup = ReturnType<typeof setup>;
+export type JsonCrdtTestSetup = typeof setup;
