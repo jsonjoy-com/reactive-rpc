@@ -4,7 +4,7 @@ import {TestSetup} from "../../__demos__/json-crdt-server/__tests__/setup";
 export const runPresenceTests = (setup: () => TestSetup) => {
   describe('presence', () => {
     test('can subscribe and receive published presence entries', async () => {
-      const {call, call$} = setup();
+      const {call, call$} = await setup();
       const emits: any[] = [];
       call$('presence.listen', {room: 'my-room'}).subscribe((res) => {
         emits.push(res);
@@ -33,7 +33,7 @@ export const runPresenceTests = (setup: () => TestSetup) => {
     });
 
     test('can receive an existing record when subscribing after it was created', async () => {
-      const {call, call$} = setup();
+      const {call, call$} = await setup();
       const emits: any[] = [];
       call$('presence.listen', {room: 'my-room'}).subscribe((res) => {
         emits.push(res);
@@ -67,7 +67,7 @@ export const runPresenceTests = (setup: () => TestSetup) => {
     });
 
     test('can remove existing entries', async () => {
-      const {call, call$} = setup();
+      const {call, call$} = await setup();
       const emits: any[] = [];
       call$('presence.listen', {room: 'my-room'}).subscribe((res) => {
         emits.push(res);
@@ -91,7 +91,7 @@ export const runPresenceTests = (setup: () => TestSetup) => {
     });
 
     test('emits entry deletion messages', async () => {
-      const {call, call$} = setup();
+      const {call, call$} = await setup();
       await call('presence.update', {
         room: 'my-room',
         id: 'user-1',

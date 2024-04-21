@@ -3,15 +3,20 @@ import {RpcErrorCodes} from '../../common/rpc/caller';
 import {tick, until} from 'thingies';
 import {TestSetup} from "../../__demos__/json-crdt-server/__tests__/setup";
 
+const sid = Math.random().toString(36).slice(2);
+let seq = 0;
+const getId = () => `${sid}-${Date.now().toString(36)}-${seq++}`;
+
 export const runBlockTests = (setup: () => TestSetup) => {
   describe('block.*', () => {
     describe('block.new', () => {
       test('can create an empty block', async () => {
-        const {call} = setup();
-        await call('block.new', {id: 'my-block', patches: []});
-        const {model} = await call('block.get', {id: 'my-block'});
+        const {call} = await setup();
+        const id = getId();
+        await call('block.new', {id, patches: []});
+        const {model} = await call('block.get', {id});
         expect(model).toMatchObject({
-          id: 'my-block',
+          id,
           seq: -1,
           blob: expect.any(Uint8Array),
           created: expect.any(Number),
@@ -22,8 +27,9 @@ export const runBlockTests = (setup: () => TestSetup) => {
       });
 
       test('can create a block with value', async () => {
-        const {call} = setup();
+        const {call} = await setup();
         const model = Model.withLogicalClock();
+        const id = getId();
         model.api.root({
           name: 'Super Woman',
           age: 25,
@@ -34,7 +40,7 @@ export const runBlockTests = (setup: () => TestSetup) => {
         });
         const patch2 = model.api.flush();
         await call('block.new', {
-          id: '123412341234',
+          id,
           patches: [
             {
               blob: patch1.toBinary(),
@@ -44,9 +50,9 @@ export const runBlockTests = (setup: () => TestSetup) => {
             },
           ],
         });
-        const res = await call('block.get', {id: '123412341234'});
+        const res = await call('block.get', {id});
         expect(res.model).toMatchObject({
-          id: '123412341234',
+          id,
           seq: 1,
           blob: expect.any(Uint8Array),
           created: expect.any(Number),
@@ -62,13 +68,14 @@ export const runBlockTests = (setup: () => TestSetup) => {
 
     describe('block.remove', () => {
       test('can remove an existing block', async () => {
-        const {call} = setup();
-        await call('block.new', {id: 'my-block', patches: []});
-        const {model} = await call('block.get', {id: 'my-block'});
-        expect(model.id).toBe('my-block');
-        await call('block.del', {id: 'my-block'});
+        const {call} = await setup();
+        const id = getId();
+        await call('block.new', {id, patches: []});
+        const {model} = await call('block.get', {id});
+        expect(model.id).toBe(id);
+        await call('block.del', {id});
         try {
-          await call('block.get', {id: 'my-block'});
+          await call('block.get', {id});
           throw new Error('not this error');
         } catch (err: any) {
           expect(err.errno).toBe(RpcErrorCodes.NOT_FOUND);
@@ -78,8 +85,8 @@ export const runBlockTests = (setup: () => TestSetup) => {
 
     describe('block.upd', () => {
       test('can edit a document sequentially', async () => {
-        const {call} = setup();
-        const id = 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx';
+        const {call} = await setup();
+        const id = getId();
         const model = Model.withLogicalClock();
         model.api.root({
           text: 'Hell',
@@ -142,8 +149,8 @@ export const runBlockTests = (setup: () => TestSetup) => {
       });
 
       test('can edit a document concurrently', async () => {
-        const {call} = setup();
-        const id = 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx';
+        const {call} = await setup();
+        const id = getId();
 
         // User 1
         const model = Model.withLogicalClock();
@@ -208,8 +215,8 @@ export const runBlockTests = (setup: () => TestSetup) => {
       });
 
       test('returns patches that happened concurrently', async () => {
-        const {call} = setup();
-        const id = 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx';
+        const {call} = await setup();
+        const id = getId();
 
         // User 1
         const model = Model.withLogicalClock();
@@ -273,11 +280,12 @@ export const runBlockTests = (setup: () => TestSetup) => {
 
     describe('block.listen', () => {
       test('can listen for block changes', async () => {
-        const {call, call$} = setup();
-        await call('block.new', {id: 'my-block', patches: []});
+        const {call, call$} = await setup();
+        const id = getId();
+        await call('block.new', {id, patches: []});
         await tick(11);
         const emits: any[] = [];
-        call$('block.listen', {id: 'my-block'}).subscribe((data) => emits.push(data));
+        call$('block.listen', {id}).subscribe((data) => emits.push(data));
         const model = Model.withLogicalClock();
         model.api.root({
           text: 'Hell',
@@ -286,7 +294,7 @@ export const runBlockTests = (setup: () => TestSetup) => {
         await tick(12);
         expect(emits.length).toBe(0);
         await call('block.upd', {
-          id: 'my-block',
+          id,
           patches: [{seq: 0, created: Date.now(), blob: patch1.toBinary()}],
         });
         await until(() => emits.length === 1);
@@ -301,7 +309,7 @@ export const runBlockTests = (setup: () => TestSetup) => {
         await tick(12);
         expect(emits.length).toBe(1);
         await call('block.upd', {
-          id: 'my-block',
+          id,
           patches: [{seq: 1, created: Date.now(), blob: patch2.toBinary()}],
         });
         await until(() => emits.length === 2);
@@ -312,9 +320,10 @@ export const runBlockTests = (setup: () => TestSetup) => {
       });
 
       test('can subscribe before block is created', async () => {
-        const {call, call$} = setup();
+        const {call, call$} = await setup();
         const emits: any[] = [];
-        call$('block.listen', {id: 'my-block'}).subscribe((data) => emits.push(data));
+        const id = getId();
+        call$('block.listen', {id}).subscribe((data) => emits.push(data));
         const model = Model.withLogicalClock();
         model.api.root({
           text: 'Hell',
@@ -323,7 +332,7 @@ export const runBlockTests = (setup: () => TestSetup) => {
         await tick(12);
         expect(emits.length).toBe(0);
         await call('block.new', {
-          id: 'my-block',
+          id,
           patches: [
             {
               blob: patch1.toBinary(),
@@ -339,16 +348,17 @@ export const runBlockTests = (setup: () => TestSetup) => {
       });
 
       test('can receive deletion events', async () => {
-        const {call, call$} = setup();
+        const {call, call$} = await setup();
         const emits: any[] = [];
-        call$('block.listen', {id: 'my-block'}).subscribe((data) => {
+        const id = getId();
+        call$('block.listen', {id}).subscribe((data) => {
           emits.push(data);
         });
-        await call('block.new', {id: 'my-block', patches: []});
+        await call('block.new', {id, patches: []});
         await until(() => emits.length === 1);
         expect(emits[0][1].model.seq).toBe(-1);
         await tick(3);
-        await call('block.del', {id: 'my-block'});
+        await call('block.del', {id});
         await until(() => emits.length === 2);
         expect(emits[1][0]).toBe('del');
       });
@@ -356,14 +366,15 @@ export const runBlockTests = (setup: () => TestSetup) => {
 
     describe('block.scan', () => {
       test('can retrieve change history', async () => {
-        const {call} = setup();
+        const {call} = await setup();
+        const id = getId();
         const model = Model.withLogicalClock();
         model.api.root({
           text: 'Hell',
         });
         const patch1 = model.api.flush();
         await call('block.new', {
-          id: 'my-block',
+          id,
           patches: [
             {
               blob: patch1.toBinary(),
@@ -378,7 +389,7 @@ export const runBlockTests = (setup: () => TestSetup) => {
         });
         const patch3 = model.api.flush();
         await call('block.upd', {
-          id: 'my-block',
+          id,
           patches: [
             {
               seq: 1,
@@ -392,7 +403,7 @@ export const runBlockTests = (setup: () => TestSetup) => {
             },
           ],
         });
-        const history = await call('block.scan', {id: 'my-block', seq: 0, limit: 3});
+        const history = await call('block.scan', {id, seq: 0, limit: 3});
         expect(history).toMatchObject({
           patches: [
             {
@@ -417,14 +428,15 @@ export const runBlockTests = (setup: () => TestSetup) => {
 
     describe('block.get', () => {
       test('returns whole history when block is loaded', async () => {
-        const {call} = setup();
+        const {call} = await setup();
+        const id = getId();
         const model = Model.withLogicalClock();
         model.api.root({
           text: 'Hell',
         });
         const patch1 = model.api.flush();
         await call('block.new', {
-          id: 'my-block',
+          id,
           patches: [
             {
               blob: patch1.toBinary(),
@@ -438,7 +450,7 @@ export const runBlockTests = (setup: () => TestSetup) => {
         });
         const patch3 = model.api.flush();
         await call('block.upd', {
-          id: 'my-block',
+          id,
           patches: [
             {
               seq: 1,
@@ -452,10 +464,10 @@ export const runBlockTests = (setup: () => TestSetup) => {
             },
           ],
         });
-        const result = await call('block.get', {id: 'my-block', history: true});
+        const result = await call('block.get', {id, history: true});
         expect(result).toMatchObject({
           model: {
-            id: 'my-block',
+            id,
             seq: 2,
             blob: expect.any(Uint8Array),
             created: expect.any(Number),

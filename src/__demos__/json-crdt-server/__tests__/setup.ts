@@ -2,7 +2,7 @@ import {buildE2eClient} from '../../../common/testing/buildE2eClient';
 import {createCaller} from '../routes';
 import {Services} from '../services/Services';
 
-export const setup = () => {
+export const setup = async () => {
   const services = new Services();
   const {caller} = createCaller(services);
   const {client} = buildE2eClient(caller, {

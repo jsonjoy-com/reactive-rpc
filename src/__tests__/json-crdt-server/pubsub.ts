@@ -4,7 +4,7 @@ import {TestSetup} from "../../__demos__/json-crdt-server/__tests__/setup";
 export const runPubsubTests = (setup: () => TestSetup) => {
   describe('pubsub', () => {
     test('throws error on invalid input', async () => {
-      const {call} = setup();
+      const {call} = await setup();
       try {
         await call('pubsub.publish', {
           channel2: 'INVALID KEY',
@@ -16,10 +16,10 @@ export const runPubsubTests = (setup: () => TestSetup) => {
       }
     });
 
-    test('can subscribe and receive published messages', async () => {
-      const {call, call$} = setup();
+    test.only('can subscribe and receive published messages', async () => {
+      const {call, call$} = await setup();
       const emits: any[] = [];
-      call$('pubsub.listen', {channel: 'my-channel'}).subscribe((res) => {
+      const subscription = call$('pubsub.listen', {channel: 'my-channel'}).subscribe((res) => {
         emits.push(res.message);
       });
       await call('pubsub.publish', {
@@ -28,10 +28,11 @@ export const runPubsubTests = (setup: () => TestSetup) => {
       });
       await until(() => emits.length === 1);
       expect(emits).toStrictEqual(['hello world']);
+      subscription.unsubscribe();
     });
 
     test('does not receive messages after un-subscription', async () => {
-      const {call, call$} = setup();
+      const {call, call$} = await setup();
       const emits: any[] = [];
       const sub = call$('pubsub.listen', {channel: 'my-channel'}).subscribe((res) => {
         emits.push(res.message);
@@ -57,7 +58,7 @@ export const runPubsubTests = (setup: () => TestSetup) => {
     });
 
     test('multiple multiple subscribers can subscribe to multiple channels', async () => {
-      const {call, call$} = setup();
+      const {call, call$} = await setup();
       const user1: any[] = [];
       const user2: any[] = [];
       const user3: any[] = [];
