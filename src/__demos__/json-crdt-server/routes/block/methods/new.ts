@@ -7,7 +7,7 @@ export const new_ =
     const Request = t.Object(
       t.prop('id', t.Ref<typeof BlockId>('BlockId')).options({
         title: 'New block ID',
-        description: 'The ID of the new block.',
+        description: 'The ID of the new block. Must be a unique ID, if the block already exists it will return an error.',
       }),
       t.prop('patches', t.Array(t.Ref<typeof BlockPatchPartial>('BlockPatchPartial'))).options({
         title: 'Patches',
@@ -19,14 +19,14 @@ export const new_ =
       t.prop('model', t.Ref<typeof Block>('Block')),
       t.prop('patches', t.Array(t.Ref<typeof BlockPatchPartialReturn>('BlockPatchPartialReturn'))).options({
         title: 'Patches',
-        description: 'The list of all patches.',
+        description: 'The list of patches to apply to the newly created block.',
       }),
     );
 
     const Func = t.Function(Request, Response).options({
       title: 'Create Block',
-      intro: 'Creates a new block or applies patches to it.',
-      description: 'Creates a new block or applies patches to it.',
+      intro: 'Creates a new block out of patches.',
+      description: 'Creates a new block out of supplied patches. A block starts empty with an `undefined` state, and patches are applied to it.',
     });
 
     return r.prop('block.new', Func, async ({id, patches}) => {

@@ -20,7 +20,7 @@ export const get =
       t.prop('model', t.Ref<typeof Block>('Block')),
       t.propOpt('patches', t.Array(t.Ref<typeof BlockPatch>('BlockPatch'))).options({
         title: 'Patches',
-        description: 'The list of all patches.',
+        description: 'The list of all patches, full history.',
       }),
     );
 

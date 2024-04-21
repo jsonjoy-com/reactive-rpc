@@ -22,6 +22,7 @@ export const scan =
       }),
       t.propOpt('model', t.bool).options({
         title: 'With Model',
+        intro: 'Whether to include the model.',
         description:
           'Whether to include the model in the response. ' +
           'Defaults to `false`, when `len` is positive; and, defaults to `true`, when `len` is negative.',
@@ -33,7 +34,7 @@ export const scan =
         title: 'Patches',
         description: 'The list of patches.',
       }),
-      t.propOpt('modelBlob', t.bin),
+      t.propOpt('model', t.bin),
     );
 
     const Func = t.Function(Request, Response).options({
@@ -45,6 +46,6 @@ export const scan =
     return r.prop('block.scan', Func, async ({id, seq, limit = 10, model: returnModel = limit > 0}) => {
       const {patches, model} = await services.blocks.scan(id, seq, limit, returnModel);
       const modelBlob: Uint8Array | undefined = model?.toBinary();
-      return {patches, modelBlob};
+      return {patches, model: modelBlob};
     });
   };

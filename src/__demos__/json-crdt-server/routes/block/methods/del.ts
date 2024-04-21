@@ -14,9 +14,9 @@ export const del =
     const Response = t.obj;
 
     const Func = t.Function(Request, Response).options({
-      title: 'Read Block',
-      intro: 'Retrieves a block by ID.',
-      description: 'Fetches a block by ID.',
+      title: 'Delete Block',
+      intro: 'Deletes a block by ID.',
+      description: 'Deletes a block by ID. It will not rise an error if the block does not exist.',
     });
 
     return r.prop('block.del', Func, async ({id}) => {
