@@ -166,11 +166,10 @@ export class Http1Server implements Printable {
   protected wsMatcher: RouteMatcher<WsEndpointDefinition> = () => undefined;
 
   private readonly onUpgrade = (req: http.IncomingMessage, socket: net.Socket) => {
-      if (req.headers['upgrade'] === 'websocket') {
-        this.onWsUpgrade(req, socket);
-      } else {
-
-      }
+    if (req.headers.upgrade === 'websocket') {
+      this.onWsUpgrade(req, socket);
+    } else {
+    }
   };
 
   private readonly onWsUpgrade = (req: http.IncomingMessage, socket: net.Socket) => {

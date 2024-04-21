@@ -1,5 +1,5 @@
-import type {JsonCrdtTestSetup} from "../../__demos__/json-crdt-server/__tests__/setup";
-import type {ApiTestSetup} from "../../common/rpc/__tests__/runApiTests";
+import type {JsonCrdtTestSetup} from '../../__demos__/json-crdt-server/__tests__/setup';
+import type {ApiTestSetup} from '../../common/rpc/__tests__/runApiTests';
 
 export const runUtilTests = (_setup: ApiTestSetup, params: {staticOnly?: true} = {}) => {
   const setup = _setup as JsonCrdtTestSetup;

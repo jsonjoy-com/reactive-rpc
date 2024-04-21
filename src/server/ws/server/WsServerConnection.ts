@@ -116,6 +116,7 @@ export class WsServerConnection {
     socket.on('close', handleClose);
     socket.on('error', (err: Error) => {
       // TODO: Improve error handling.
+      // tslint:disable-next-line:no-console
       console.log('SOCKET ERROR:', err);
       this.onClose(0, '');
     });
