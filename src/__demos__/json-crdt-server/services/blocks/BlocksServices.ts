@@ -2,7 +2,7 @@ import {MemoryStore} from './MemoryStore';
 import {RpcError, RpcErrorCodes} from '../../../../common/rpc/caller';
 import {Model, Patch} from 'json-joy/lib/json-crdt';
 import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
-import type {StoreModel, StorePatch} from './types';
+import type {StoreSnapshot, StorePatch} from './types';
 import type {Services} from '../Services';
 
 const BLOCK_TTL = 1000 * 60 * 30; // 30 minutes
@@ -26,15 +26,15 @@ export class BlocksServices {
     const length = partialPatches.length;
     const now = Date.now();
     if (!length) {
-      const rawModel = Model.withLogicalClock(SESSION.GLOBAL);
-      const model: StoreModel = {
+      const model = Model.withLogicalClock(SESSION.GLOBAL);
+      const snapshot: StoreSnapshot = {
         id,
         seq: -1,
-        blob: rawModel.toBinary(),
+        blob: model.toBinary(),
         created: now,
         updated: now,
       };
-      return await this.__create(id, model, []);
+      return await this.__create(id, snapshot, []);
     }
     const rawPatches: Patch[] = [];
     const patches: StorePatch[] = [];
@@ -44,28 +44,28 @@ export class BlocksServices {
       rawPatches.push(Patch.fromBinary(blob));
       patches.push({seq, created: now, blob});
     }
-    const rawModel = Model.fromPatches(rawPatches);
-    const model: StoreModel = {
+    const model = Model.fromPatches(rawPatches);
+    const snapshot: StoreSnapshot = {
       id,
       seq: seq - 1,
-      blob: rawModel.toBinary(),
+      blob: model.toBinary(),
       created: now,
       updated: now,
     };
-    return await this.__create(id, model, patches);
+    return await this.__create(id, snapshot, patches);
   }
 
-  private async __create(id: string, model: StoreModel, patches: StorePatch[]) {
-    await this.store.create(id, model, patches);
-    this.__emitUpd(id, model, patches);
+  private async __create(id: string, snapshot: StoreSnapshot, patches: StorePatch[]) {
+    await this.store.create(id, snapshot, patches);
+    this.__emitUpd(id, patches);
     return {
-      model,
+      snapshot,
       patches,
     };
   }
 
-  private __emitUpd(id: string, model: StoreModel, patches: StorePatch[]) {
-    const msg = ['upd', {model, patches}];
+  private __emitUpd(id: string, patches: StorePatch[]) {
+    const msg = ['upd', {patches}];
     this.services.pubsub.publish(`__block:${id}`, msg).catch((error) => {
       // tslint:disable-next-line:no-console
       console.error('Error publishing block patches', error);
@@ -76,8 +76,7 @@ export class BlocksServices {
     const {store} = this;
     const result = await store.get(id);
     if (!result) throw RpcError.fromCode(RpcErrorCodes.NOT_FOUND);
-    const {model} = result;
-    return {model};
+    return result;
   }
 
   public async remove(id: string) {
@@ -93,7 +92,7 @@ export class BlocksServices {
     id: string,
     offset: number | undefined,
     limit: number | undefined = 10,
-    returnStartModel: boolean = limit < 0,
+    returnStartSnapshot: boolean = limit < 0,
   ) {
     const {store} = this;
     if (typeof offset !== 'number') offset = await store.seq(id);
@@ -113,7 +112,7 @@ export class BlocksServices {
     }
     const patches = await store.history(id, min, max);
     let model: Model | undefined;
-    if (returnStartModel) {
+    if (returnStartSnapshot) {
       const startPatches = await store.history(id, 0, min);
       if (startPatches.length) {
         model = Model.fromPatches(startPatches.map((p) => Patch.fromBinary(p.blob)));
@@ -129,14 +128,14 @@ export class BlocksServices {
     const seq = patches[0].seq;
     const {store} = this;
     validatePatches(patches);
-    const {model} = await store.edit(id, patches);
-    this.__emitUpd(id, model, patches);
+    const {snapshot} = await store.edit(id, patches);
+    this.__emitUpd(id, patches);
     const expectedBlockSeq = seq + patches.length - 1;
-    const hadConcurrentEdits = model.seq !== expectedBlockSeq;
+    const hadConcurrentEdits = snapshot.seq !== expectedBlockSeq;
     let patchesBack: StorePatch[] = [];
-    if (hadConcurrentEdits) patchesBack = await store.history(id, seq, model.seq);
+    if (hadConcurrentEdits) patchesBack = await store.history(id, seq, snapshot.seq);
     return {
-      model,
+      snapshot,
       patches: patchesBack,
     };
   }

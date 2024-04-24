@@ -1,15 +1,15 @@
 import type {Observable} from "rxjs";
 import {CallerToMethods, TypedRpcClient} from '../../common';
 import type {JsonJoyDemoRpcCaller} from '../../__demos__/json-crdt-server';
-import type {RemoteHistory, RemoteSnapshot, RemotePatch, RemoteBlock} from './types';
+import type {RemoteHistory, RemoteBlockSnapshot, RemoteBlockPatch, RemoteBlock} from './types';
 
 type Methods = CallerToMethods<JsonJoyDemoRpcCaller>;
 
 export type Cursor = number;
 
 export interface DemoServerBlock extends RemoteBlock<Cursor> {}
-export interface DemoServerSnapshot extends RemoteSnapshot<Cursor> {}
-export interface DemoServerPatch extends RemotePatch<Cursor> {}
+export interface DemoServerSnapshot extends RemoteBlockSnapshot<Cursor> {}
+export interface DemoServerPatch extends RemoteBlockPatch<Cursor> {}
 
 export class DemoServerRemoteHistory implements RemoteHistory<Cursor, DemoServerBlock, DemoServerSnapshot, DemoServerPatch> {
   constructor(protected readonly client: TypedRpcClient<Methods>) {}

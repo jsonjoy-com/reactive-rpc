@@ -5,11 +5,14 @@ export const BlockId = t.str.options({
   min: 6,
   max: 40,
 });
-export const BlockSeq = t.num.options({
+export const BlockIdRef = t.Ref<typeof BlockId>('BlockId');
+
+export const BlockCur = t.num.options({
   title: 'Block Sequence Number',
-  gte: 0,
+  gte: -1,
   format: 'i32',
 });
+export const BlockCurRef = t.Ref<typeof BlockCur>('BlockCur');
 
 // ---------------------------------------------------------------------- Patch
 
@@ -20,13 +23,15 @@ export const BlockPatchPartial = t.Object(
     description: 'The binary data of the patch. The format of the data is defined by the patch type.',
   }),
 );
+export const BlockPatchPartialRef = t.Ref<typeof BlockPatchPartial>('BlockPatchPartial');
+
 // prettier-ignore
 export const BlockPatchPartialReturn = t.Object(
-  t.prop('seq', t.num).options({
+  t.prop('cur', BlockCurRef).options({
     title: 'Patch Sequence Number',
     description: 'The sequence number of the patch in the block. A monotonically increasing integer, starting from 0.',
   }),
-  t.prop('created', t.num).options({
+  t.prop('ts', t.num.options({format: 'u'})).options({
     title: 'Patch Creation Time',
     description: 'The time when the patch was created, in milliseconds since the Unix epoch.' +
       '\n\n' + 
@@ -35,7 +40,10 @@ export const BlockPatchPartialReturn = t.Object(
       'information in the patch blob itself.',
   }),
 );
+export const BlockPatchPartialReturnRef = t.Ref<typeof BlockPatchPartialReturn>('BlockPatchPartialReturn');
+
 export const BlockPatch = BlockPatchPartial.extend(BlockPatchPartialReturn);
+export const BlockPatchRef = t.Ref<typeof BlockPatch>('BlockPatch');
 
 // ------------------------------------------------------------------- Snapshot
 
@@ -45,12 +53,12 @@ export const BlockSnapshot = t.Object(
       title: 'Snapshot Blob',
       description: 'A serialized JSON CRDT model.',
     }),
-  t.prop('cur', t.num)
+  t.prop('cur', BlockCurRef)
     .options({
       title: 'Snapshot Cursor',
       description: 'The cursor of the snapshot, representing the position in the history.',
     }),
-  t.prop('ts', t.num)
+  t.prop('ts', t.num.options({format: 'u'}))
     .options({
       title: 'Snapshot Creation Time',
       description: 'The time when the snapshot was created, in milliseconds since the Unix epoch.',
@@ -59,17 +67,22 @@ export const BlockSnapshot = t.Object(
   title: 'Block Snapshot',
   description: 'A snapshot of the block\'s state at a certain point in time.',
 });
+export const BlockSnapshotRef = t.Ref<typeof BlockSnapshot>('BlockSnapshot');
+
+export const NewBlockSnapshotResponse = BlockSnapshot.omit('blob');
+export const NewBlockSnapshotResponseRef = t.Ref<typeof NewBlockSnapshotResponse>('NewBlockSnapshotResponse');
 
 // ---------------------------------------------------------------------- Block
 
 // prettier-ignore
-export const BlockPartial = t.Object(
-  t.prop('blob', t.bin),
-);
-export const BlockPartialReturn = t.Object(
+export const BlockNew = t.Object(
   t.prop('id', t.Ref<typeof BlockId>('BlockId')),
-  t.prop('ts', t.num),
-  t.prop('data', t.Ref<typeof BlockSnapshot>('BlockSnapshot')),
-  t.prop('tip', t.Array(t.Ref<typeof BlockPatch>('BlockPatch'))),
+  t.prop('ts', t.num.options({format: 'u'})),
 );
-export const Block = BlockPartial.extend(BlockPartialReturn);
+export const BlockNewRef = t.Ref<typeof BlockNew>('BlockNew');
+
+export const Block = BlockNew.extend(t.Object(
+  t.prop('data', BlockSnapshotRef),
+  t.prop('tip', t.Array(BlockPatchRef)),
+));
+export const BlockRef = t.Ref<typeof Block>('Block');

@@ -32,8 +32,8 @@ import type {Observable} from "rxjs";
 export interface RemoteHistory<
   Cursor,
   B extends RemoteBlock<Cursor>,
-  S extends RemoteSnapshot<Cursor> = RemoteSnapshot<Cursor>,
-  P extends RemotePatch<Cursor> = RemotePatch<Cursor>
+  S extends RemoteBlockSnapshot<Cursor> = RemoteBlockSnapshot<Cursor>,
+  P extends RemoteBlockPatch<Cursor> = RemoteBlockPatch<Cursor>
 > {
   /**
    * Load the latest snapshot of the block, and any unmerged "tip" of patches
@@ -117,20 +117,20 @@ export interface RemoteBlock<Cursor> {
   /**
    * The latest snapshot of the block.
    */
-  data: RemoteSnapshot<Cursor>;
+  data: RemoteBlockSnapshot<Cursor>;
 
   /**
    * The latest patches that have been stored, but not yet applied to the the
    * latest snapshot. The client should apply these patches to the snapshot
    * to get the latest state of the block.
    */
-  tip: RemotePatch<Cursor>[];
+  tip: RemoteBlockPatch<Cursor>[];
 }
 
 /**
  * A snapshot of the block's state at a certain point in time.
  */
-export interface RemoteSnapshot<Cursor> {
+export interface RemoteBlockSnapshot<Cursor> {
   /**
    * The content of the snapshot.
    */
@@ -150,7 +150,7 @@ export interface RemoteSnapshot<Cursor> {
 /**
  * A patch is a change to the block's state.
  */
-export interface RemotePatch<Cursor> {
+export interface RemoteBlockPatch<Cursor> {
   /**
    * The content of the patch.
    */
