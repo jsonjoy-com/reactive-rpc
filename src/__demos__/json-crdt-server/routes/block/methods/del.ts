@@ -11,7 +11,12 @@ export const del =
       }),
     );
 
-    const Response = t.obj;
+    const Response = t.Object(
+      t.prop('success', t.bool).options({
+        title: 'Success',
+        description: 'Indicates whether the block was deleted successfully. Returns `false` if the block does not exist.',
+      }),
+    );
 
     const Func = t.Function(Request, Response).options({
       title: 'Delete Block',
@@ -20,7 +25,9 @@ export const del =
     });
 
     return r.prop('block.del', Func, async ({id}) => {
-      await services.blocks.remove(id);
-      return {};
+      const success = await services.blocks.remove(id);
+      return {
+        success,
+      };
     });
   };

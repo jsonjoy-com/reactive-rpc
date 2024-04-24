@@ -94,89 +94,89 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
       });
     });
 
-    // describe('block.remove', () => {
-    //   test('can remove an existing block', async () => {
-    //     const {call, stop} = await setup();
-    //     const id = getId();
-    //     await call('block.new', {id, patches: []});
-    //     const {model} = await call('block.get', {id});
-    //     expect(model.id).toBe(id);
-    //     await call('block.del', {id});
-    //     try {
-    //       await call('block.get', {id});
-    //       throw new Error('not this error');
-    //     } catch (err: any) {
-    //       expect(err.errno).toBe(RpcErrorCodes.NOT_FOUND);
-    //     }
-    //     stop();
-    //   });
-    // });
+    describe('block.remove', () => {
+      test('can remove an existing block', async () => {
+        const {call, stop} = await setup();
+        const id = getId();
+        await call('block.new', {id, patches: []});
+        const {block} = await call('block.get', {id});
+        expect(block.id).toBe(id);
+        await call('block.del', {id});
+        try {
+          await call('block.get', {id});
+          throw new Error('not this error');
+        } catch (err: any) {
+          expect(err.errno).toBe(RpcErrorCodes.NOT_FOUND);
+        }
+        stop();
+      });
+    });
 
-    // describe('block.upd', () => {
-    //   test('can edit a document sequentially', async () => {
-    //     const {call, stop} = await setup();
-    //     const id = getId();
-    //     const model = Model.withLogicalClock();
-    //     model.api.root({
-    //       text: 'Hell',
-    //     });
-    //     const patch1 = model.api.flush();
-    //     await call('block.new', {
-    //       id,
-    //       patches: [
-    //         {
-    //           blob: patch1.toBinary(),
-    //         },
-    //       ],
-    //     });
-    //     model.api.str(['text']).ins(4, 'o');
-    //     const patch2 = model.api.flush();
-    //     model.api.str(['text']).ins(5, ' World');
-    //     const patch3 = model.api.flush();
-    //     await call('block.upd', {
-    //       id,
-    //       patches: [
-    //         {
-    //           seq: 1,
-    //           created: Date.now(),
-    //           blob: patch2.toBinary(),
-    //         },
-    //         {
-    //           seq: 2,
-    //           created: Date.now(),
-    //           blob: patch3.toBinary(),
-    //         },
-    //       ],
-    //     });
-    //     const block2 = await call('block.get', {id});
-    //     expect(Model.fromBinary(block2.model.blob).view()).toStrictEqual({
-    //       text: 'Hello World',
-    //     });
-    //     model.api.str(['text']).del(5, 1).ins(5, ', ');
-    //     const patch4 = model.api.flush();
-    //     model.api.str(['text']).ins(12, '!');
-    //     const patch5 = model.api.flush();
-    //     await call('block.upd', {
-    //       id,
-    //       patches: [
-    //         {
-    //           seq: 3,
-    //           created: Date.now(),
-    //           blob: patch4.toBinary(),
-    //         },
-    //         {
-    //           seq: 4,
-    //           created: Date.now(),
-    //           blob: patch5.toBinary(),
-    //         },
-    //       ],
-    //     });
-    //     const block3 = await call('block.get', {id});
-    //     expect(Model.fromBinary(block3.model.blob).view()).toStrictEqual({
-    //       text: 'Hello, World!',
-    //     });
-    //     stop();
-    //   });
+    describe('block.upd', () => {
+      test('can edit a document sequentially', async () => {
+        const {call, stop} = await setup();
+        const id = getId();
+        const model = Model.withLogicalClock();
+        model.api.root({
+          text: 'Hell',
+        });
+        const patch1 = model.api.flush();
+        await call('block.new', {
+          id,
+          patches: [
+            {
+              blob: patch1.toBinary(),
+            },
+          ],
+        });
+        model.api.str(['text']).ins(4, 'o');
+        const patch2 = model.api.flush();
+        model.api.str(['text']).ins(5, ' World');
+        const patch3 = model.api.flush();
+        await call('block.upd', {
+          id,
+          patches: [
+            {
+              seq: 1,
+              created: Date.now(),
+              blob: patch2.toBinary(),
+            },
+            {
+              seq: 2,
+              created: Date.now(),
+              blob: patch3.toBinary(),
+            },
+          ],
+        });
+        const block2 = await call('block.get', {id});
+        expect(Model.fromBinary(block2.model.blob).view()).toStrictEqual({
+          text: 'Hello World',
+        });
+        model.api.str(['text']).del(5, 1).ins(5, ', ');
+        const patch4 = model.api.flush();
+        model.api.str(['text']).ins(12, '!');
+        const patch5 = model.api.flush();
+        await call('block.upd', {
+          id,
+          patches: [
+            {
+              seq: 3,
+              created: Date.now(),
+              blob: patch4.toBinary(),
+            },
+            {
+              seq: 4,
+              created: Date.now(),
+              blob: patch5.toBinary(),
+            },
+          ],
+        });
+        const block3 = await call('block.get', {id});
+        expect(Model.fromBinary(block3.model.blob).view()).toStrictEqual({
+          text: 'Hello, World!',
+        });
+        stop();
+      });
 
     //   test('can edit a document concurrently', async () => {
     //     const {call, stop} = await setup();

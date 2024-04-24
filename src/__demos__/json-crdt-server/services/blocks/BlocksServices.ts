@@ -80,12 +80,13 @@ export class BlocksServices {
   }
 
   public async remove(id: string) {
-    await this.store.remove(id);
+    const deleted = await this.store.remove(id);
     const msg = ['del'];
     this.services.pubsub.publish(`__block:${id}`, msg).catch((error) => {
       // tslint:disable-next-line:no-console
       console.error('Error publishing block deletion', error);
     });
+    return deleted;
   }
 
   public async scan(

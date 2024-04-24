@@ -38,9 +38,9 @@ export const block =
     return (
     ( new_(d)
     ( get(d)
-    // ( upd(d)
-    // ( del(d)
+    ( upd(d)
+    ( del(d)
     // ( listen(d)
     // ( scan(d)
-    ( r ))));
+    ( r ))))));
   };
