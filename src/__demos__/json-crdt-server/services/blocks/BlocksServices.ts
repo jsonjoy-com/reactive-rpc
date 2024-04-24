@@ -122,15 +122,22 @@ export class BlocksServices {
     return {patches, model};
   }
 
-  public async edit(id: string, patches: StorePatch[]) {
+  public async edit(id: string, patches: Pick<StorePatch, 'blob'>[]) {
     this.maybeGc();
     if (!Array.isArray(patches)) throw RpcError.validation('patches must be an array');
     if (!patches.length) throw RpcError.validation('patches must not be empty');
-    const seq = patches[0].seq;
-    const {store} = this;
     validatePatches(patches);
-    const {snapshot} = await store.edit(id, patches);
-    this.__emitUpd(id, patches);
+    const {store} = this;
+    const seq = (await store.seq(id)) ?? -1;
+    const fullPatches: StorePatch[] = [];
+    const now = Date.now();
+    for (let i = 0; i < patches.length; i++) {
+      const seqNum = seq + i;
+      const patch = patches[i];
+      fullPatches.push({seq: seqNum, created: now, blob: patch.blob});
+    }
+    const {snapshot} = await store.edit(id, fullPatches);
+    this.__emitUpd(id, fullPatches);
     const expectedBlockSeq = seq + patches.length - 1;
     const hadConcurrentEdits = snapshot.seq !== expectedBlockSeq;
     let patchesBack: StorePatch[] = [];
