@@ -3,7 +3,7 @@ import type {RouteDeps, Router, RouterBase} from '../types';
 export const ping =
   ({t}: RouteDeps) =>
   <R extends RouterBase>(r: Router<R>) => {
-    const Request = t.any;
+    const Request = t.undef;
     const Response = t.Const(<const>'pong');
     const Func = t.Function(Request, Response);
     return r.prop('util.ping', Func, async () => {

@@ -74,7 +74,7 @@
     "@jsonjoy.com/jit-router": "^1.0.1",
     "@jsonjoy.com/json-pack": "^1.0.2",
     "@jsonjoy.com/util": "^1.0.0",
-    "json-joy": "^14.2.0",
+    "json-joy": "^15.4.0",
     "memfs": "^4.8.1",
     "sonic-forest": "^1.0.0"
   },
