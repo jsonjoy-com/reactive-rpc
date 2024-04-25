@@ -37,9 +37,11 @@ export const scan =
 
     return r.prop('block.scan', Func, async ({id, cur, limit = 10}) => {
       const {patches} = await services.blocks.scan(id, cur, limit);
-      return {patches: patches.map(p => ({
-        blob: p.blob,
-        ts: p.created,
-      }))};
+      return {
+        patches: patches.map((p) => ({
+          blob: p.blob,
+          ts: p.created,
+        })),
+      };
     });
   };

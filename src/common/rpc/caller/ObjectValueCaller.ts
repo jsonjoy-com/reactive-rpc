@@ -136,12 +136,7 @@ export class ObjectValueCaller<V extends ObjectValue<ObjectType<any>>, Ctx = unk
   public toString(tab: string = ''): string {
     return (
       `${this.constructor.name}` +
-      printTree(tab,
-        [
-          tab => this.router.toString(tab),
-          tab => this.system.toString(tab),
-        ]
-      )
+      printTree(tab, [(tab) => this.router.toString(tab), (tab) => this.system.toString(tab)])
     );
   }
 }

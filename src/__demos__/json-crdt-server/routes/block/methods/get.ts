@@ -12,9 +12,7 @@ export const get =
       }),
     );
 
-    const Response = t.Object(
-      t.prop('block', BlockRef),
-    );
+    const Response = t.Object(t.prop('block', BlockRef));
 
     const Func = t.Function(Request, Response).options({
       title: 'Read Block',

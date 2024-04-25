@@ -66,10 +66,15 @@ export class BlocksServices {
   }
 
   private __emitUpd(id: string, patches: StorePatch[]) {
-    const msg: TBlockUpdateEvent = ['upd', {patches: patches.map(patch => ({
-      blob: patch.blob,
-      ts: patch.created,
-    }))}];
+    const msg: TBlockUpdateEvent = [
+      'upd',
+      {
+        patches: patches.map((patch) => ({
+          blob: patch.blob,
+          ts: patch.created,
+        })),
+      },
+    ];
     this.services.pubsub.publish(`__block:${id}`, msg).catch((error) => {
       // tslint:disable-next-line:no-console
       console.error('Error publishing block patches', error);
@@ -93,11 +98,7 @@ export class BlocksServices {
     return deleted;
   }
 
-  public async scan(
-    id: string,
-    offset: number | undefined,
-    limit: number | undefined = 10,
-  ) {
+  public async scan(id: string, offset: number | undefined, limit: number | undefined = 10) {
     const {store} = this;
     if (typeof offset !== 'number') offset = await store.seq(id);
     let min: number = 0,

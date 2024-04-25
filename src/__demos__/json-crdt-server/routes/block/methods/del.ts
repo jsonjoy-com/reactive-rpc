@@ -14,7 +14,8 @@ export const del =
     const Response = t.Object(
       t.prop('success', t.bool).options({
         title: 'Success',
-        description: 'Indicates whether the block was deleted successfully. Returns `false` if the block does not exist.',
+        description:
+          'Indicates whether the block was deleted successfully. Returns `false` if the block does not exist.',
       }),
     );
 

@@ -31,7 +31,7 @@ export const upd =
 
     return r.prop('block.upd', Func, async ({id, patches}) => {
       const res = await services.blocks.edit(id, patches);
-      const patchesReturn: ResolveType<typeof BlockPatchPartialReturnRef>[] = res.patches.map(patch => ({
+      const patchesReturn: ResolveType<typeof BlockPatchPartialReturnRef>[] = res.patches.map((patch) => ({
         ts: patch.created,
       }));
       return {

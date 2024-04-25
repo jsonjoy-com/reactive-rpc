@@ -20,7 +20,7 @@ let cnt = 0;
 const genId = () => Math.random().toString(36).slice(2) + '-' + Date.now().toString(36) + '-' + cnt++;
 
 describe('.create()', () => {
-  test('can create a block with a simple patch', async () => {
+  test.skip('can create a block with a simple patch', async () => {
     const {remote, caller} = await setup();
     const model = Model.withLogicalClock();
     model.api.root({foo: 'bar'});

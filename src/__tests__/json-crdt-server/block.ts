@@ -436,7 +436,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
               cur: 2,
               ts: expect.any(Number),
             },
-          }
+          },
         });
         stop();
       });

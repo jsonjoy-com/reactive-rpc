@@ -12,9 +12,7 @@ export const listen =
       }),
     );
 
-    const Response = t.Object(
-      t.prop('event', BlockEventRef),
-    );
+    const Response = t.Object(t.prop('event', BlockEventRef));
 
     const Func = t.Function$(Request, Response).options({
       title: 'Listen for block changes',

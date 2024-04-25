@@ -1,14 +1,14 @@
-import type {Observable} from "rxjs";
+import type {Observable} from 'rxjs';
 
 /**
  * A history of patches that have been applied to a model, stored in the
  * "remote" location, i.e. requires network communication to access. Can be
  * slow to access, or not accessible at all, depending on the network.
- * 
+ *
  * The `RemoteHistory` interface is a low-level interface that abstracts: (1)
  * a centra server; (2) un-fetched content addressable storage files; or (3) a
  * peer-to-peer network.
- * 
+ *
  * A *block* is a collaboratively edited document, which is a JSON-like object
  * that can be edited by multiple clients, it has a globally unique ID. A
  * *snapshot* of the block is a point-in-time representation of the block's
@@ -16,16 +16,16 @@ import type {Observable} from "rxjs";
  * of patches that have been applied to the block. The history can be applied
  * to a snapshot, hence one needs to keep track of the oldest snapshot from
  * which the history starts, or keep the history from the beginning of time.
- * 
+ *
  * The `Cursor` is any JSON-like serializable value. It can be a number, a string,
  * or even a list of logical timestamps. The cursor is used to identify the
  * position in the history of the block.
- * 
+ *
  * In a central server architecture, the cursor will typically be a number. In
  * content addressable storage, the cursor will also a number or a hash of the
  * block's state. In a peer-to-peer network, the cursor will be a list of logical
  * timestamps, which represent the latest logical clock values of all peers.
- * 
+ *
  * The higher levels should treat the cursor as `unknown` and only pass it to the
  * `RemoteHistory` methods without modifying it.
  */
@@ -33,7 +33,7 @@ export interface RemoteHistory<
   Cursor,
   B extends RemoteBlock<Cursor>,
   S extends RemoteBlockSnapshot<Cursor> = RemoteBlockSnapshot<Cursor>,
-  P extends RemoteBlockPatch = RemoteBlockPatch
+  P extends RemoteBlockPatch = RemoteBlockPatch,
 > {
   /**
    * Load the latest snapshot of the block, and any unmerged "tip" of patches
@@ -67,10 +67,13 @@ export interface RemoteHistory<
    * @param id A unique ID for the block.
    * @param patches A list of patches, which constitute the initial state of the block.
    */
-  create(id: string, patches: Pick<P, 'blob'>[]): Promise<{
-    block: Omit<B, 'data' | 'tip'>,
-    snapshot: Omit<S, 'blob'>,
-    patches: Omit<P, 'blob'>[],
+  create(
+    id: string,
+    patches: Pick<P, 'blob'>[],
+  ): Promise<{
+    block: Omit<B, 'data' | 'tip'>;
+    snapshot: Omit<S, 'blob'>;
+    patches: Omit<P, 'blob'>[];
   }>;
 
   /**
