@@ -4,6 +4,7 @@ import {RpcErrorCodes} from '../../common/rpc/caller';
 import {tick, until} from 'thingies';
 import type {ApiTestSetup} from '../../common/rpc/__tests__/runApiTests';
 import type {JsonCrdtTestSetup} from '../../__demos__/json-crdt-server/__tests__/setup';
+import type {TBlockEvent} from '../../__demos__/json-crdt-server/routes/block/schema';
 
 const sid = Math.random().toString(36).slice(2);
 let seq = 0;
@@ -232,96 +233,109 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
       });
     });
 
-    // if (!params.staticOnly) {
-    //   describe('block.listen', () => {
-    //     test('can listen for block changes', async () => {
-    //       const {call, call$, stop} = await setup();
-    //       const id = getId();
-    //       await call('block.new', {id, patches: []});
-    //       await tick(11);
-    //       const emits: any[] = [];
-    //       call$('block.listen', {id}).subscribe((data) => emits.push(data));
-    //       const model = Model.withLogicalClock();
-    //       model.api.root({
-    //         text: 'Hell',
-    //       });
-    //       const patch1 = model.api.flush();
-    //       await tick(12);
-    //       expect(emits.length).toBe(0);
-    //       await call('block.upd', {
-    //         id,
-    //         patches: [{seq: 0, created: Date.now(), blob: patch1.toBinary()}],
-    //       });
-    //       await until(() => emits.length === 1);
-    //       expect(emits.length).toBe(1);
-    //       expect(emits[0][0]).toBe('upd');
-    //       expect(emits[0][1].patches.length).toBe(1);
-    //       expect(emits[0][1].patches[0].seq).toBe(0);
-    //       model.api.root({
-    //         text: 'Hello',
-    //       });
-    //       const patch2 = model.api.flush();
-    //       await tick(12);
-    //       expect(emits.length).toBe(1);
-    //       await call('block.upd', {
-    //         id,
-    //         patches: [{seq: 1, created: Date.now(), blob: patch2.toBinary()}],
-    //       });
-    //       await until(() => emits.length === 2);
-    //       expect(emits.length).toBe(2);
-    //       expect(emits[1][0]).toBe('upd');
-    //       expect(emits[1][1].patches.length).toBe(1);
-    //       expect(emits[1][1].patches[0].seq).toBe(1);
-    //       stop();
-    //     });
+    if (!params.staticOnly) {
+      describe('block.listen', () => {
+        test('can listen for block changes', async () => {
+          const {call, call$, stop} = await setup();
+          const id = getId();
+          await call('block.new', {id, patches: []});
+          await tick(11);
+          const emits: TBlockEvent[] = [];
+          call$('block.listen', {id}).subscribe(({event}) => emits.push(event));
+          const model = Model.withLogicalClock();
+          model.api.root({
+            text: 'Hell',
+          });
+          const patch1 = model.api.flush();
+          await tick(12);
+          expect(emits.length).toBe(0);
+          await call('block.upd', {
+            id,
+            patches: [{blob: patch1.toBinary()}],
+          });
+          await until(() => emits.length === 1);
+          expect(emits.length).toBe(1);
+          expect(emits[0][0]).toBe('upd');
+          if (emits[0][0] === 'upd') {
+            expect(emits[0][1].patches.length).toBe(1);
+            expect(emits[0][1].patches[0]).toMatchObject({
+              ts: expect.any(Number),
+              blob: patch1.toBinary(),
+            });
+          }
+          model.api.root({
+            text: 'Hello',
+          });
+          const patch2 = model.api.flush();
+          await tick(12);
+          expect(emits.length).toBe(1);
+          await call('block.upd', {
+            id,
+            patches: [{blob: patch2.toBinary()}],
+          });
+          await until(() => emits.length === 2);
+          expect(emits.length).toBe(2);
+          expect(emits[1][0]).toBe('upd');
+          if (emits[1][0] === 'upd') {
+            expect(emits[1][1].patches.length).toBe(1);
+            expect(emits[1][1].patches[0]).toMatchObject({
+              ts: expect.any(Number),
+              blob: patch2.toBinary(),
+            });
+          }
+          stop();
+        });
 
-    //     test('can subscribe before block is created', async () => {
-    //       const {call, call$, stop} = await setup();
-    //       const emits: any[] = [];
-    //       const id = getId();
-    //       call$('block.listen', {id}).subscribe((data) => emits.push(data));
-    //       const model = Model.withLogicalClock();
-    //       model.api.root({
-    //         text: 'Hell',
-    //       });
-    //       const patch1 = model.api.flush();
-    //       await tick(12);
-    //       expect(emits.length).toBe(0);
-    //       await call('block.new', {
-    //         id,
-    //         patches: [
-    //           {
-    //             blob: patch1.toBinary(),
-    //           },
-    //         ],
-    //       });
-    //       await until(() => emits.length === 1);
-    //       expect(emits.length).toBe(1);
-    //       expect(emits[0][0]).toBe('upd');
-    //       expect(emits[0][1].patches.length).toBe(1);
-    //       expect(emits[0][1].patches[0].seq).toBe(0);
-    //       expect(emits[0][1].patches[0].blob).toStrictEqual(patch1.toBinary());
-    //       stop();
-    //     });
+        test('can subscribe before block is created', async () => {
+          const {call, call$, stop} = await setup();
+          const emits: TBlockEvent[] = [];
+          const id = getId();
+          call$('block.listen', {id}).subscribe(({event}) => emits.push(event));
+          const model = Model.withLogicalClock();
+          model.api.root({
+            text: 'Hell',
+          });
+          const patch1 = model.api.flush();
+          await tick(12);
+          expect(emits.length).toBe(0);
+          await call('block.new', {
+            id,
+            patches: [
+              {
+                blob: patch1.toBinary(),
+              },
+            ],
+          });
+          await until(() => emits.length === 1);
+          expect(emits.length).toBe(1);
+          expect(emits[0][0]).toBe('upd');
+          if (emits[0][0] === 'upd') {
+            expect(emits[0][1].patches.length).toBe(1);
+            expect(emits[0][1].patches[0]).toMatchObject({
+              ts: expect.any(Number),
+              blob: patch1.toBinary(),
+            });
+          }
+          stop();
+        });
 
-    //     test('can receive deletion events', async () => {
-    //       const {call, call$, stop} = await setup();
-    //       const emits: any[] = [];
-    //       const id = getId();
-    //       call$('block.listen', {id}).subscribe((data) => {
-    //         emits.push(data);
-    //       });
-    //       await call('block.new', {id, patches: []});
-    //       await until(() => emits.length === 1);
-    //       expect(emits[0][1].model.seq).toBe(-1);
-    //       await tick(3);
-    //       await call('block.del', {id});
-    //       await until(() => emits.length === 2);
-    //       expect(emits[1][0]).toBe('del');
-    //       stop();
-    //     });
-    //   });
-    // }
+        test('can receive deletion events', async () => {
+          const {call, call$, stop} = await setup();
+          const emits: TBlockEvent[] = [];
+          const id = getId();
+          call$('block.listen', {id}).subscribe(({event}) => {
+            emits.push(event);
+          });
+          await call('block.new', {id, patches: []});
+          await until(() => emits.length === 1);
+          await tick(3);
+          await call('block.del', {id});
+          await until(() => emits.length === 2);
+          expect(emits[1][0]).toBe('del');
+          stop();
+        });
+      });
+    }
 
     describe('block.scan', () => {
       test('can retrieve change history', async () => {

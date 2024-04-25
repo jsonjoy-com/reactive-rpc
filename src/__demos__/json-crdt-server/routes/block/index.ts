@@ -14,6 +14,7 @@ import {
   BlockNew,
   BlockSnapshot,
   NewBlockSnapshotResponse,
+  BlockEvent,
 } from './schema';
 import type {RouteDeps, Router, RouterBase} from '../types';
 
@@ -34,13 +35,15 @@ export const block =
     system.alias('BlockPatchPartial', BlockPatchPartial);
     system.alias('BlockPatchPartialReturn', BlockPatchPartialReturn);
 
+    system.alias('BlockEvent', BlockEvent);
+
     // prettier-ignore
     return (
     ( new_(d)
     ( get(d)
     ( upd(d)
     ( del(d)
-    // ( listen(d)
+    ( listen(d)
     ( scan(d)
-    ( r )))))));
+    ( r ))))))));
   };

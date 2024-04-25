@@ -4,13 +4,14 @@ import {Model, Patch} from 'json-joy/lib/json-crdt';
 import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
 import type {StoreSnapshot, StorePatch} from './types';
 import type {Services} from '../Services';
+import type {Observable} from 'rxjs';
+import type {TBlockEvent, TBlockUpdateEvent, TBlockDeleteEvent} from '../../routes/block/schema';
 
 const BLOCK_TTL = 1000 * 60 * 30; // 30 minutes
 
 const validatePatches = (patches: Pick<StorePatch, 'blob'>[]) => {
   for (const patch of patches) {
     if (patch.blob.length > 2000) throw RpcError.validation('patch blob too large');
-    // if (patch.seq > 500_000) throw RpcError.validation('patch seq too large');
   }
 };
 
@@ -65,7 +66,10 @@ export class BlocksServices {
   }
 
   private __emitUpd(id: string, patches: StorePatch[]) {
-    const msg = ['upd', {patches}];
+    const msg: TBlockUpdateEvent = ['upd', {patches: patches.map(patch => ({
+      blob: patch.blob,
+      ts: patch.created,
+    }))}];
     this.services.pubsub.publish(`__block:${id}`, msg).catch((error) => {
       // tslint:disable-next-line:no-console
       console.error('Error publishing block patches', error);
@@ -81,7 +85,7 @@ export class BlocksServices {
 
   public async remove(id: string) {
     const deleted = await this.store.remove(id);
-    const msg = ['del'];
+    const msg: TBlockDeleteEvent = ['del'];
     this.services.pubsub.publish(`__block:${id}`, msg).catch((error) => {
       // tslint:disable-next-line:no-console
       console.error('Error publishing block deletion', error);
@@ -138,6 +142,10 @@ export class BlocksServices {
       snapshot,
       patches: patchesBack,
     };
+  }
+
+  public listen(id: string): Observable<TBlockEvent> {
+    return this.services.pubsub.listen$(`__block:${id}`) as Observable<TBlockEvent>;
   }
 
   public stats() {

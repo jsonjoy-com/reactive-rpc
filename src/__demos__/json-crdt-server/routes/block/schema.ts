@@ -1,4 +1,5 @@
 import {t} from '../system';
+import type {ResolveType} from 'json-joy/lib/json-type';
 
 export const BlockId = t.str.options({
   title: 'Block ID',
@@ -82,3 +83,32 @@ export const Block = BlockNew.extend(t.Object(
   t.prop('tip', t.Array(BlockPatchRef)),
 ));
 export const BlockRef = t.Ref<typeof Block>('Block');
+
+// --------------------------------------------------------------------- Events
+
+export const BlockDeleteEvent = t.Tuple(
+  t.Const(<const>'del').options({title: 'Event Type'}),
+).options({title: 'Delete Event'});
+
+export const BlockUpdateEvent = t.Tuple(
+  t.Const(<const>'upd').options({title: 'Event Type'}),
+  t.Object(
+    t.prop('patches', t.Array(BlockPatchRef)).options({
+      title: 'Latest Patches',
+      description: 'Patches that have been applied to the block.',
+    }),
+  ).options({title: 'Event Data'}),
+).options({title: 'Update Event'});
+
+export const BlockEvent = t.Or(
+  BlockUpdateEvent,
+  BlockDeleteEvent,
+).options({
+  title: 'Block Event',
+  description: 'A collection of possible events that can happen to a block.',
+});
+export const BlockEventRef = t.Ref<typeof BlockEvent>('BlockEvent');
+
+export type TBlockDeleteEvent = ResolveType<typeof BlockDeleteEvent>;
+export type TBlockUpdateEvent = ResolveType<typeof BlockUpdateEvent>;
+export type TBlockEvent = ResolveType<typeof BlockEvent>;
