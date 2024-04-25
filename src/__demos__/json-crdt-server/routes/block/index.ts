@@ -6,13 +6,15 @@ import {scan} from './methods/scan';
 import {listen} from './methods/listen';
 import {
   Block,
-  BlockPartial,
-  BlockPartialReturn,
   BlockId,
   BlockPatch,
   BlockPatchPartial,
   BlockPatchPartialReturn,
-  BlockSeq,
+  BlockCur,
+  BlockNew,
+  BlockSnapshot,
+  NewBlockSnapshotResponse,
+  BlockEvent,
 } from './schema';
 import type {RouteDeps, Router, RouterBase} from '../types';
 
@@ -22,13 +24,18 @@ export const block =
     const {system} = d;
 
     system.alias('BlockId', BlockId);
-    system.alias('BlockSeq', BlockSeq);
+    system.alias('BlockCur', BlockCur);
+    system.alias('BlockNew', BlockNew);
     system.alias('Block', Block);
-    system.alias('BlockPartial', BlockPartial);
-    system.alias('BlockPartialReturn', BlockPartialReturn);
+
+    system.alias('BlockSnapshot', BlockSnapshot);
+    system.alias('NewBlockSnapshotResponse', NewBlockSnapshotResponse);
+
     system.alias('BlockPatch', BlockPatch);
     system.alias('BlockPatchPartial', BlockPatchPartial);
     system.alias('BlockPatchPartialReturn', BlockPatchPartialReturn);
+
+    system.alias('BlockEvent', BlockEvent);
 
     // prettier-ignore
     return (

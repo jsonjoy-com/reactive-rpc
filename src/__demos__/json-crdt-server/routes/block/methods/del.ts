@@ -11,16 +11,24 @@ export const del =
       }),
     );
 
-    const Response = t.obj;
+    const Response = t.Object(
+      t.prop('success', t.bool).options({
+        title: 'Success',
+        description:
+          'Indicates whether the block was deleted successfully. Returns `false` if the block does not exist.',
+      }),
+    );
 
     const Func = t.Function(Request, Response).options({
-      title: 'Read Block',
-      intro: 'Retrieves a block by ID.',
-      description: 'Fetches a block by ID.',
+      title: 'Delete Block',
+      intro: 'Deletes a block by ID.',
+      description: 'Deletes a block by ID. It will not rise an error if the block does not exist.',
     });
 
     return r.prop('block.del', Func, async ({id}) => {
-      await services.blocks.remove(id);
-      return {};
+      const success = await services.blocks.remove(id);
+      return {
+        success,
+      };
     });
   };

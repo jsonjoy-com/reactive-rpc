@@ -1,4 +1,4 @@
-export interface StoreModel {
+export interface StoreSnapshot {
   id: string;
   seq: number;
   created: number;
@@ -20,7 +20,7 @@ export interface Store {
    * @param patches Initial patches to apply to a new block.
    * @returns Newly created block data.
    */
-  create(id: string, model: StoreModel, patches: StorePatch[]): Promise<void>;
+  create(id: string, snapshot: StoreSnapshot, patches: StorePatch[]): Promise<void>;
 
   /**
    * Retrieve an existing block.
@@ -67,9 +67,9 @@ export interface Store {
 }
 
 export interface StoreGetResult {
-  model: StoreModel;
+  snapshot: StoreSnapshot;
 }
 
 export interface StoreApplyResult {
-  model: StoreModel;
+  snapshot: StoreSnapshot;
 }

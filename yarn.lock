@@ -602,11 +602,6 @@
   dependencies:
     hyperdyperid "^1.2.0"
 
-"@multiformats/base-x@^4.0.1":
-  version "4.0.1"
-  resolved "https://registry.yarnpkg.com/@multiformats/base-x/-/base-x-4.0.1.tgz#95ff0fa58711789d53aefb2590a8b7a4e715d121"
-  integrity sha512-eMk0b9ReBbV23xXU693TAIrLyeO5iTgBZGSJfpqriG8UkYvr/hC9u9pyMlAakDNHWmbhMZCDs6KQO0jzKD8OTw==
-
 "@pkgjs/parseargs@^0.11.0":
   version "0.11.0"
   resolved "https://registry.yarnpkg.com/@pkgjs/parseargs/-/parseargs-0.11.0.tgz#a77ea742fab25775145434eb1d2328cf5013ac33"
@@ -1931,17 +1926,17 @@ jsesc@^2.5.1:
   resolved "https://registry.yarnpkg.com/jsesc/-/jsesc-2.5.2.tgz#80564d2e483dacf6e8ef209650a67df3f0c283a4"
   integrity sha512-OYu7XEzjkCQ3C5Ps3QIZsQfNpqoJyZZA99wd9aWd05NCtC5pWOkShK2mkL6HXQR6/Cy2lbNdPlZBpuQHXE63gA==
 
-json-joy@^14.2.0:
-  version "14.2.0"
-  resolved "https://registry.yarnpkg.com/json-joy/-/json-joy-14.2.0.tgz#48066efbe407da721ea151d83cda0d0ba53ffa3b"
-  integrity sha512-youoaTAleJAg639CpeaRV1E0XGNQShQ5Z4vsdeUJltW7QtK8KUxtu3OXqbKY+spNXBAdy8jjUN8WTfQcPCokhg==
+json-joy@^15.4.1:
+  version "15.4.1"
+  resolved "https://registry.yarnpkg.com/json-joy/-/json-joy-15.4.1.tgz#dc57284782213502057c456b828771b8fc855c0c"
+  integrity sha512-o2x8ave2Si0aoamm7Jg3eX7zjOmtFBzJaS8B/j13FTQDjh7EEbngRGv+Gh15p6C7IirXlgdTO09+nIAYeBz1DA==
   dependencies:
     "@jsonjoy.com/base64" "^1.1.1"
     "@jsonjoy.com/json-pack" "^1.0.2"
     "@jsonjoy.com/util" "^1.0.0"
     arg "^5.0.2"
     hyperdyperid "^1.2.0"
-    multibase "^4.0.6"
+    sonic-forest "^1.0.0"
     thingies "^1.20.0"
 
 json-parse-even-better-errors@^2.3.0:
@@ -2104,13 +2099,6 @@ ms@2.1.2:
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.2.tgz#d09d1f357b443f493382a8eb3ccd183872ae6009"
   integrity sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==
-
-multibase@^4.0.6:
-  version "4.0.6"
-  resolved "https://registry.yarnpkg.com/multibase/-/multibase-4.0.6.tgz#6e624341483d6123ca1ede956208cb821b440559"
-  integrity sha512-x23pDe5+svdLz/k5JPGCVdfn7Q5mZVMBETiC+ORfO+sor9Sgs0smJzAjfTbM5tckeCqnaUuMYoz+k3RXMmJClQ==
-  dependencies:
-    "@multiformats/base-x" "^4.0.1"
 
 natural-compare@^1.4.0:
   version "1.4.0"

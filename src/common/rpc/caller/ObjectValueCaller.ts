@@ -83,7 +83,7 @@ export class ObjectValueCaller<V extends ObjectValue<ObjectType<any>>, Ctx = unk
     const call = fn.data;
     const validator = fnType.req.validator('object');
     const requestSchema = (fnType.req as AbstractType<Schema>).getSchema();
-    const isRequestVoid = requestSchema.__t === 'const' && requestSchema.value === undefined;
+    const isRequestVoid = requestSchema.kind === 'const' && requestSchema.value === undefined;
     const validate = isRequestVoid
       ? () => {}
       : (req: unknown) => {
@@ -136,13 +136,7 @@ export class ObjectValueCaller<V extends ObjectValue<ObjectType<any>>, Ctx = unk
   public toString(tab: string = ''): string {
     return (
       `${this.constructor.name}` +
-      printTree(
-        tab,
-        this.router.keys().map((key) => {
-          const value = this.router.get(key);
-          return (tab: string) => `${key}: ${(value?.type as Type).getOptions().title || ''}`;
-        }),
-      )
+      printTree(tab, [(tab) => this.router.toString(tab), (tab) => this.system.toString(tab)])
     );
   }
 }

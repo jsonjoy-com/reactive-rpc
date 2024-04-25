@@ -8,7 +8,7 @@ export const runUtilTests = (_setup: ApiTestSetup, params: {staticOnly?: true} =
     describe('util.ping', () => {
       test('returns pong', async () => {
         const {call, stop} = await setup();
-        const res = await call('util.ping', {});
+        const res = await call('util.ping', undefined);
         expect(res).toBe('pong');
         stop();
       });

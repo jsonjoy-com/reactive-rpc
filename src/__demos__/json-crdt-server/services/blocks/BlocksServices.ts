@@ -2,15 +2,16 @@ import {MemoryStore} from './MemoryStore';
 import {RpcError, RpcErrorCodes} from '../../../../common/rpc/caller';
 import {Model, Patch} from 'json-joy/lib/json-crdt';
 import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
-import type {StoreModel, StorePatch} from './types';
+import type {StoreSnapshot, StorePatch} from './types';
 import type {Services} from '../Services';
+import type {Observable} from 'rxjs';
+import type {TBlockEvent, TBlockUpdateEvent, TBlockDeleteEvent} from '../../routes/block/schema';
 
 const BLOCK_TTL = 1000 * 60 * 30; // 30 minutes
 
 const validatePatches = (patches: Pick<StorePatch, 'blob'>[]) => {
   for (const patch of patches) {
     if (patch.blob.length > 2000) throw RpcError.validation('patch blob too large');
-    // if (patch.seq > 500_000) throw RpcError.validation('patch seq too large');
   }
 };
 
@@ -26,15 +27,15 @@ export class BlocksServices {
     const length = partialPatches.length;
     const now = Date.now();
     if (!length) {
-      const rawModel = Model.withLogicalClock(SESSION.GLOBAL);
-      const model: StoreModel = {
+      const model = Model.withLogicalClock(SESSION.GLOBAL);
+      const snapshot: StoreSnapshot = {
         id,
         seq: -1,
-        blob: rawModel.toBinary(),
+        blob: model.toBinary(),
         created: now,
         updated: now,
       };
-      return await this.__create(id, model, []);
+      return await this.__create(id, snapshot, []);
     }
     const rawPatches: Patch[] = [];
     const patches: StorePatch[] = [];
@@ -44,28 +45,36 @@ export class BlocksServices {
       rawPatches.push(Patch.fromBinary(blob));
       patches.push({seq, created: now, blob});
     }
-    const rawModel = Model.fromPatches(rawPatches);
-    const model: StoreModel = {
+    const model = Model.fromPatches(rawPatches);
+    const snapshot: StoreSnapshot = {
       id,
       seq: seq - 1,
-      blob: rawModel.toBinary(),
+      blob: model.toBinary(),
       created: now,
       updated: now,
     };
-    return await this.__create(id, model, patches);
+    return await this.__create(id, snapshot, patches);
   }
 
-  private async __create(id: string, model: StoreModel, patches: StorePatch[]) {
-    await this.store.create(id, model, patches);
-    this.__emitUpd(id, model, patches);
+  private async __create(id: string, snapshot: StoreSnapshot, patches: StorePatch[]) {
+    await this.store.create(id, snapshot, patches);
+    this.__emitUpd(id, patches);
     return {
-      model,
+      snapshot,
       patches,
     };
   }
 
-  private __emitUpd(id: string, model: StoreModel, patches: StorePatch[]) {
-    const msg = ['upd', {model, patches}];
+  private __emitUpd(id: string, patches: StorePatch[]) {
+    const msg: TBlockUpdateEvent = [
+      'upd',
+      {
+        patches: patches.map((patch) => ({
+          blob: patch.blob,
+          ts: patch.created,
+        })),
+      },
+    ];
     this.services.pubsub.publish(`__block:${id}`, msg).catch((error) => {
       // tslint:disable-next-line:no-console
       console.error('Error publishing block patches', error);
@@ -76,25 +85,20 @@ export class BlocksServices {
     const {store} = this;
     const result = await store.get(id);
     if (!result) throw RpcError.fromCode(RpcErrorCodes.NOT_FOUND);
-    const {model} = result;
-    return {model};
+    return result;
   }
 
   public async remove(id: string) {
-    await this.store.remove(id);
-    const msg = ['del'];
+    const deleted = await this.store.remove(id);
+    const msg: TBlockDeleteEvent = ['del'];
     this.services.pubsub.publish(`__block:${id}`, msg).catch((error) => {
       // tslint:disable-next-line:no-console
       console.error('Error publishing block deletion', error);
     });
+    return deleted;
   }
 
-  public async scan(
-    id: string,
-    offset: number | undefined,
-    limit: number | undefined = 10,
-    returnStartModel: boolean = limit < 0,
-  ) {
+  public async scan(id: string, offset: number | undefined, limit: number | undefined = 10) {
     const {store} = this;
     if (typeof offset !== 'number') offset = await store.seq(id);
     let min: number = 0,
@@ -112,33 +116,37 @@ export class BlocksServices {
       max = Math.abs(limit);
     }
     const patches = await store.history(id, min, max);
-    let model: Model | undefined;
-    if (returnStartModel) {
-      const startPatches = await store.history(id, 0, min);
-      if (startPatches.length) {
-        model = Model.fromPatches(startPatches.map((p) => Patch.fromBinary(p.blob)));
-      }
-    }
-    return {patches, model};
+    return {patches};
   }
 
-  public async edit(id: string, patches: StorePatch[]) {
+  public async edit(id: string, patches: Pick<StorePatch, 'blob'>[]) {
     this.maybeGc();
     if (!Array.isArray(patches)) throw RpcError.validation('patches must be an array');
     if (!patches.length) throw RpcError.validation('patches must not be empty');
-    const seq = patches[0].seq;
-    const {store} = this;
     validatePatches(patches);
-    const {model} = await store.edit(id, patches);
-    this.__emitUpd(id, model, patches);
+    const {store} = this;
+    const seq = (await store.seq(id)) ?? -1;
+    const fullPatches: StorePatch[] = [];
+    const now = Date.now();
+    for (let i = 0; i < patches.length; i++) {
+      const seqNum = seq + i;
+      const patch = patches[i];
+      fullPatches.push({seq: seqNum, created: now, blob: patch.blob});
+    }
+    const {snapshot} = await store.edit(id, fullPatches);
+    this.__emitUpd(id, fullPatches);
     const expectedBlockSeq = seq + patches.length - 1;
-    const hadConcurrentEdits = model.seq !== expectedBlockSeq;
+    const hadConcurrentEdits = snapshot.seq !== expectedBlockSeq;
     let patchesBack: StorePatch[] = [];
-    if (hadConcurrentEdits) patchesBack = await store.history(id, seq, model.seq);
+    if (hadConcurrentEdits) patchesBack = await store.history(id, seq, snapshot.seq);
     return {
-      model,
+      snapshot,
       patches: patchesBack,
     };
+  }
+
+  public listen(id: string): Observable<TBlockEvent> {
+    return this.services.pubsub.listen$(`__block:${id}`) as Observable<TBlockEvent>;
   }
 
   public stats() {

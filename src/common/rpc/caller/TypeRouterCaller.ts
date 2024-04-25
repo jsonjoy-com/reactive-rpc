@@ -37,7 +37,7 @@ export class TypeRouterCaller<Router extends TypeRouter<any>, Ctx = unknown> ext
     if (!fn || !(fn instanceof FunctionType || fn instanceof FunctionStreamingType)) return undefined;
     const validator = fn.req.validator('object');
     const requestSchema = (fn.req as AbstractType<Schema>).getSchema();
-    const isRequestVoid = requestSchema.__t === 'const' && requestSchema.value === undefined;
+    const isRequestVoid = requestSchema.kind === 'const' && requestSchema.value === undefined;
     const validate = isRequestVoid
       ? () => {}
       : (req: unknown) => {
