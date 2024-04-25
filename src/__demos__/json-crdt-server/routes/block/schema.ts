@@ -27,10 +27,6 @@ export const BlockPatchPartialRef = t.Ref<typeof BlockPatchPartial>('BlockPatchP
 
 // prettier-ignore
 export const BlockPatchPartialReturn = t.Object(
-  t.prop('cur', BlockCurRef).options({
-    title: 'Patch Sequence Number',
-    description: 'The sequence number of the patch in the block. A monotonically increasing integer, starting from 0.',
-  }),
   t.prop('ts', t.num.options({format: 'u'})).options({
     title: 'Patch Creation Time',
     description: 'The time when the patch was created, in milliseconds since the Unix epoch.' +
@@ -82,7 +78,7 @@ export const BlockNew = t.Object(
 export const BlockNewRef = t.Ref<typeof BlockNew>('BlockNew');
 
 export const Block = BlockNew.extend(t.Object(
-  t.prop('data', BlockSnapshotRef),
+  t.prop('snapshot', BlockSnapshotRef),
   t.prop('tip', t.Array(BlockPatchRef)),
 ));
 export const BlockRef = t.Ref<typeof Block>('Block');

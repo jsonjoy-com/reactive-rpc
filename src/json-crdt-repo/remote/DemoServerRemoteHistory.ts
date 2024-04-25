@@ -9,7 +9,7 @@ export type Cursor = number;
 
 export interface DemoServerBlock extends RemoteBlock<Cursor> {}
 export interface DemoServerSnapshot extends RemoteBlockSnapshot<Cursor> {}
-export interface DemoServerPatch extends RemoteBlockPatch<Cursor> {}
+export interface DemoServerPatch extends RemoteBlockPatch {}
 
 export class DemoServerRemoteHistory implements RemoteHistory<Cursor, DemoServerBlock, DemoServerSnapshot, DemoServerPatch> {
   constructor(protected readonly client: TypedRpcClient<Methods>) {}

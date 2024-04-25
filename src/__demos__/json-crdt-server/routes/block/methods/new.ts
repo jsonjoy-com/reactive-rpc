@@ -45,7 +45,6 @@ export const new_ =
           ts: res.snapshot.created,
         },
         patches: res.patches.map((patch) => ({
-          cur: patch.seq,
           ts: patch.created,
         })),
       };

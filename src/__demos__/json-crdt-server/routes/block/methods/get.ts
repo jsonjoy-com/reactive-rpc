@@ -27,7 +27,7 @@ export const get =
         block: {
           id: snapshot.id,
           ts: snapshot.created,
-          data: {
+          snapshot: {
             blob: snapshot.blob,
             cur: snapshot.seq,
             ts: snapshot.created,

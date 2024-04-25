@@ -1,5 +1,6 @@
+import {ResolveType} from 'json-joy/lib/json-type';
 import type {RouteDeps, Router, RouterBase} from '../../types';
-import {BlockCurRef, BlockIdRef, BlockPatchPartialRef, BlockPatchRef} from '../schema';
+import {BlockCurRef, BlockIdRef, BlockPatchPartialRef, BlockPatchPartialReturnRef} from '../schema';
 
 export const upd =
   ({t, services}: RouteDeps) =>
@@ -9,13 +10,6 @@ export const upd =
         title: 'Document ID',
         description: 'The ID of the document to apply the patch to.',
       }),
-      t.prop('cur', BlockCurRef).options({
-        title: 'Last known sequence number',
-        description:
-          'The last known sequence number of the document. ' +
-          'If the document has changed since this sequence number, ' +
-          'the response will contain all the necessary patches for the client to catch up.',
-      }),
       t.prop('patches', t.Array(BlockPatchPartialRef)).options({
         title: 'Patches',
         description: 'The patches to apply to the document.',
@@ -23,7 +17,7 @@ export const upd =
     );
 
     const Response = t.Object(
-      t.prop('patches', t.Array(BlockPatchRef)).options({
+      t.prop('patches', t.Array(BlockPatchPartialReturnRef)).options({
         title: 'Latest patches',
         description: 'The list of patches that the client might have missed and should apply to the document.',
       }),
@@ -35,10 +29,13 @@ export const upd =
       description: 'Applies patches to an existing document and returns the latest concurrent changes.',
     });
 
-    return r.prop('block.upd', Func, async ({id, cur, patches}) => {
+    return r.prop('block.upd', Func, async ({id, patches}) => {
       const res = await services.blocks.edit(id, patches);
+      const patchesReturn: ResolveType<typeof BlockPatchPartialReturnRef>[] = res.patches.map(patch => ({
+        ts: patch.created,
+      }));
       return {
-        patches: res.patches,
+        patches: patchesReturn,
       };
     });
   };

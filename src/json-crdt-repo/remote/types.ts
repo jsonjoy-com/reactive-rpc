@@ -33,7 +33,7 @@ export interface RemoteHistory<
   Cursor,
   B extends RemoteBlock<Cursor>,
   S extends RemoteBlockSnapshot<Cursor> = RemoteBlockSnapshot<Cursor>,
-  P extends RemoteBlockPatch<Cursor> = RemoteBlockPatch<Cursor>
+  P extends RemoteBlockPatch = RemoteBlockPatch
 > {
   /**
    * Load the latest snapshot of the block, and any unmerged "tip" of patches
@@ -124,7 +124,7 @@ export interface RemoteBlock<Cursor> {
    * latest snapshot. The client should apply these patches to the snapshot
    * to get the latest state of the block.
    */
-  tip: RemoteBlockPatch<Cursor>[];
+  tip: RemoteBlockPatch[];
 }
 
 /**
@@ -150,16 +150,11 @@ export interface RemoteBlockSnapshot<Cursor> {
 /**
  * A patch is a change to the block's state.
  */
-export interface RemoteBlockPatch<Cursor> {
+export interface RemoteBlockPatch {
   /**
    * The content of the patch.
    */
   blob: Uint8Array;
-
-  /**
-   * The cursor of the patch, representing the position in the history.
-   */
-  cur?: Cursor;
 
   /**
    * Unix timestamp when the patch was created.
