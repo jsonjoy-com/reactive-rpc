@@ -323,68 +323,61 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
     //   });
     // }
 
-    // describe('block.scan', () => {
-    //   test('can retrieve change history', async () => {
-    //     const {call, stop} = await setup();
-    //     const id = getId();
-    //     const model = Model.withLogicalClock();
-    //     model.api.root({
-    //       text: 'Hell',
-    //     });
-    //     const patch1 = model.api.flush();
-    //     await call('block.new', {
-    //       id,
-    //       patches: [
-    //         {
-    //           blob: patch1.toBinary(),
-    //         },
-    //       ],
-    //     });
-    //     await tick(11);
-    //     model.api.str(['text']).ins(4, 'o');
-    //     const patch2 = model.api.flush();
-    //     model.api.obj([]).set({
-    //       age: 26,
-    //     });
-    //     const patch3 = model.api.flush();
-    //     await call('block.upd', {
-    //       id,
-    //       patches: [
-    //         {
-    //           seq: 1,
-    //           created: Date.now(),
-    //           blob: patch2.toBinary(),
-    //         },
-    //         {
-    //           seq: 2,
-    //           created: Date.now(),
-    //           blob: patch3.toBinary(),
-    //         },
-    //       ],
-    //     });
-    //     const history = await call('block.scan', {id, seq: 0, limit: 3});
-    //     expect(history).toMatchObject({
-    //       patches: [
-    //         {
-    //           seq: 0,
-    //           created: expect.any(Number),
-    //           blob: patch1.toBinary(),
-    //         },
-    //         {
-    //           seq: 1,
-    //           created: expect.any(Number),
-    //           blob: patch2.toBinary(),
-    //         },
-    //         {
-    //           seq: 2,
-    //           created: expect.any(Number),
-    //           blob: patch3.toBinary(),
-    //         },
-    //       ],
-    //     });
-    //     stop();
-    //   });
-    // });
+    describe('block.scan', () => {
+      test('can retrieve change history', async () => {
+        const {call, stop} = await setup();
+        const id = getId();
+        const model = Model.withLogicalClock();
+        model.api.root({
+          text: 'Hell',
+        });
+        const patch1 = model.api.flush();
+        await call('block.new', {
+          id,
+          patches: [
+            {
+              blob: patch1.toBinary(),
+            },
+          ],
+        });
+        await tick(11);
+        model.api.str(['text']).ins(4, 'o');
+        const patch2 = model.api.flush();
+        model.api.obj([]).set({
+          age: 26,
+        });
+        const patch3 = model.api.flush();
+        await call('block.upd', {
+          id,
+          patches: [
+            {
+              blob: patch2.toBinary(),
+            },
+            {
+              blob: patch3.toBinary(),
+            },
+          ],
+        });
+        const history = await call('block.scan', {id, cur: 0, limit: 3});
+        expect(history).toMatchObject({
+          patches: [
+            {
+              ts: expect.any(Number),
+              blob: patch1.toBinary(),
+            },
+            {
+              ts: expect.any(Number),
+              blob: patch2.toBinary(),
+            },
+            {
+              ts: expect.any(Number),
+              blob: patch3.toBinary(),
+            },
+          ],
+        });
+        stop();
+      });
+    });
 
     describe('block.get', () => {
       test('can load a block', async () => {

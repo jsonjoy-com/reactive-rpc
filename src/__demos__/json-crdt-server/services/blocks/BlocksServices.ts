@@ -93,7 +93,6 @@ export class BlocksServices {
     id: string,
     offset: number | undefined,
     limit: number | undefined = 10,
-    returnStartSnapshot: boolean = limit < 0,
   ) {
     const {store} = this;
     if (typeof offset !== 'number') offset = await store.seq(id);
@@ -112,14 +111,7 @@ export class BlocksServices {
       max = Math.abs(limit);
     }
     const patches = await store.history(id, min, max);
-    let model: Model | undefined;
-    if (returnStartSnapshot) {
-      const startPatches = await store.history(id, 0, min);
-      if (startPatches.length) {
-        model = Model.fromPatches(startPatches.map((p) => Patch.fromBinary(p.blob)));
-      }
-    }
-    return {patches, model};
+    return {patches};
   }
 
   public async edit(id: string, patches: Pick<StorePatch, 'blob'>[]) {

@@ -41,6 +41,6 @@ export const block =
     ( upd(d)
     ( del(d)
     // ( listen(d)
-    // ( scan(d)
-    ( r ))))));
+    ( scan(d)
+    ( r )))))));
   };
