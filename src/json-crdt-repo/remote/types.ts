@@ -71,7 +71,7 @@ export interface RemoteHistory<
     id: string,
     patches: Pick<P, 'blob'>[],
   ): Promise<{
-    block: Omit<B, 'data' | 'tip'>;
+    block: Omit<B, 'snapshot' | 'tip'>;
     snapshot: Omit<S, 'blob'>;
     patches: Omit<P, 'blob'>[];
   }>;
@@ -120,7 +120,7 @@ export interface RemoteBlock<Cursor> {
   /**
    * The latest snapshot of the block.
    */
-  data: RemoteBlockSnapshot<Cursor>;
+  snapshot: RemoteBlockSnapshot<Cursor>;
 
   /**
    * The latest patches that have been stored, but not yet applied to the the

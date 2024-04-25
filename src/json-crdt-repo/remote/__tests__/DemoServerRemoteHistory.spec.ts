@@ -54,6 +54,45 @@ describe('.create()', () => {
   });
 });
 
+describe('.read()', () => {
+  test('can read a block with a simple patch', async () => {
+    const {remote} = await setup();
+    const model = Model.withLogicalClock();
+    model.api.root({score: 42});
+    const patch = model.api.flush();
+    const blob = patch.toBinary();
+    const id = genId();
+    await remote.create(id, [{blob}]);
+    const read = await remote.read(id);
+    expect(read).toMatchObject({
+      block: {
+        id,
+        snapshot: {
+          blob: expect.any(Uint8Array),
+          cur: 0,
+          ts: expect.any(Number),
+        },
+        tip: [],
+      },
+    });
+    const model2 = Model.fromBinary(read.block.snapshot.blob);
+    expect(model2.view()).toEqual({score: 42});
+  });
+
+  test('throws NOT_FOUND error on missing block', async () => {
+    const {remote} = await setup();
+    const id = genId();
+    try {
+      const read = await remote.read(id);
+      throw new Error('not this error');
+    } catch (error) {
+      expect(error).toMatchObject({
+        message: 'NOT_FOUND',
+      });
+    }
+  });
+});
+
 describe('.delete()', () => {
   test('can delete an existing block', async () => {
     const {remote, caller} = await setup();

@@ -17,14 +17,14 @@ export class DemoServerRemoteHistory
   constructor(protected readonly client: TypedRpcClient<Methods>) {}
 
   public async read(id: string): Promise<{block: DemoServerBlock}> {
-    throw new Error('Method not implemented.');
     const res = await this.client.call('block.get', {id});
-
-    // return {
-    //   cursor: model.seq,
-    //   model,
-    //   patches: [],
-    // };
+    return {
+      block: {
+        id: res.block.id,
+        snapshot: res.block.snapshot,
+        tip: [],
+      },
+    };
   }
 
   public async scanFwd(id: string, cursor: Cursor): Promise<{patches: DemoServerPatch[]}> {
@@ -64,7 +64,7 @@ export class DemoServerRemoteHistory
     id: string,
     patches: Pick<DemoServerPatch, 'blob'>[],
   ): Promise<{
-    block: Omit<DemoServerBlock, 'data' | 'tip'>;
+    block: Omit<DemoServerBlock, 'data' | 'tip' | 'snapshot'>;
     snapshot: Omit<DemoServerSnapshot, 'blob'>;
     patches: Omit<DemoServerPatch, 'blob'>[];
   }> {
