@@ -30,9 +30,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">90.9% </span>
+                <span class="strong">72.72% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>30/33</span>
+                <span class='fraction'>24/33</span>
             </div>
         
             
@@ -231,9 +231,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
-<span class="cline-any cline-yes">24x</span>
-<span class="cline-any cline-yes">24x</span>
-<span class="cline-any cline-yes">24x</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-yes">22x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -243,19 +243,19 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">24x</span>
+<span class="cline-any cline-yes">22x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">58x</span>
-<span class="cline-any cline-yes">58x</span>
-<span class="cline-any cline-yes">58x</span>
-<span class="cline-any cline-yes">58x</span>
+<span class="cline-any cline-yes">62x</span>
+<span class="cline-any cline-yes">62x</span>
+<span class="cline-any cline-yes">62x</span>
+<span class="cline-any cline-yes">62x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">24x</span>
+<span class="cline-any cline-yes">22x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">64x</span>
 <span class="cline-any cline-yes">64x</span>
@@ -266,8 +266,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">24x</span>
-<span class="cline-any cline-yes">24x</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-yes">22x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -334,8 +334,8 @@ export interface BuildE2eClientOptions {
   token?: string;
 }
 &nbsp;
-export const buildE2eClient = &lt;Caller extends RpcCaller&lt;any&gt;&gt;(caller: Caller, opt: BuildE2eClientOptions = {}) =&gt; {
-  const writer = opt.writer<span class="branch-0 cbranch-no" title="branch not covered" > ?? n</span>ew Writer(Fuzzer.randomInt2(opt.writerDefaultBufferKb ?? [4, 4]) * 1024);
+export const buildE2eClient = &lt;Caller extends RpcCaller&lt;any&gt;&gt;(caller: Caller, opt: BuildE2eClientOptions = <span class="branch-0 cbranch-no" title="branch not covered" >{})</span> =&gt; {
+  const writer = opt.writer<span class="branch-0 cbranch-no" title="branch not covered" > ?? n</span>ew Writer(Fuzzer.randomInt2(opt.writerDefaultBufferKb ?? <span class="branch-1 cbranch-no" title="branch not covered" >[4, 4])</span> * 1024);
   const codecs = new RpcCodecs(new Codecs(writer), new RpcMessageCodecs());
   const ctx = new ConnectionContext(
     opt.ip<span class="branch-0 cbranch-no" title="branch not covered" > ?? '</span>0.0.0.0',
@@ -356,8 +356,8 @@ export const buildE2eClient = &lt;Caller extends RpcCaller&lt;any&gt;&gt;(caller
         client.onMessages(decoded as ReactiveRpcServerMessage[]);
       }, 1);
     },
-    bufferSize: Fuzzer.randomInt2(opt.serverBufferSize ?? [1, 1]),
-    bufferTime: Fuzzer.randomInt2(opt.serverBufferTime ?? [0, 0]),
+    bufferSize: Fuzzer.randomInt2(opt.serverBufferSize ?? <span class="branch-1 cbranch-no" title="branch not covered" >[1, 1])</span>,
+    bufferTime: Fuzzer.randomInt2(opt.serverBufferTime ?? <span class="branch-1 cbranch-no" title="branch not covered" >[0, 0])</span>,
   });
   client = new StreamingRpcClient({
     send: (messages: ReactiveRpcClientMessage[]) =&gt; {
@@ -367,8 +367,8 @@ export const buildE2eClient = &lt;Caller extends RpcCaller&lt;any&gt;&gt;(caller
         streamProcessor.onMessages(decoded as ReactiveRpcClientMessage[], {});
       }, 1);
     },
-    bufferSize: Fuzzer.randomInt2(opt.clientBufferSize ?? [1, 1]),
-    bufferTime: Fuzzer.randomInt2(opt.clientBufferTime ?? [0, 0]),
+    bufferSize: Fuzzer.randomInt2(opt.clientBufferSize ?? <span class="branch-1 cbranch-no" title="branch not covered" >[1, 1])</span>,
+    bufferTime: Fuzzer.randomInt2(opt.clientBufferTime ?? <span class="branch-1 cbranch-no" title="branch not covered" >[0, 0])</span>,
   });
   const typedClient = client as TypedRpcClient&lt;CallerToMethods&lt;Caller&gt;&gt;;
   return {
@@ -382,7 +382,7 @@ export const buildE2eClient = &lt;Caller extends RpcCaller&lt;any&gt;&gt;(caller
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2024-04-21T15:28:51.488Z
+                at 2024-04-25T13:22:14.713Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

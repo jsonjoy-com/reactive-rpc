@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>10/10</span>
+                <span class='fraction'>13/13</span>
             </div>
         
             
@@ -39,14 +39,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>4/4</span>
+                <span class='fraction'>5/5</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>9/9</span>
+                <span class='fraction'>13/13</span>
             </div>
         
             
@@ -98,89 +98,74 @@
 <a name='L33'></a><a href='#L33'>33</a>
 <a name='L34'></a><a href='#L34'>34</a>
 <a name='L35'></a><a href='#L35'>35</a>
-<a name='L36'></a><a href='#L36'>36</a>
-<a name='L37'></a><a href='#L37'>37</a>
-<a name='L38'></a><a href='#L38'>38</a>
-<a name='L39'></a><a href='#L39'>39</a>
-<a name='L40'></a><a href='#L40'>40</a>
-<a name='L41'></a><a href='#L41'>41</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">5x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L36'></a><a href='#L36'>36</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-yes">5x</span>
-<span class="cline-any cline-yes">24x</span>
-<span class="cline-any cline-yes">24x</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-yes">22x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">24x</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">22x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">24x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">24x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import {switchMap} from 'rxjs';
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import {map, switchMap, tap} from 'rxjs';
+import {BlockEventRef, BlockIdRef} from '../schema';
 import type {RouteDeps, Router, RouterBase} from '../../types';
-import type {BlockId, BlockPatch, Block} from '../schema';
 &nbsp;
 export const listen =
   ({t, services}: RouteDeps) =&gt;
   &lt;R extends RouterBase&gt;(r: Router&lt;R&gt;) =&gt; {
     const Request = t.Object(
-      t.prop('id', t.Ref&lt;typeof BlockId&gt;('BlockId')).options({
+      t.prop('id', BlockIdRef).options({
         title: 'Block ID',
         description: 'The ID of the block to subscribe to.',
       }),
     );
 &nbsp;
-    const Response = t.Or(
-      t.Tuple(t.Const('del')),
-      t.Tuple(
-        t.Const('upd'),
-        t.Object(
-          t.propOpt('model', t.Ref&lt;typeof Block&gt;('Block')).options({
-            title: 'Block',
-            description: 'The whole block object, emitted only when the block is created.',
-          }),
-          t.propOpt('patches', t.Array(t.Ref&lt;typeof BlockPatch&gt;('BlockPatch'))).options({
-            title: 'Latest Patches',
-            description: 'Patches that have been applied to the block.',
-          }),
-        ),
-      ),
-    );
+    const Response = t.Object(t.prop('event', BlockEventRef));
 &nbsp;
     const Func = t.Function$(Request, Response).options({
       title: 'Listen for block changes',
-      description: 'Subscribe to a block to receive updates when it changes.',
+      description: `Subscribe to a block to receive updates when it changes.`,
     });
 &nbsp;
     return r.prop('block.listen', Func, (req$) =&gt; {
-      return req$.pipe(switchMap(({id}) =&gt; services.pubsub.listen$(`__block:${id}`))) as any;
+      const response = req$.pipe(
+        switchMap(({id}) =&gt; {
+          return services.blocks.listen(id);
+        }),
+        map((event) =&gt; {
+          return {
+            event,
+          };
+        }),
+      );
+      return response;
     });
   };
 &nbsp;</pre></td></tr></table></pre>
@@ -190,7 +175,7 @@ export const listen =
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2024-04-21T15:28:51.488Z
+                at 2024-04-25T13:22:14.713Z
             </div>
         <script src="../../../../../prettify.js"></script>
         <script>
