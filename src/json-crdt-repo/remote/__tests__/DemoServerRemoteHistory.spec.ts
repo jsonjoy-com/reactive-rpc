@@ -93,6 +93,30 @@ describe('.read()', () => {
   });
 });
 
+describe('.update()', () => {
+  test('can apply changes to an empty document', async () => {
+    const {remote, caller} = await setup();
+    const id = genId();
+    await remote.create(id, []);
+    const read1 = await remote.read(id);
+    const model1 = Model.fromBinary(read1.block.snapshot.blob);
+    expect(model1.view()).toBe(undefined);
+    const model = Model.withLogicalClock();
+    model.api.root({score: 42});
+    const patch = model.api.flush();
+    const blob = patch.toBinary();
+    const update = await remote.update(id, [{blob}]);
+    expect(update).toMatchObject({
+      patches: [{
+        ts: expect.any(Number),
+      }]
+    });
+    const read2 = await remote.read(id);
+    const model2 = Model.fromBinary(read2.block.snapshot.blob);
+    expect(model2.view()).toEqual({score: 42});
+  });
+});
+
 describe('.delete()', () => {
   test('can delete an existing block', async () => {
     const {remote, caller} = await setup();

@@ -83,7 +83,7 @@ export interface RemoteHistory<
    * @param cursor The cursor of the last known model state of the block.
    * @param patches A list of patches to apply to the block.
    */
-  update(id: string, cursor: Cursor, patches: Pick<P, 'blob'>[]): Promise<{patches: Omit<P, 'blob'>[]}>;
+  update(id: string, patches: Pick<P, 'blob'>[]): Promise<{patches: Omit<P, 'blob'>[]}>;
 
   /**
    * Delete the block. If not implemented, means that the protocol does not

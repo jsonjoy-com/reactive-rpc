@@ -79,22 +79,17 @@ export class DemoServerRemoteHistory
 
   public async update(
     id: string,
-    cursor: Cursor,
     patches: Pick<DemoServerPatch, 'blob'>[],
   ): Promise<{patches: Omit<DemoServerPatch, 'blob'>[]}> {
-    throw new Error('Method not implemented.');
-    // const res = await this.client.call('block.upd', {
-    //   id,
-    //   patches: patches.map((patch, seq) => ({
-    //     seq,
-    //     created: Date.now(),
-    //     blob: patch.blob,
-    //   })),
-    // });
-    // return {
-    //   cursor: res.patches.length ? res.patches[res.patches.length - 1].seq : cursor,
-    //   patches: res.patches,
-    // };
+    const res = await this.client.call('block.upd', {
+      id,
+      patches: patches.map((patch) => ({
+        blob: patch.blob,
+      })),
+    });
+    return {
+      patches: res.patches,
+    };
   }
 
   public async delete(id: string): Promise<void> {
