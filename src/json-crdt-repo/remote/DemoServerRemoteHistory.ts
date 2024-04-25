@@ -1,5 +1,5 @@
-import type {Observable} from 'rxjs';
 import {CallerToMethods, TypedRpcClient} from '../../common';
+import type {Observable} from 'rxjs';
 import type {JsonJoyDemoRpcCaller} from '../../__demos__/json-crdt-server';
 import type {RemoteHistory, RemoteBlockSnapshot, RemoteBlockPatch, RemoteBlock} from './types';
 
@@ -68,13 +68,13 @@ export class DemoServerRemoteHistory
     snapshot: Omit<DemoServerSnapshot, 'blob'>;
     patches: Omit<DemoServerPatch, 'blob'>[];
   }> {
-    throw new Error('Method not implemented.');
-    // await this.client.call('block.new', {
-    //   id,
-    //   patches: patches.map((patch) => ({
-    //     blob: patch.blob,
-    //   })),
-    // });
+    const res = await this.client.call('block.new', {
+      id,
+      patches: patches.map((patch) => ({
+        blob: patch.blob,
+      })),
+    });
+    return res;
   }
 
   public async update(
