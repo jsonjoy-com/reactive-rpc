@@ -28,23 +28,13 @@ export class DemoServerRemoteHistory
   }
 
   public async scanFwd(id: string, cursor: Cursor): Promise<{patches: DemoServerPatch[]}> {
-    throw new Error('Method not implemented.');
-    // const limit = 100;
-    // const res = await this.client.call('block.scan', {
-    //   id,
-    //   seq: cursor,
-    //   limit: cursor + limit,
-    // });
-    // if (res.patches.length === 0) {
-    //   return {
-    //     cursor,
-    //     patches: [],
-    //   };
-    // }
-    // return {
-    //   cursor: res.patches[res.patches.length - 1].seq,
-    //   patches: res.patches,
-    // };
+    const limit = 100;
+    const res = await this.client.call('block.scan', {
+      id,
+      cur: cursor,
+      limit,
+    });
+    return res;
   }
 
   public async scanBwd(

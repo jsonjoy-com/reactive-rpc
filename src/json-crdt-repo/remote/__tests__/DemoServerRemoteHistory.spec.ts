@@ -95,7 +95,7 @@ describe('.read()', () => {
 
 describe('.update()', () => {
   test('can apply changes to an empty document', async () => {
-    const {remote, caller} = await setup();
+    const {remote} = await setup();
     const id = genId();
     await remote.create(id, []);
     const read1 = await remote.read(id);
@@ -114,6 +114,32 @@ describe('.update()', () => {
     const read2 = await remote.read(id);
     const model2 = Model.fromBinary(read2.block.snapshot.blob);
     expect(model2.view()).toEqual({score: 42});
+  });
+});
+
+describe('.scanFwd()', () => {
+  test('can scan patches forward', async () => {
+    const {remote} = await setup();
+    const id = genId();
+    const model1 = Model.withLogicalClock();
+    model1.api.root({score: 42});
+    const patch1 = model1.api.flush();
+    const blob = patch1.toBinary();
+    await remote.create(id, [{blob}]);
+    const read1 = await remote.read(id);
+    model1.api.obj([]).set({
+      foo: 'bar',
+    });
+    const patch2 = model1.api.flush();
+    const blob2 = patch2.toBinary();
+    await remote.update(id, [{blob: blob2}]);
+    const scan1 = await remote.scanFwd(id, read1.block.snapshot.cur + 1);
+    expect(scan1).toMatchObject({
+      patches: [{
+        blob: expect.any(Uint8Array),
+        ts: expect.any(Number),
+      }]
+    });
   });
 });
 
