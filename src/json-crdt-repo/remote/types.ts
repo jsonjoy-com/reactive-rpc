@@ -59,7 +59,7 @@ export interface RemoteHistory<
    * @param id ID of the block.
    * @param cursor The cursor until which to scan.
    */
-  scanBwd(id: string, cursor: Cursor): Promise<{snapshot: S; patches: P[]}>;
+  scanBwd(id: string, cursor: Cursor): Promise<{patches: P[]; snapshot?: S}>;
 
   /**
    * Create a new block with the given patches.
@@ -71,7 +71,7 @@ export interface RemoteHistory<
     id: string,
     patches: Pick<P, 'blob'>[],
   ): Promise<{
-    block: Omit<B, 'data' | 'tip'>;
+    block: Omit<B, 'snapshot' | 'tip'>;
     snapshot: Omit<S, 'blob'>;
     patches: Omit<P, 'blob'>[];
   }>;
@@ -83,7 +83,7 @@ export interface RemoteHistory<
    * @param cursor The cursor of the last known model state of the block.
    * @param patches A list of patches to apply to the block.
    */
-  update(id: string, cursor: Cursor, patches: Pick<P, 'blob'>[]): Promise<{patches: Omit<P, 'blob'>[]}>;
+  update(id: string, patches: Pick<P, 'blob'>[]): Promise<{patches: Omit<P, 'blob'>[]}>;
 
   /**
    * Delete the block. If not implemented, means that the protocol does not
@@ -120,7 +120,7 @@ export interface RemoteBlock<Cursor> {
   /**
    * The latest snapshot of the block.
    */
-  data: RemoteBlockSnapshot<Cursor>;
+  snapshot: RemoteBlockSnapshot<Cursor>;
 
   /**
    * The latest patches that have been stored, but not yet applied to the the

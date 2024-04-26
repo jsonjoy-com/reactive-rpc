@@ -1,6 +1,6 @@
 import {ResolveType} from 'json-joy/lib/json-type';
 import type {RouteDeps, Router, RouterBase} from '../../types';
-import {BlockCurRef, BlockIdRef, BlockPatchPartialRef, BlockPatchPartialReturnRef} from '../schema';
+import {BlockIdRef, BlockPatchPartialRef, BlockPatchPartialReturnRef} from '../schema';
 
 export const upd =
   ({t, services}: RouteDeps) =>

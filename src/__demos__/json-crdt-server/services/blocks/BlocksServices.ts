@@ -106,10 +106,10 @@ export class BlocksServices {
     if (!limit || Math.round(limit) !== limit) throw RpcError.badRequest('INVALID_LIMIT');
     if (limit > 0) {
       min = Number(offset) || 0;
-      max = min + limit;
+      max = min + limit - 1;
     } else {
       max = Number(offset) || 0;
-      min = max - limit;
+      min = max - limit + 1;
     }
     if (min < 0) {
       min = 0;
