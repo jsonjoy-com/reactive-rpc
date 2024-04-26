@@ -1,7 +1,7 @@
 import {memfs} from 'memfs';
 import {NodeCrud} from 'memfs/lib/node-to-crud';
 import {Locks} from 'thingies/es2020/Locks';
-import {LocalHistoryCrud} from '../LocalHistoryCrud';
+import {LocalHistoryCrud} from '../local/LocalHistoryCrud';
 import {Model} from 'json-joy/lib/json-crdt';
 import {Log} from 'json-joy/lib/json-crdt/log/Log';
 

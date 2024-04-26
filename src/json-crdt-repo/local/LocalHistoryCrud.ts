@@ -7,6 +7,7 @@ import type {Locks} from 'thingies/es2020/Locks';
 import type {Patch} from 'json-joy/lib/json-crdt-patch';
 import type {Log} from 'json-joy/lib/json-crdt/log/Log';
 import type {LocalHistory} from './types';
+import type {RemoteHistory} from '../remote/types';
 
 export const genId = (octets: number = 8): string => {
   const uint8 = crypto.getRandomValues(new Uint8Array(octets));
@@ -15,7 +16,7 @@ export const genId = (octets: number = 8): string => {
   return hex;
 };
 
-const STATE_FILE_NAME = 'state.seq.cbor';
+const STATE_FILE_NAME = 'block.seq.cbor';
 
 export class LocalHistoryCrud implements LocalHistory {
   protected encoder: LogEncoder = new LogEncoder({
@@ -26,6 +27,7 @@ export class LocalHistoryCrud implements LocalHistory {
   });
 
   constructor(
+    public readonly remote: RemoteHistory,
     protected readonly crud: CrudApi,
     protected readonly locks: Locks,
   ) {}

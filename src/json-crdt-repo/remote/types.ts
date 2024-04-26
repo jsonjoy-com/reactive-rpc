@@ -30,8 +30,8 @@ import type {Observable} from 'rxjs';
  * `RemoteHistory` methods without modifying it.
  */
 export interface RemoteHistory<
-  Cursor,
-  B extends RemoteBlock<Cursor>,
+  Cursor = unknown,
+  B extends RemoteBlock<Cursor> = RemoteBlock<Cursor>,
   S extends RemoteBlockSnapshot<Cursor> = RemoteBlockSnapshot<Cursor>,
   P extends RemoteBlockPatch = RemoteBlockPatch,
 > {
