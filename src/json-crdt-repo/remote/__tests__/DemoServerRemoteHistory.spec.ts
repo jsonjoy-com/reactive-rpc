@@ -107,9 +107,11 @@ describe('.update()', () => {
     const blob = patch.toBinary();
     const update = await remote.update(id, [{blob}]);
     expect(update).toMatchObject({
-      patches: [{
-        ts: expect.any(Number),
-      }]
+      patches: [
+        {
+          ts: expect.any(Number),
+        },
+      ],
     });
     const read2 = await remote.read(id);
     const model2 = Model.fromBinary(read2.block.snapshot.blob);
@@ -135,10 +137,12 @@ describe('.scanFwd()', () => {
     await remote.update(id, [{blob: blob2}]);
     const scan1 = await remote.scanFwd(id, read1.block.snapshot.cur);
     expect(scan1).toMatchObject({
-      patches: [{
-        blob: expect.any(Uint8Array),
-        ts: expect.any(Number),
-      }]
+      patches: [
+        {
+          blob: expect.any(Uint8Array),
+          ts: expect.any(Number),
+        },
+      ],
     });
     expect(scan1.patches[0].blob).toEqual(blob2);
   });
@@ -164,10 +168,12 @@ describe('.scanBwd()', () => {
     const scan1 = await remote.scanBwd(id, read2.block.snapshot.cur);
     expect(scan1.patches.length).toBe(1);
     expect(scan1).toMatchObject({
-      patches: [{
-        blob: expect.any(Uint8Array),
-        ts: expect.any(Number),
-      }]
+      patches: [
+        {
+          blob: expect.any(Uint8Array),
+          ts: expect.any(Number),
+        },
+      ],
     });
     expect(scan1.patches[0].blob).toEqual(blob1);
   });
