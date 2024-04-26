@@ -59,7 +59,7 @@ export interface RemoteHistory<
    * @param id ID of the block.
    * @param cursor The cursor until which to scan.
    */
-  scanBwd(id: string, cursor: Cursor): Promise<{snapshot: S; patches: P[]}>;
+  scanBwd(id: string, cursor: Cursor): Promise<{patches: P[]; snapshot?: S}>;
 
   /**
    * Create a new block with the given patches.

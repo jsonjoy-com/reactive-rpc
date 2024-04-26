@@ -133,13 +133,43 @@ describe('.scanFwd()', () => {
     const patch2 = model1.api.flush();
     const blob2 = patch2.toBinary();
     await remote.update(id, [{blob: blob2}]);
-    const scan1 = await remote.scanFwd(id, read1.block.snapshot.cur + 1);
+    const scan1 = await remote.scanFwd(id, read1.block.snapshot.cur);
     expect(scan1).toMatchObject({
       patches: [{
         blob: expect.any(Uint8Array),
         ts: expect.any(Number),
       }]
     });
+    expect(scan1.patches[0].blob).toEqual(blob2);
+  });
+});
+
+describe('.scanBwd()', () => {
+  test('can scan patches backward', async () => {
+    const {remote} = await setup();
+    const id = genId();
+    const model1 = Model.withLogicalClock();
+    model1.api.root({score: 42});
+    const patch1 = model1.api.flush();
+    const blob1 = patch1.toBinary();
+    await remote.create(id, [{blob: blob1}]);
+    const read1 = await remote.read(id);
+    model1.api.obj([]).set({
+      foo: 'bar',
+    });
+    const patch2 = model1.api.flush();
+    const blob2 = patch2.toBinary();
+    await remote.update(id, [{blob: blob2}]);
+    const read2 = await remote.read(id);
+    const scan1 = await remote.scanBwd(id, read2.block.snapshot.cur);
+    expect(scan1.patches.length).toBe(1);
+    expect(scan1).toMatchObject({
+      patches: [{
+        blob: expect.any(Uint8Array),
+        ts: expect.any(Number),
+      }]
+    });
+    expect(scan1.patches[0].blob).toEqual(blob1);
   });
 });
 

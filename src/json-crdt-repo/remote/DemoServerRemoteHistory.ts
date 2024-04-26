@@ -31,7 +31,7 @@ export class DemoServerRemoteHistory
     const limit = 100;
     const res = await this.client.call('block.scan', {
       id,
-      cur: cursor,
+      cur: cursor + 1,
       limit,
     });
     return res;
@@ -40,14 +40,20 @@ export class DemoServerRemoteHistory
   public async scanBwd(
     id: string,
     cursor: Cursor,
-  ): Promise<{snapshot: DemoServerSnapshot; patches: DemoServerPatch[]}> {
-    throw new Error('Method not implemented.');
-    // const res = await this.client.call('block.scan', {
-    //   id,
-    //   seq: cursor,
-    //   limit: -100,
-    //   model: true,
-    // });
+  ): Promise<{snapshot?: DemoServerSnapshot; patches: DemoServerPatch[]}> {
+    if (cursor <= 0) {
+      return {
+        patches: [],
+      };
+    }
+    const res = await this.client.call('block.scan', {
+      id,
+      cur: 0,
+      limit: cursor,
+    });
+    return {
+      patches: res.patches,
+    };
   }
 
   public async create(
