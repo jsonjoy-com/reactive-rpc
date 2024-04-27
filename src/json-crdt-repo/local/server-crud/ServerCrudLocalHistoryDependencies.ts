@@ -15,6 +15,7 @@ export interface ServerCrudLocalHistoryDependenciesOpts {
   readonly connected$?: BehaviorSubject<boolean>;
 }
 
+// TODO: Rename to ServerCrudLocalHistoryCore
 export class ServerCrudLocalHistoryDependencies implements ServerCrudLocalHistoryDependenciesOpts {
   public readonly remote: RemoteHistory;
   public readonly crud: CrudApi;

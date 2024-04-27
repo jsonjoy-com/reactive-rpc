@@ -37,20 +37,23 @@ export class ServerCrudLocalHistory implements LocalHistory {
 
   protected async sync(collection: string[], id: string): Promise<void> {
     const deps = this.deps;
-    const crudCollection = this.crudCollection(collection, id);
     await this.lockForSync({collection, id}, async () => {
+      if (!this.deps.connected$.getValue()) return;
       const meta = await this.getSyncMeta(collection, id);
       const isNewBlock = meta.time < 1;
       if (isNewBlock) {
-        const remoteId = [...collection, id].join('/');
-        const blob = await deps.crud.get(crudCollection, DATA_FILE_NAME);
+        const blob = await this.__read(collection, id);
         const {history} = deps.decoder.decode(blob, {format: 'seq.cbor', history: true});
         const patches: RemoteBlockPatch[] = [];
         history!.patches.forEach(({v: patch}) => {
           if (patch.getId()?.sid === deps.sid) patches.push({blob: patch.toBinary()});
         });
+        const remoteId = [...collection, id].join('/');
         await this.deps.remote.create(remoteId, patches);
+      } else {
+        // TODO: Implement sync with remote.
       }
+      await this.markTidy(collection, id);
     });
   }
 
@@ -85,11 +88,16 @@ export class ServerCrudLocalHistory implements LocalHistory {
     });
   }
 
-  public async read(collection: string[], id: string): Promise<{log: Log; cursor: string}> {
+  protected async __read(collection: string[], id: string): Promise<Uint8Array> {
     const deps = this.deps;
     const crudCollection = this.crudCollection(collection, id);
     const blob = await deps.crud.get(crudCollection, DATA_FILE_NAME);
-    const {frontier} = deps.decoder.decode(blob, {format: 'seq.cbor', frontier: true});
+    return blob;
+  }
+
+  public async read(collection: string[], id: string): Promise<{log: Log; cursor: string}> {
+    const blob = await this.__read(collection, id);
+    const {frontier} = this.deps.decoder.decode(blob, {format: 'seq.cbor', frontier: true});
     return {
       log: frontier!,
       cursor: '1',
