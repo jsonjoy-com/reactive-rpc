@@ -3,11 +3,11 @@ import {genId} from './util';
 import type {Patch} from 'json-joy/lib/json-crdt-patch';
 import type {Log} from 'json-joy/lib/json-crdt/log/Log';
 import type {LocalHistory} from '../types';
-import type {BlockMetadata} from './types';
-import {RemoteBlockPatch} from '../../remote/types';
+import type {BlockSyncMetadata} from './types';
+import type {RemoteBlockPatch} from '../../remote/types';
 
-const LOG_FILE_NAME = 'log.seq.cbor';
-const META_FILE_NAME = 'meta.cbor';
+const DATA_FILE_NAME = 'data.seq.cbor';
+const SYNC_FILE_NAME = 'sync.cbor';
 
 export class ServerCrudLocalHistory implements LocalHistory {
   protected readonly deps: ServerCrudLocalHistoryDependencies;
@@ -16,29 +16,34 @@ export class ServerCrudLocalHistory implements LocalHistory {
     this.deps = new ServerCrudLocalHistoryDependencies(opts);
   }
 
-  public async create(collection: string[], log: Log, id: string = genId()): Promise<{id: string}> {
+  public async create(collection: string[], log: Log, id: string = genId()): Promise<{id: string, remote: Promise<void>}> {
     if (log.end.clock.time <= 1) throw new Error('EMPTY_LOG');
     const deps = this.deps;
     const crud = deps.crud;
     const blob = this.encode(log);
     const crudCollection = this.crudCollection(collection, id);
-    await this.lockBlock({collection, id}, async () => {
-      await crud.put(crudCollection, LOG_FILE_NAME, blob, {throwIf: 'exists'});
-      await this.putMeta(collection, id, {cur: -1});
-      await this.markDirty(collection, id);
+    await this.lockForWrite({collection, id}, async () => {
+      await crud.put(crudCollection, DATA_FILE_NAME, blob, {throwIf: 'exists'});
     });
-    return {id};
+    const remote = (async () => {
+      await this.markDirty(collection, id);
+      await this.sync(collection, id);
+    })();
+    return {
+      id,
+      remote,
+    };
   }
 
-  protected async sync(collection: string[], id: string, log: Log): Promise<void> {
+  protected async sync(collection: string[], id: string): Promise<void> {
     const deps = this.deps;
     const crudCollection = this.crudCollection(collection, id);
-    await this.lockBlock({reason: 'sync', collection, id}, async () => {
-      const meta = await this.getMeta(collection, id);
-      const isNewBlock = meta.cur < 1;
+    await this.lockForSync({collection, id}, async () => {
+      const meta = await this.getSyncMeta(collection, id);
+      const isNewBlock = meta.time < 1;
       if (isNewBlock) {
         const remoteId = [...collection, id].join('/');
-        const blob = await deps.crud.get(crudCollection, LOG_FILE_NAME);
+        const blob = await deps.crud.get(crudCollection, DATA_FILE_NAME);
         const {history} = deps.decoder.decode(blob, {format: 'seq.cbor', history: true});
         const patches: RemoteBlockPatch[] = [];
         history!.patches.forEach(({v: patch}) => {
@@ -51,6 +56,7 @@ export class ServerCrudLocalHistory implements LocalHistory {
 
   protected encode(log: Log): Uint8Array {
     // TODO: Add browser-native compression. Wrap the blob into `[]` TLV tuple.
+    // TODO: Encrypt with user's public key.
     return this.deps.encoder.encode(log, {
       format: 'seq.cbor',
       model: 'binary',
@@ -63,12 +69,12 @@ export class ServerCrudLocalHistory implements LocalHistory {
     const deps = this.deps;
     await this.lockBlock({collection, id}, async () => {
       const crudCollection = this.crudCollection(collection, id);
-      const blob = await deps.crud.get(crudCollection, LOG_FILE_NAME);
+      const blob = await deps.crud.get(crudCollection, DATA_FILE_NAME);
       const decoded = deps.decoder.decode(blob, {format: 'seq.cbor', history: true});
       const log = decoded.history!;
       log.end.applyBatch(patches);
       const blob2 = this.encode(log);
-      await deps.crud.put(crudCollection, LOG_FILE_NAME, blob2, {throwIf: 'missing'});
+      await deps.crud.put(crudCollection, DATA_FILE_NAME, blob2, {throwIf: 'missing'});
     });
   }
 
@@ -79,23 +85,10 @@ export class ServerCrudLocalHistory implements LocalHistory {
     });
   }
 
-  protected async getMeta(collection: string[], id: string): Promise<BlockMetadata> {
-    const deps = this.deps;
-    const crudCollection = this.crudCollection(collection, id);
-    const meta = await deps.crud.get(crudCollection, META_FILE_NAME);
-    try {
-      return deps.cborDecoder.decode(meta) as BlockMetadata;
-    } catch (err) {
-      return {
-        cur: -1,
-      } as BlockMetadata;
-    }
-  }
-
   public async read(collection: string[], id: string): Promise<{log: Log; cursor: string}> {
     const deps = this.deps;
     const crudCollection = this.crudCollection(collection, id);
-    const blob = await deps.crud.get(crudCollection, LOG_FILE_NAME);
+    const blob = await deps.crud.get(crudCollection, DATA_FILE_NAME);
     const {frontier} = deps.decoder.decode(blob, {format: 'seq.cbor', frontier: true});
     return {
       log: frontier!,
@@ -106,7 +99,7 @@ export class ServerCrudLocalHistory implements LocalHistory {
   public async readHistory(collection: string[], id: string, cursor: string): Promise<{log: Log; cursor: string}> {
     const deps = this.deps;
     const crudCollection = this.crudCollection(collection, id);
-    const blob = await deps.crud.get(crudCollection, LOG_FILE_NAME);
+    const blob = await deps.crud.get(crudCollection, DATA_FILE_NAME);
     const {history} = deps.decoder.decode(blob, {format: 'seq.cbor', history: true});
     return {
       log: history!,
@@ -114,10 +107,24 @@ export class ServerCrudLocalHistory implements LocalHistory {
     };
   }
 
-  protected async putMeta(collection: string[], id: string, meta: BlockMetadata): Promise<void> {
+  protected async getSyncMeta(collection: string[], id: string): Promise<BlockSyncMetadata> {
+    const deps = this.deps;
+    const crudCollection = this.crudCollection(collection, id);
+    const meta = await deps.crud.get(crudCollection, SYNC_FILE_NAME);
+    try {
+      return deps.cborDecoder.decode(meta) as BlockSyncMetadata;
+    } catch (err) {
+      return {
+        time: -1,
+        ts: 0,
+      } as BlockSyncMetadata;
+    }
+  }
+
+  protected async putSyncMeta(collection: string[], id: string, meta: BlockSyncMetadata): Promise<void> {
     const deps = this.deps;
     const blob = deps.cborEncoder.encode(meta);
-    await deps.crud.put([...collection, id], META_FILE_NAME, blob);
+    await deps.crud.put([...collection, id], SYNC_FILE_NAME, blob);
   }
 
   protected crudCollection(collection: string[], id: string): string[] {
@@ -139,6 +146,7 @@ export class ServerCrudLocalHistory implements LocalHistory {
     
   // }
 
+  /** @deprecated */
   protected async lockBlock(params: {
     reason?: 'write' | 'sync',
     collection: string[];
@@ -156,5 +164,22 @@ export class ServerCrudLocalHistory implements LocalHistory {
     )(async () => {
       await fn();
     });
+  }
+
+  protected async lockForWrite({collection, id}: {
+    collection: string[];
+    id: string;
+  }, fn: () => Promise<void>): Promise<void> {
+    const key = ['write', collection, id].join('/');
+    await this.deps.locks.lock(key, 300, 300)(fn);
+  }
+
+  protected async lockForSync({collection, id}: {
+    collection: string[];
+    id: string;
+  }, fn: () => Promise<void>): Promise<void> {
+    const key = ['sync', collection, id].join('/');
+    const locker = this.deps.locks.lock(key, 5000, 200);
+    await locker(fn);
   }
 }
