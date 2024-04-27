@@ -1,15 +1,22 @@
 import {memfs} from 'memfs';
 import {NodeCrud} from 'memfs/lib/node-to-crud';
 import {Locks} from 'thingies/es2020/Locks';
-import {LocalHistoryCrud} from '../local/server-crud/ServerCrudLocalHistory';
+import {ServerCrudLocalHistory} from '../local/server-crud/ServerCrudLocalHistory';
 import {Model} from 'json-joy/lib/json-crdt';
 import {Log} from 'json-joy/lib/json-crdt/log/Log';
+import {BehaviorSubject} from 'rxjs';
 
 const setup = async () => {
   const {fs, vol} = memfs();
   const crud = new NodeCrud({fs: fs.promises, dir: '/'});
   const locks = new Locks();
-  const local = new LocalHistoryCrud(crud, locks);
+  const local = new ServerCrudLocalHistory({
+    crud,
+    locks,
+    remote,
+    sid: 123456788,
+    connected$: new BehaviorSubject(true),
+  });
   return {
     fs,
     vol,
