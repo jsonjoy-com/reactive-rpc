@@ -1,17 +1,21 @@
 import {ServerCrudLocalHistoryCore, ServerCrudLocalHistoryCoreOpts} from './ServerCrudLocalHistoryCore';
-import {ServerCrudLocalHistorySync} from './ServerCrudLocalHistorySync';
+import {ServerCrudLocalHistorySync, ServerCrudLocalHistorySyncOpts} from './ServerCrudLocalHistorySync';
 import {genId} from './util';
 import type {Patch} from 'json-joy/lib/json-crdt-patch';
 import type {Log} from 'json-joy/lib/json-crdt/log/Log';
 import type {LocalHistory} from '../types';
 
+export interface ServerCrudLocalHistoryOpts extends ServerCrudLocalHistoryCoreOpts {
+  sync?: ServerCrudLocalHistorySyncOpts;
+}
+
 export class ServerCrudLocalHistory implements LocalHistory {
   protected readonly core: ServerCrudLocalHistoryCore;
   public readonly sync: ServerCrudLocalHistorySync;
 
-  constructor(opts: ServerCrudLocalHistoryCoreOpts) {
+  constructor(opts: ServerCrudLocalHistoryOpts) {
     this.core = new ServerCrudLocalHistoryCore(opts);
-    this.sync = new ServerCrudLocalHistorySync(this.core);
+    this.sync = new ServerCrudLocalHistorySync(opts.sync ?? {}, this.core);
   }
 
   public async create(collection: string[], log: Log, id: string = genId()): Promise<{id: string, remote: Promise<void>}> {

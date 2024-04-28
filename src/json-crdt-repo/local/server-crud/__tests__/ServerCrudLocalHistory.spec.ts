@@ -1,18 +1,17 @@
-import {ServerCrudLocalHistory} from '../ServerCrudLocalHistory';
+import {ServerCrudLocalHistory, ServerCrudLocalHistoryOpts} from '../ServerCrudLocalHistory';
 import {memfs} from 'memfs';
 import {NodeCrud} from 'memfs/lib/node-to-crud';
 import {toTreeSync} from 'memfs/lib/print';
-import {Locks} from 'thingies/es2020/Locks';
+import {Locks} from 'thingies/lib/Locks';
 import {Model} from 'json-joy/lib/json-crdt';
 import {Log} from 'json-joy/lib/json-crdt/log/Log';
 import {BehaviorSubject} from 'rxjs';
 import {setup as remoteSetup} from '../../../remote/__tests__/setup';
 import {tick} from 'thingies';
-import type {ServerCrudLocalHistoryCoreOpts} from '../ServerCrudLocalHistoryCore';
 
 const setup = async (opts: {
   remote?: ReturnType<typeof remoteSetup>;
-  local?: Partial<ServerCrudLocalHistoryCoreOpts>;
+  local?: Partial<ServerCrudLocalHistoryOpts>;
 } = {}) => {
   const remote = opts.remote ?? remoteSetup();
   const {fs, vol} = memfs();
@@ -206,5 +205,73 @@ describe('.create()', () => {
       const isDirty = await kit.local.sync.isDirty(['my', 'col'], kit.id);
       expect(isDirty).toBe(true);
     });
+  });
+
+  describe('when remote call times out hard', () => {
+    const setupFaultyConnection = () => {
+      const remote = remoteSetup();
+      const create = remote.remote.create.bind(remote.remote);
+      remote.remote.create = async (...args) => {
+        await tick(500);
+        return create(...args);
+      };
+      return setup({
+        remote,
+        local: {
+          sync: {
+            remoteTimeout: 100,
+          },
+        },
+      });
+    };
+
+    test('throws on empty log', async () => {
+      const kit = await setupFaultyConnection();
+      const model = Model.withLogicalClock(kit.sid);
+      const emptyLog = Log.fromNewModel(model);
+      try {
+        await kit.local.create(['collection'], emptyLog, kit.id);
+        throw 'not this error';
+      } catch (err) {
+        expect(err).toEqual(new Error('EMPTY_LOG'));
+      }
+    });
+  
+    test('can create a new block', async () => {
+      const kit = await setupFaultyConnection();
+      const res = await kit.local.create(['collection'], kit.log, kit.id);
+      expect(res).toMatchObject({
+        id: kit.id,
+        remote: expect.any(Promise)
+      });
+    });
+  
+    test('does not store the block on remote, throws on remote sync', async () => {
+      const kit = await setupFaultyConnection();
+      const res = await kit.local.create(['my', 'col'], kit.log, kit.id);
+      expect(kit.remote.services.blocks.stats().blocks).toBe(0);
+      try {
+        await res.remote;
+        throw 'not this error';
+      } catch (error) {
+        expect(error).toEqual(new Error('TIMEOUT'));
+      }
+      expect(kit.remote.services.blocks.stats().blocks).toBe(0);
+    });
+  
+    // test('marks item as "dirty" for sync', async () => {
+    //   const kit = await setupFaultyConnection();
+    //   const res = await kit.local.create(['my', 'col'], kit.log, kit.id);
+    //   try {
+    //     await res.remote;
+    //   } catch {}
+    //   const meta = await kit.local.sync.getMeta(['my', 'col'], kit.id);
+    //   expect(meta).toMatchObject({
+    //     time: -1,
+    //     ts: 0,
+    //   });
+    //   const isDirty = await kit.local.sync.isDirty(['my', 'col'], kit.id);
+    //   expect(isDirty).toBe(true);
+    // });
   });
 });

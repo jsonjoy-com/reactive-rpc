@@ -1,29 +1,49 @@
+import {timeout} from 'thingies/lib/timeout';
 import type {RemoteBlockPatch} from "../../remote/types";
 import type {ServerCrudLocalHistoryCore} from "./ServerCrudLocalHistoryCore";
 import type {BlockSyncMetadata} from "./types";
 
 const SYNC_FILE_NAME = 'sync.cbor';
 
+export interface ServerCrudLocalHistorySyncOpts {
+  /**
+   * Number of milliseconds after which remote calls are considered timed out.
+   */
+  remoteTimeout?: number;
+}
+
 export class ServerCrudLocalHistorySync {
-  constructor(protected readonly core: ServerCrudLocalHistoryCore) {}
+  constructor(
+    protected readonly opts: ServerCrudLocalHistorySyncOpts,
+    protected readonly core: ServerCrudLocalHistoryCore,
+  ) {}
+
+  protected remoteTimeout(): number {
+    return this.opts.remoteTimeout ?? 5000;
+  }
 
   public async push(collection: string[], id: string): Promise<boolean> {
-    const core = this.core;
-    const success = await this.lock<boolean>({collection, id}, async () => {
-      // TODO: timeout this after 3s.
+    return await this.lock<boolean>({collection, id}, async () => {
       // TODO: handle case when this times out, but actually succeeds, so on re-sync it handles the case when the block is already synced.
-      if (!core.connected$.getValue()) return false;
-      const meta = await this.getMeta(collection, id);
-      const isNewBlock = meta.time < 1;
-      if (isNewBlock) {
-        await this.pushNewBlock(collection, id);
-      } else {
-        await this.pushExistingBlock(collection, id, meta.time);
+      try {
+        return timeout(this.remoteTimeout(), async () => {
+          const core = this.core;
+          if (!core.connected$.getValue()) return false;
+          const meta = await this.getMeta(collection, id);
+          const isNewBlock = meta.time < 1;
+          if (isNewBlock) {
+            await this.pushNewBlock(collection, id);
+          } else {
+            await this.pushExistingBlock(collection, id, meta.time);
+          }
+          await this.markTidy(collection, id);
+          return true;
+        });
+      } catch (error) {
+        if (error instanceof Error && error.message === 'TIMEOUT') return false;
+        throw error;
       }
-      await this.markTidy(collection, id);
-      return true;
     });
-    return success;
   }
 
   private async pushNewBlock(collection: string[], id: string): Promise<void> {
@@ -75,7 +95,7 @@ export class ServerCrudLocalHistorySync {
     id: string;
   }, fn: () => Promise<T>): Promise<T> {
     const key = ['sync', collection, id].join('/');
-    const locker = this.core.locks.lock(key, 5000, 200);
+    const locker = this.core.locks.lock(key, this.remoteTimeout() + 200, 200);
     return await locker<T>(fn);
   }
 
