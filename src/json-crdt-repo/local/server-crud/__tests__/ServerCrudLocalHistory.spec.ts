@@ -213,7 +213,7 @@ describe('.create()', () => {
       const create = remote.remote.create.bind(remote.remote);
       remote.remote.create = async (...args) => {
         await tick(500);
-        return create(...args);
+        throw new Error('something went wrong');
       };
       return setup({
         remote,
@@ -259,19 +259,76 @@ describe('.create()', () => {
       expect(kit.remote.services.blocks.stats().blocks).toBe(0);
     });
   
-    // test('marks item as "dirty" for sync', async () => {
-    //   const kit = await setupFaultyConnection();
-    //   const res = await kit.local.create(['my', 'col'], kit.log, kit.id);
-    //   try {
-    //     await res.remote;
-    //   } catch {}
-    //   const meta = await kit.local.sync.getMeta(['my', 'col'], kit.id);
-    //   expect(meta).toMatchObject({
-    //     time: -1,
-    //     ts: 0,
-    //   });
-    //   const isDirty = await kit.local.sync.isDirty(['my', 'col'], kit.id);
-    //   expect(isDirty).toBe(true);
-    // });
+    test('marks item as "dirty" for sync', async () => {
+      const kit = await setupFaultyConnection();
+      const res = await kit.local.create(['my', 'col'], kit.log, kit.id);
+      try {
+        await res.remote;
+      } catch {}
+      const meta = await kit.local.sync.getMeta(['my', 'col'], kit.id);
+      expect(meta).toMatchObject({
+        time: -1,
+        ts: 0,
+      });
+      const isDirty = await kit.local.sync.isDirty(['my', 'col'], kit.id);
+      expect(isDirty).toBe(true);
+    });
+  });
+
+  describe('when remote call times out, but operation succeeds', () => {
+    const setupFaultyConnection = () => {
+      const remote = remoteSetup();
+      const create = remote.remote.create.bind(remote.remote);
+      remote.remote.create = async (...args) => {
+        await tick(200);
+        return create(...args);
+      };
+      return setup({
+        remote,
+        local: {
+          sync: {
+            remoteTimeout: 100,
+          },
+        },
+      });
+    };
+
+    test('throws on empty log', async () => {
+      const kit = await setupFaultyConnection();
+      const model = Model.withLogicalClock(kit.sid);
+      const emptyLog = Log.fromNewModel(model);
+      try {
+        await kit.local.create(['collection'], emptyLog, kit.id);
+        throw 'not this error';
+      } catch (err) {
+        expect(err).toEqual(new Error('EMPTY_LOG'));
+      }
+    });
+  
+    test('can create a new block', async () => {
+      const kit = await setupFaultyConnection();
+      const res = await kit.local.create(['collection'], kit.log, kit.id);
+      expect(res).toMatchObject({
+        id: kit.id,
+        remote: expect.any(Promise)
+      });
+    });
+  
+    test('marks item as "dirty" for sync, but synchronizes over time', async () => {
+      const kit = await setupFaultyConnection();
+      const res = await kit.local.create(['my', 'col'], kit.log, kit.id);
+      try {
+        await res.remote;
+      } catch {}
+      const meta = await kit.local.sync.getMeta(['my', 'col'], kit.id);
+      expect(meta).toMatchObject({
+        time: -1,
+        ts: 0,
+      });
+      const isDirty = await kit.local.sync.isDirty(['my', 'col'], kit.id);
+      expect(isDirty).toBe(true);
+      await tick(200);
+      expect(isDirty).toBe(false);
+    });
   });
 });

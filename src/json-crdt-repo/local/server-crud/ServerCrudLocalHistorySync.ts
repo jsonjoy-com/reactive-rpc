@@ -79,6 +79,7 @@ export class ServerCrudLocalHistorySync {
     history!.patches.forEach(({v: patch}) => {
       const id = patch.getId();
       if (!id) return;
+      // TODO: also filter in SESSION.GLOBAL patches.
       if (id.sid === core.sid && id.time > syncedTime) {
         patches.push({blob: patch.toBinary()});
         time = id.time;
