@@ -22,8 +22,11 @@ const setup = async () => {
     sid,
     connected$: new BehaviorSubject(true),
   });
-  const model = Model.withLogicalClock(sid);
-  const log = Log.fromNewModel(model);
+  const log = Log.fromNewModel(Model.withLogicalClock(sid));
+  log.end.api.root({foo: 'bar'});
+  log.end.api.flush();
+  const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
+  const id = genId();
   return {
     remote,
     fs,
@@ -33,20 +36,27 @@ const setup = async () => {
     locks,
     local,
     sid,
-    model,
     log,
+    genId,
+    id,
   };
 };
 
 describe('.create()', () => {
-  test('...', async () => {
-    const {local, log, printFs} = await setup();
-    log.end.api.root({foo: 'bar'});
-    log.end.api.flush();
-    console.log(log + '');
-    const res = await local.create(['collection'], log, 'test');
+  test('can create a new block', async () => {
+    const kit = await setup();
+    const res = await kit.local.create(['collection'], kit.log, kit.id);
+    expect(res).toMatchObject({
+      id: kit.id,
+      remote: expect.any(Promise)
+    });
+  });
+
+  test('stores the new block on remote', async () => {
+    const kit = await setup();
+    const res = await kit.local.create(['my', 'col'], kit.log, kit.id);
+    expect(kit.remote.services.blocks.stats().blocks).toBe(0);
     await res.remote;
-    console.log(res);
-    printFs();
+    expect(kit.remote.services.blocks.stats().blocks).toBe(1);
   });
 });
