@@ -45,12 +45,12 @@ export class ServerCrudLocalHistoryCore implements ServerCrudLocalHistoryCoreOpt
     const blob = await this.crud.get(crudCollection, DATA_FILE_NAME);
     return blob;
   }
-  
+
   public async create(collection: string[], id: string, blob: Uint8Array): Promise<void> {
     const crudCollection = this.crudCollection(collection, id);
     await this.crud.put(crudCollection, DATA_FILE_NAME, blob, {throwIf: 'exists'});
   }
-  
+
   public async update(collection: string[], id: string, blob: Uint8Array): Promise<void> {
     const crudCollection = this.crudCollection(collection, id);
     await this.crud.put(crudCollection, DATA_FILE_NAME, blob, {throwIf: 'missing'});

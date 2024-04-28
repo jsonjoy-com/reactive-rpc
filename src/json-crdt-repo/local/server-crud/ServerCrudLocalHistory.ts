@@ -18,7 +18,11 @@ export class ServerCrudLocalHistory implements LocalHistory {
     this.sync = new ServerCrudLocalHistorySync(opts.sync ?? {}, this.core);
   }
 
-  public async create(collection: string[], log: Log, id: string = genId()): Promise<{id: string, remote: Promise<void>}> {
+  public async create(
+    collection: string[],
+    log: Log,
+    id: string = genId(),
+  ): Promise<{id: string; remote: Promise<void>}> {
     if (log.end.clock.time <= 1) throw new Error('EMPTY_LOG');
     const blob = this.encode(log);
     await this.lockForWrite({collection, id}, async () => {
@@ -91,10 +95,16 @@ export class ServerCrudLocalHistory implements LocalHistory {
     // };
   }
 
-  protected async lockForWrite({collection, id}: {
-    collection: string[];
-    id: string;
-  }, fn: () => Promise<void>): Promise<void> {
+  protected async lockForWrite(
+    {
+      collection,
+      id,
+    }: {
+      collection: string[];
+      id: string;
+    },
+    fn: () => Promise<void>,
+  ): Promise<void> {
     const key = ['write', collection, id].join('/');
     await this.core.locks.lock(key, 300, 300)(fn);
   }

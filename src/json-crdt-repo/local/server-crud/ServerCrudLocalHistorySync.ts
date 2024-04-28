@@ -1,7 +1,7 @@
 import {timeout} from 'thingies/lib/timeout';
-import type {RemoteBlockPatch} from "../../remote/types";
-import type {ServerCrudLocalHistoryCore} from "./ServerCrudLocalHistoryCore";
-import type {BlockSyncMetadata} from "./types";
+import type {RemoteBlockPatch} from '../../remote/types';
+import type {ServerCrudLocalHistoryCore} from './ServerCrudLocalHistoryCore';
+import type {BlockSyncMetadata} from './types';
 
 const SYNC_FILE_NAME = 'sync.cbor';
 
@@ -91,10 +91,16 @@ export class ServerCrudLocalHistorySync {
     await this.putMeta(collection, id, {time, ts: Date.now()});
   }
 
-  public async lock<T>({collection, id}: {
-    collection: string[];
-    id: string;
-  }, fn: () => Promise<T>): Promise<T> {
+  public async lock<T>(
+    {
+      collection,
+      id,
+    }: {
+      collection: string[];
+      id: string;
+    },
+    fn: () => Promise<T>,
+  ): Promise<T> {
     const key = ['sync', collection, id].join('/');
     const locker = this.core.locks.lock(key, this.remoteTimeout() + 200, 200);
     return await locker<T>(fn);
@@ -135,8 +141,7 @@ export class ServerCrudLocalHistorySync {
       await this.core.crud.info(dir, id);
       return true;
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'ResourceNotFound')
-        return false;
+      if (error instanceof DOMException && error.name === 'ResourceNotFound') return false;
       throw error;
     }
   }

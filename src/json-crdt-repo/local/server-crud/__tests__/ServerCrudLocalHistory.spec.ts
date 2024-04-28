@@ -9,10 +9,12 @@ import {BehaviorSubject} from 'rxjs';
 import {setup as remoteSetup} from '../../../remote/__tests__/setup';
 import {tick} from 'thingies';
 
-const setup = async (opts: {
-  remote?: ReturnType<typeof remoteSetup>;
-  local?: Partial<ServerCrudLocalHistoryOpts>;
-} = {}) => {
+const setup = async (
+  opts: {
+    remote?: ReturnType<typeof remoteSetup>;
+    local?: Partial<ServerCrudLocalHistoryOpts>;
+  } = {},
+) => {
   const remote = opts.remote ?? remoteSetup();
   const {fs, vol} = memfs();
   const printFs = () => console.log(toTreeSync(fs));
@@ -65,7 +67,7 @@ describe('.create()', () => {
     const res = await kit.local.create(['collection'], kit.log, kit.id);
     expect(res).toMatchObject({
       id: kit.id,
-      remote: expect.any(Promise)
+      remote: expect.any(Promise),
     });
   });
 
@@ -91,11 +93,12 @@ describe('.create()', () => {
   });
 
   describe('when not connected', () => {
-    const setupNotConnected = () => setup({
-      local: {
-        connected$: new BehaviorSubject(false),
-      }
-    });
+    const setupNotConnected = () =>
+      setup({
+        local: {
+          connected$: new BehaviorSubject(false),
+        },
+      });
 
     test('throws on empty log', async () => {
       const kit = await setupNotConnected();
@@ -108,16 +111,16 @@ describe('.create()', () => {
         expect(err).toEqual(new Error('EMPTY_LOG'));
       }
     });
-  
+
     test('can create a new block', async () => {
       const kit = await setupNotConnected();
       const res = await kit.local.create(['collection'], kit.log, kit.id);
       expect(res).toMatchObject({
         id: kit.id,
-        remote: expect.any(Promise)
+        remote: expect.any(Promise),
       });
     });
-  
+
     test('does not store the block on remote, throws on remote sync', async () => {
       const kit = await setupNotConnected();
       const res = await kit.local.create(['my', 'col'], kit.log, kit.id);
@@ -130,7 +133,7 @@ describe('.create()', () => {
       }
       expect(kit.remote.services.blocks.stats().blocks).toBe(0);
     });
-  
+
     test('marks item as "dirty" for sync', async () => {
       const kit = await setupNotConnected();
       const res = await kit.local.create(['my', 'col'], kit.log, kit.id);
@@ -168,16 +171,16 @@ describe('.create()', () => {
         expect(err).toEqual(new Error('EMPTY_LOG'));
       }
     });
-  
+
     test('can create a new block', async () => {
       const kit = await setupFaultyConnection();
       const res = await kit.local.create(['collection'], kit.log, kit.id);
       expect(res).toMatchObject({
         id: kit.id,
-        remote: expect.any(Promise)
+        remote: expect.any(Promise),
       });
     });
-  
+
     test('does not store the block on remote, throws on remote sync', async () => {
       const kit = await setupFaultyConnection();
       const res = await kit.local.create(['my', 'col'], kit.log, kit.id);
@@ -190,7 +193,7 @@ describe('.create()', () => {
       }
       expect(kit.remote.services.blocks.stats().blocks).toBe(0);
     });
-  
+
     test('marks item as "dirty" for sync', async () => {
       const kit = await setupFaultyConnection();
       const res = await kit.local.create(['my', 'col'], kit.log, kit.id);
@@ -236,16 +239,16 @@ describe('.create()', () => {
         expect(err).toEqual(new Error('EMPTY_LOG'));
       }
     });
-  
+
     test('can create a new block', async () => {
       const kit = await setupFaultyConnection();
       const res = await kit.local.create(['collection'], kit.log, kit.id);
       expect(res).toMatchObject({
         id: kit.id,
-        remote: expect.any(Promise)
+        remote: expect.any(Promise),
       });
     });
-  
+
     test('does not store the block on remote, throws on remote sync', async () => {
       const kit = await setupFaultyConnection();
       const res = await kit.local.create(['my', 'col'], kit.log, kit.id);
@@ -258,7 +261,7 @@ describe('.create()', () => {
       }
       expect(kit.remote.services.blocks.stats().blocks).toBe(0);
     });
-  
+
     test('marks item as "dirty" for sync', async () => {
       const kit = await setupFaultyConnection();
       const res = await kit.local.create(['my', 'col'], kit.log, kit.id);
@@ -304,16 +307,16 @@ describe('.create()', () => {
         expect(err).toEqual(new Error('EMPTY_LOG'));
       }
     });
-  
+
     test('can create a new block', async () => {
       const kit = await setupFaultyConnection();
       const res = await kit.local.create(['collection'], kit.log, kit.id);
       expect(res).toMatchObject({
         id: kit.id,
-        remote: expect.any(Promise)
+        remote: expect.any(Promise),
       });
     });
-  
+
     test('marks item as "dirty" for sync, but synchronizes over time', async () => {
       const kit = await setupFaultyConnection();
       const res = await kit.local.create(['my', 'col'], kit.log, kit.id);
