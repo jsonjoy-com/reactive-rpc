@@ -10,6 +10,8 @@ export class ServerCrudLocalHistorySync {
   public async push(collection: string[], id: string): Promise<boolean> {
     const core = this.core;
     const success = await this.lock<boolean>({collection, id}, async () => {
+      // TODO: timeout this after 3s.
+      // TODO: handle case when this times out, but actually succeeds, so on re-sync it handles the case when the block is already synced.
       if (!core.connected$.getValue()) return false;
       const meta = await this.getMeta(collection, id);
       const isNewBlock = meta.time < 1;
