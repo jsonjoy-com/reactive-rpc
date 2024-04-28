@@ -8,9 +8,9 @@ export class ServerCrudLocalHistorySync {
   constructor(protected readonly core: ServerCrudLocalHistoryCore) {}
 
   public async push(collection: string[], id: string): Promise<void> {
-    const deps = this.core;
+    const core = this.core;
     await this.lock({collection, id}, async () => {
-      if (!this.core.connected$.getValue()) return;
+      if (!core.connected$.getValue()) return;
       const meta = await this.getMeta(collection, id);
       const isNewBlock = meta.time < 1;
       if (isNewBlock) {
@@ -18,7 +18,7 @@ export class ServerCrudLocalHistorySync {
       } else {
         await this.pushExistingBlock(collection, id, meta.time);
       }
-      await this.core.markTidy(collection, id);
+      await this.markTidy(collection, id);
     });
   }
 
@@ -77,9 +77,8 @@ export class ServerCrudLocalHistorySync {
 
   protected async getMeta(collection: string[], id: string): Promise<BlockSyncMetadata> {
     const deps = this.core;
-    const crudCollection = this.core.crudCollection(collection, id);
-    const meta = await deps.crud.get(crudCollection, SYNC_FILE_NAME);
     try {
+      const meta = await deps.crud.get(['sync', 'state', ...collection, id], SYNC_FILE_NAME);
       return deps.cborDecoder.decode(meta) as BlockSyncMetadata;
     } catch (err) {
       return {
@@ -92,6 +91,16 @@ export class ServerCrudLocalHistorySync {
   protected async putMeta(collection: string[], id: string, meta: BlockSyncMetadata): Promise<void> {
     const deps = this.core;
     const blob = deps.cborEncoder.encode(meta);
-    await deps.crud.put([...collection, id], SYNC_FILE_NAME, blob);
+    await deps.crud.put(['sync', 'state', ...collection, id], SYNC_FILE_NAME, blob);
+  }
+
+  public async markDirty(collection: string[], id: string): Promise<void> {
+    const dir = ['sync', 'dirty', ...collection];
+    await this.core.crud.put(dir, id, new Uint8Array(0));
+  }
+
+  public async markTidy(collection: string[], id: string): Promise<void> {
+    const dir = ['sync', 'dirty', ...collection];
+    await this.core.crud.del(dir, id);
   }
 }

@@ -40,19 +40,19 @@ export class ServerCrudLocalHistoryCore implements ServerCrudLocalHistoryCoreOpt
     return ['blocks', ...collection, id];
   }
 
-  public async markDirty(collection: string[], id: string): Promise<void> {
-    const dir = ['dirty', ...collection];
-    await this.crud.put(dir, id, new Uint8Array(0));
-  }
-
-  public async markTidy(collection: string[], id: string): Promise<void> {
-    const dir = ['dirty', ...collection];
-    await this.crud.del(dir, id);
-  }
-
   public async read(collection: string[], id: string): Promise<Uint8Array> {
     const crudCollection = this.crudCollection(collection, id);
     const blob = await this.crud.get(crudCollection, DATA_FILE_NAME);
     return blob;
+  }
+  
+  public async create(collection: string[], id: string, blob: Uint8Array): Promise<void> {
+    const crudCollection = this.crudCollection(collection, id);
+    await this.crud.put(crudCollection, DATA_FILE_NAME, blob, {throwIf: 'exists'});
+  }
+  
+  public async update(collection: string[], id: string, blob: Uint8Array): Promise<void> {
+    const crudCollection = this.crudCollection(collection, id);
+    await this.crud.put(crudCollection, DATA_FILE_NAME, blob, {throwIf: 'missing'});
   }
 }
