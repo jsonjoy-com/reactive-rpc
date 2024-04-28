@@ -7,10 +7,10 @@ const SYNC_FILE_NAME = 'sync.cbor';
 export class ServerCrudLocalHistorySync {
   constructor(protected readonly core: ServerCrudLocalHistoryCore) {}
 
-  public async push(collection: string[], id: string): Promise<void> {
+  public async push(collection: string[], id: string): Promise<boolean> {
     const core = this.core;
-    await this.lock({collection, id}, async () => {
-      if (!core.connected$.getValue()) return;
+    const success = await this.lock<boolean>({collection, id}, async () => {
+      if (!core.connected$.getValue()) return false;
       const meta = await this.getMeta(collection, id);
       const isNewBlock = meta.time < 1;
       if (isNewBlock) {
@@ -19,7 +19,9 @@ export class ServerCrudLocalHistorySync {
         await this.pushExistingBlock(collection, id, meta.time);
       }
       await this.markTidy(collection, id);
+      return true;
     });
+    return success;
   }
 
   private async pushNewBlock(collection: string[], id: string): Promise<void> {
@@ -66,16 +68,16 @@ export class ServerCrudLocalHistorySync {
     await this.putMeta(collection, id, {time, ts: Date.now()});
   }
 
-  public async lock({collection, id}: {
+  public async lock<T>({collection, id}: {
     collection: string[];
     id: string;
-  }, fn: () => Promise<void>): Promise<void> {
+  }, fn: () => Promise<T>): Promise<T> {
     const key = ['sync', collection, id].join('/');
     const locker = this.core.locks.lock(key, 5000, 200);
-    await locker(fn);
+    return await locker<T>(fn);
   }
 
-  protected async getMeta(collection: string[], id: string): Promise<BlockSyncMetadata> {
+  public async getMeta(collection: string[], id: string): Promise<BlockSyncMetadata> {
     const deps = this.core;
     try {
       const meta = await deps.crud.get(['sync', 'state', ...collection, id], SYNC_FILE_NAME);
@@ -102,5 +104,17 @@ export class ServerCrudLocalHistorySync {
   public async markTidy(collection: string[], id: string): Promise<void> {
     const dir = ['sync', 'dirty', ...collection];
     await this.core.crud.del(dir, id);
+  }
+
+  public async isDirty(collection: string[], id: string): Promise<boolean> {
+    const dir = ['sync', 'dirty', ...collection];
+    try {
+      await this.core.crud.info(dir, id);
+      return true;
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'ResourceNotFound')
+        return false;
+      throw error;
+    }
   }
 }

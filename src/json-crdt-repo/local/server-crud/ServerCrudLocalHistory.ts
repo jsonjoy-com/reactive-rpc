@@ -7,7 +7,7 @@ import type {LocalHistory} from '../types';
 
 export class ServerCrudLocalHistory implements LocalHistory {
   protected readonly core: ServerCrudLocalHistoryCore;
-  protected readonly sync: ServerCrudLocalHistorySync;
+  public readonly sync: ServerCrudLocalHistorySync;
 
   constructor(opts: ServerCrudLocalHistoryCoreOpts) {
     this.core = new ServerCrudLocalHistoryCore(opts);
@@ -23,7 +23,8 @@ export class ServerCrudLocalHistory implements LocalHistory {
     const remote = (async () => {
       await this.sync.markDirty(collection, id);
       // TODO: use pushNewBlock instead?
-      await this.sync.push(collection, id);
+      const success = await this.sync.push(collection, id);
+      if (!success) throw new Error('NOT_SYNCED');
     })();
     remote.catch(() => {});
     return {
