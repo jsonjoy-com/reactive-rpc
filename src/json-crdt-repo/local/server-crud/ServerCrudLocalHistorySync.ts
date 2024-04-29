@@ -3,6 +3,7 @@ import type {RemoteBlockPatch} from '../../remote/types';
 import type {ServerCrudLocalHistoryCore} from './ServerCrudLocalHistoryCore';
 import type {BlockSyncMetadata} from './types';
 import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
+import {ts} from 'json-joy/lib/json-crdt-patch';
 
 const SYNC_FILE_NAME = 'sync.cbor';
 
@@ -55,15 +56,19 @@ export class ServerCrudLocalHistorySync {
           const {history} = core.decoder.decode(blob, {format: 'seq.cbor', history: true});
           const patches: RemoteBlockPatch[] = [];
           let time = 0;
-          // TODO: perf: use a binary search to find the first patch to sync.
-          history!.patches.forEach(({v: patch}) => {
-            const id = patch.getId();
-            if (!id) return;
-            if ((id.sid === core.sid || (id.sid === SESSION.GLOBAL)) && id.time > meta.time) {
-              patches.push({blob: patch.toBinary()});
-              time = id.time;
-            }
-          });
+          const patchTree = history!.patches;
+          let node = patchTree.getOrNextLower(ts(0, meta.time)) || patchTree.first();
+          if (node) {
+            do {
+              const {k: id, v: patch} = node;
+              const patchSid = id.sid;
+              const patchTime = id.time;
+              if ((patchSid === core.sid || (patchSid === SESSION.GLOBAL)) && (patchTime > meta.time)) {
+                patches.push({blob: patch.toBinary()});
+                time = patchTime;
+              }
+            } while (node = patchTree.next(node));
+          }
           if (!patches.length) {
             await this.putMeta(collection, id, {time, ts: Date.now()});
             return true;
