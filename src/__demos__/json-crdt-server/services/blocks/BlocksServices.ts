@@ -119,7 +119,13 @@ export class BlocksServices {
     return {patches};
   }
 
-  public async edit(id: string, patches: Pick<StorePatch, 'blob'>[]) {
+  public async edit(id: string, patches: Pick<StorePatch, 'blob'>[], createIfNotExists: boolean) {
+    if (createIfNotExists) {
+      const exists = await this.store.exists(id);
+      if (!exists) {
+        return await this.create(id, patches);
+      }
+    }
     this.maybeGc();
     if (!Array.isArray(patches)) throw RpcError.validation('patches must be an array');
     if (!patches.length) throw RpcError.validation('patches must not be empty');

@@ -1,22 +1,7 @@
 import {Model} from 'json-joy/lib/json-crdt';
-import {buildE2eClient} from '../../../common/testing/buildE2eClient';
-import {createCaller} from '../../../__demos__/json-crdt-server/routes';
-import {DemoServerRemoteHistory} from '../DemoServerRemoteHistory';
 import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
 import {Value} from 'json-joy/lib/json-type-value/Value';
-
-const setup = () => {
-  const {caller, router} = createCaller();
-  const {client} = buildE2eClient(caller);
-  const remote = new DemoServerRemoteHistory(client);
-
-  return {
-    router,
-    caller,
-    client,
-    remote,
-  };
-};
+import {setup} from './setup';
 
 let cnt = 0;
 const genId = () => Math.random().toString(36).slice(2) + '-' + Date.now().toString(36) + '-' + cnt++;

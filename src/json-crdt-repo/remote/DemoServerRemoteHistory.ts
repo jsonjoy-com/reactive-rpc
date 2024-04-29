@@ -78,6 +78,7 @@ export class DemoServerRemoteHistory
     patches: Pick<DemoServerPatch, 'blob'>[],
   ): Promise<{patches: Omit<DemoServerPatch, 'blob'>[]}> {
     const res = await this.client.call('block.upd', {
+      create: true,
       id,
       patches: patches.map((patch) => ({
         blob: patch.blob,

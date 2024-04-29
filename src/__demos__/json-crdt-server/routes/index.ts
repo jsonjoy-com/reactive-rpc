@@ -30,5 +30,5 @@ export const createCaller = (services: Services = new Services()) => {
       return RpcError.valueFrom(error);
     },
   });
-  return {router, caller};
+  return {router, caller, services};
 };

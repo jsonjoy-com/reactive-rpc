@@ -57,6 +57,10 @@ export class RpcError extends Error implements IRpcError {
     return RpcError.fromCode(RpcErrorCodes.BAD_REQUEST, message);
   }
 
+  public static notFound(message = 'Not Found'): RpcError {
+    return RpcError.fromCode(RpcErrorCodes.NOT_FOUND, message);
+  }
+
   public static validation(message: string, meta?: unknown): RpcError {
     return RpcError.fromCode(RpcErrorCodes.BAD_REQUEST, message, meta);
   }
