@@ -7,7 +7,7 @@ import {Model, nodes, s} from 'json-joy/lib/json-crdt';
 import {Log} from 'json-joy/lib/json-crdt/log/Log';
 import {BehaviorSubject} from 'rxjs';
 import {setup as remoteSetup} from '../../../remote/__tests__/setup';
-import {tick} from 'thingies';
+import {tick, until} from 'thingies';
 import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
 
 const setup = async (
@@ -30,11 +30,15 @@ const setup = async (
     connected$: new BehaviorSubject(true),
     ...opts.local,
   });
+  local.sync.start();
   const log = Log.fromNewModel(Model.withLogicalClock(sid));
   log.end.api.root({foo: 'bar'});
   log.end.api.flush();
   const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
   const id = genId();
+  const stop = () => {
+    local.sync.stop();
+  };
   return {
     remote,
     fs,
@@ -47,6 +51,7 @@ const setup = async (
     log,
     genId,
     id,
+    stop,
   };
 };
 
@@ -168,6 +173,41 @@ describe('.create()', () => {
       });
       const isDirty = await kit.local.sync.isDirty(['my', 'col'], kit.id);
       expect(isDirty).toBe(true);
+    });
+  });
+
+  describe('when not connected, but connection resumes', () => {
+    const setupNotConnected = async () => {
+      const connected$ = new BehaviorSubject(false);
+      const deps = await setup({
+        local: {
+          connected$,
+          sync: {
+            remoteTimeout: 100,
+          },
+        },
+      });
+      return {
+        ...deps,
+        connected$,
+      };
+    };
+
+    test('does not store the block on remote at first, synchronizes it when connection resumes', async () => {
+      const kit = await setupNotConnected();
+      const res = await kit.local.create(['my', 'col'], kit.log, kit.id);
+      expect(kit.remote.services.blocks.stats().blocks).toBe(0);
+      try {
+        await res.remote;
+        throw 'not this error';
+      } catch (error) {
+        expect(error).toEqual(new Error('NOT_SYNCED'));
+      }
+      await tick(50);
+      expect(kit.remote.services.blocks.stats().blocks).toBe(0);
+      kit.connected$.next(true);
+      await until(() => kit.remote.services.blocks.stats().blocks === 1);
+      expect(kit.remote.services.blocks.stats().blocks).toBe(1);
     });
   });
 
@@ -364,7 +404,8 @@ describe('.create()', () => {
       const isDirty = await kit.local.sync.isDirty(['my', 'col'], kit.id);
       expect(isDirty).toBe(true);
       await tick(200);
-      expect(isDirty).toBe(false);
+      const isDirty2 = await kit.local.sync.isDirty(['my', 'col'], kit.id);
+      expect(isDirty2).toBe(false);
     });
   });
 });

@@ -31,7 +31,7 @@ export class ServerCrudLocalHistory implements LocalHistory {
     const remote = (async () => {
       await this.sync.markDirty(collection, id);
       // TODO: use pushNewBlock instead?
-      const success = await this.sync.push(collection, id);
+      const success = await this.sync.sync(collection, id);
       if (!success) throw new Error('NOT_SYNCED');
     })();
     remote.catch(() => {});
