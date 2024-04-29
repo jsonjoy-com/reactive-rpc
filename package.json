@@ -75,7 +75,7 @@
     "@jsonjoy.com/json-pack": "^1.0.2",
     "@jsonjoy.com/util": "^1.0.0",
     "json-joy": "^15.4.1",
-    "memfs": "^4.8.1",
+    "memfs": "^4.9.1",
     "sonic-forest": "^1.0.0",
     "thingies": "^2.1.0"
   },

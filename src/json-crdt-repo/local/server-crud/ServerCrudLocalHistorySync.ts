@@ -145,4 +145,11 @@ export class ServerCrudLocalHistorySync {
       throw error;
     }
   }
+
+  public async * listDirty(collection: string[] = ['sync', 'dirty']): AsyncIterableIterator<{collection: string[]; id: string}> {
+    for await (const entry of this.core.crud.scan(collection)) {
+      if (entry.type === 'collection') yield* this.listDirty([...collection, entry.id]);
+      else yield {collection, id: entry.id};
+    }
+  }
 }
