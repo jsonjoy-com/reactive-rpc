@@ -114,6 +114,60 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
     });
 
     describe('block.upd', () => {
+      test('can create a new block', async () => {
+        const {call, stop} = await setup();
+        const id = getId();
+        const model = Model.withLogicalClock();
+        model.api.root({
+          text: 'Hell',
+        });
+        const patch1 = model.api.flush();
+        const result = await call('block.upd', {
+          create: true,
+          id,
+          patches: [
+            {
+              blob: patch1.toBinary(),
+            },
+          ],
+        });
+        expect(result).toMatchObject({
+          patches: [
+            {
+              ts: expect.any(Number),
+            },
+          ],
+        });
+        stop();
+      });
+
+      test('throws BLOCK_NOT_FOUND when "create" flag missing', async () => {
+        const {call, stop} = await setup();
+        const id = getId();
+        const model = Model.withLogicalClock();
+        model.api.root({
+          text: 'Hell',
+        });
+        const patch1 = model.api.flush();
+        try {
+          const result = await call('block.upd', {
+            create: false,
+            id,
+            patches: [
+              {
+                blob: patch1.toBinary(),
+              },
+            ],
+          });
+          throw 'not this error';
+        } catch (error) {
+          expect(error).toMatchObject({
+            code: 'NOT_FOUND',
+          });
+        }
+        stop();
+      });
+
       test('can edit a document sequentially', async () => {
         const {call, stop} = await setup();
         const id = getId();
