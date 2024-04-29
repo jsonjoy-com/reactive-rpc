@@ -182,6 +182,7 @@ export class ServerCrudLocalHistorySync {
     const start = Date.now();
     return await locks.lock('sync', duration, 3000)(async () => {
       for await (const result of this.syncDirty()) {
+        if (!this.core.connected$.getValue()) return[];
         list.push(result);
         const now = Date.now();
         if (now - start + 100 > duration) break;
