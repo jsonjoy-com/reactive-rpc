@@ -2034,10 +2034,10 @@ marked@^4.3.0:
   resolved "https://registry.yarnpkg.com/marked/-/marked-4.3.0.tgz#796362821b019f734054582038b116481b456cf3"
   integrity sha512-PRsaiG84bK+AMvxziE/lCFss8juXjNaWzVbN5tXAm4XjeaS9NAHhop+PjQxz2A9h8Q4M/xGmzP8vqNwy6JeK0A==
 
-memfs@^4.9.1:
-  version "4.9.1"
-  resolved "https://registry.yarnpkg.com/memfs/-/memfs-4.9.1.tgz#cd0b94987c365298a6e57b4beb98c658008d7ff1"
-  integrity sha512-36cVYFMaa9HNEYyvkyKCwker8DBmOdjWLrfekE/cHEKJ806fCfKNVhOJNvoyV/CrGSZDtfQPbhn0Zid0gbH0Hw==
+memfs@^5.0.0-next.1:
+  version "5.0.0-next.1"
+  resolved "https://registry.yarnpkg.com/memfs/-/memfs-5.0.0-next.1.tgz#fbf85543cbcdda5c2c47a6a20857437f3b8ee29e"
+  integrity sha512-SrXXr7KM5P2xfYbHopapF410Ib8LZS7OPsxfUDvayA/pz/NHirxwfUVFInmSOJvjsxrmm2+VStLYb2AbNaMHLA==
   dependencies:
     "@jsonjoy.com/json-pack" "^1.0.2"
     "@jsonjoy.com/util" "^1.1.0"

@@ -10,13 +10,33 @@ export interface ServerCrudLocalHistorySyncOpts {
    * Number of milliseconds after which remote calls are considered timed out.
    */
   remoteTimeout?: number;
+
+  /**
+   * Minimum backoff time in milliseconds for the sync loop.
+   */
+  syncLoopMinBackoff?: number;
+
+  /**
+   * Maximum backoff time in milliseconds for the sync loop.
+   */
+  syncLoopMaxBackoff?: number;
 }
 
 export class ServerCrudLocalHistorySync {
+  private syncLoopTimer: any = 0;
+
   constructor(
     protected readonly opts: ServerCrudLocalHistorySyncOpts,
     protected readonly core: ServerCrudLocalHistoryCore,
   ) {}
+
+  public start(): void {
+    
+  }
+
+  public stop(): void {
+
+  }
 
   protected remoteTimeout(): number {
     return this.opts.remoteTimeout ?? 5000;
@@ -146,10 +166,28 @@ export class ServerCrudLocalHistorySync {
     }
   }
 
-  public async * listDirty(collection: string[] = ['sync', 'dirty']): AsyncIterableIterator<{collection: string[]; id: string}> {
+  protected async * listDirty(collection: string[] = ['sync', 'dirty']): AsyncIterableIterator<{collection: string[]; id: string}> {
     for await (const entry of this.core.crud.scan(collection)) {
       if (entry.type === 'collection') yield* this.listDirty([...collection, entry.id]);
       else yield {collection, id: entry.id};
     }
   }
+
+  protected async * syncDirty(): AsyncIterableIterator<[block: {collection: string[]; id: string}, success: boolean]> {
+    for await (const block of this.listDirty()) {
+      const {collection, id} = block;
+      const success = await this.push(collection, id);
+      yield [block, success];
+    }
+  }
+
+  protected async syncAllDirty(): Promise<SyncResultList> {
+    const list: SyncResultList = [];
+    for await (const result of this.syncDirty()) list.push(result);
+    return list;
+  }
 }
+
+export type ItemId = {collection: string[], id: string};
+export type SyncResult = [block: ItemId, success: boolean];
+export type SyncResultList = SyncResult[];
