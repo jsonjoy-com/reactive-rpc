@@ -2,6 +2,7 @@ import {timeout} from 'thingies/lib/timeout';
 import type {RemoteBlockPatch} from '../../remote/types';
 import type {ServerCrudLocalHistoryCore} from './ServerCrudLocalHistoryCore';
 import type {BlockSyncMetadata} from './types';
+import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
 
 const SYNC_FILE_NAME = 'sync.cbor';
 
@@ -58,8 +59,7 @@ export class ServerCrudLocalHistorySync {
           history!.patches.forEach(({v: patch}) => {
             const id = patch.getId();
             if (!id) return;
-            // TODO: also filter in SESSION.GLOBAL patches.
-            if (id.sid === core.sid && id.time > meta.time) {
+            if ((id.sid === core.sid || (id.sid === SESSION.GLOBAL)) && id.time > meta.time) {
               patches.push({blob: patch.toBinary()});
               time = id.time;
             }

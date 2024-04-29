@@ -20,7 +20,7 @@ export class ServerCrudLocalHistory implements LocalHistory {
 
   public async create(
     collection: string[],
-    log: Log,
+    log: Log<any>,
     id: string = genId(),
   ): Promise<{id: string; remote: Promise<void>}> {
     if (log.end.clock.time <= 1) throw new Error('EMPTY_LOG');

@@ -3,11 +3,12 @@ import {memfs} from 'memfs';
 import {NodeCrud} from 'memfs/lib/node-to-crud';
 import {toTreeSync} from 'memfs/lib/print';
 import {Locks} from 'thingies/lib/Locks';
-import {Model} from 'json-joy/lib/json-crdt';
+import {Model, nodes, s} from 'json-joy/lib/json-crdt';
 import {Log} from 'json-joy/lib/json-crdt/log/Log';
 import {BehaviorSubject} from 'rxjs';
 import {setup as remoteSetup} from '../../../remote/__tests__/setup';
 import {tick} from 'thingies';
+import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
 
 const setup = async (
   opts: {
@@ -90,6 +91,26 @@ describe('.create()', () => {
     });
     const isDirty = await kit.local.sync.isDirty(['my', 'col'], kit.id);
     expect(isDirty).toBe(false);
+  });
+
+  test('sends over SESSION.GLOBAL patches', async () => {
+    const kit = await setup();
+    const schema = s.obj({
+      foo: s.str('bar'),
+      arr: s.arr<nodes.val<nodes.con<number>>>([]),
+    });
+    const log = Log.fromNewModel(Model.withLogicalClock(kit.sid).setSchema(schema));
+    log.end.api.r.get().get('foo').ins(3, '!');
+    log.end.api.flush();
+    const res = await kit.local.create(['my', 'col'], log, kit.id);
+    await res.remote;
+    const {block} = await kit.remote.remote.read(['my', 'col', kit.id].join('/'));
+    const model2 = Model
+      .fromBinary(block.snapshot.blob)
+      .setSchema(schema)
+      .fork(kit.sid);
+    expect(model2.view()).toEqual({foo: 'bar!', arr: []});
+    expect(model2.clock.peers.has(SESSION.GLOBAL)).toBe(true);
   });
 
   describe('when not connected', () => {
