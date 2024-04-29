@@ -50,12 +50,27 @@ export class ServerCrudLocalHistorySync {
           const core = this.core;
           if (!core.connected$.getValue()) return false;
           const meta = await this.getMeta(collection, id);
-          const isNewBlock = meta.time < 1;
-          if (isNewBlock) {
-            await this.pushNewBlock(collection, id);
-          } else {
-            await this.pushExistingBlock(collection, id, meta.time);
+          const blob = await core.read(collection, id);
+          const {history} = core.decoder.decode(blob, {format: 'seq.cbor', history: true});
+          const patches: RemoteBlockPatch[] = [];
+          let time = 0;
+          // TODO: perf: use a binary search to find the first patch to sync.
+          history!.patches.forEach(({v: patch}) => {
+            const id = patch.getId();
+            if (!id) return;
+            // TODO: also filter in SESSION.GLOBAL patches.
+            if (id.sid === core.sid && id.time > meta.time) {
+              patches.push({blob: patch.toBinary()});
+              time = id.time;
+            }
+          });
+          if (!patches.length) {
+            await this.putMeta(collection, id, {time, ts: Date.now()});
+            return true;
           }
+          const remoteId = [...collection, id].join('/');
+          await this.core.remote.update(remoteId, patches);
+          await this.putMeta(collection, id, {time, ts: Date.now()});
           await this.markTidy(collection, id);
           return true;
         });
@@ -64,51 +79,6 @@ export class ServerCrudLocalHistorySync {
         throw error;
       }
     });
-  }
-
-  private async pushNewBlock(collection: string[], id: string): Promise<void> {
-    const core = this.core;
-    const blob = await core.read(collection, id);
-    const {history} = core.decoder.decode(blob, {format: 'seq.cbor', history: true});
-    const patches: RemoteBlockPatch[] = [];
-    let time = 0;
-    history!.patches.forEach(({v: patch}) => {
-      const id = patch.getId();
-      if (!id) return;
-      if (id.sid === core.sid) {
-        patches.push({blob: patch.toBinary()});
-        time = id.time;
-      }
-    });
-    if (!patches.length) return;
-    const remoteId = [...collection, id].join('/');
-    await this.core.remote.create(remoteId, patches);
-    await this.putMeta(collection, id, {time, ts: Date.now()});
-  }
-
-  /**
-   * @todo Unify this with `pushNewBlock`.
-   */
-  private async pushExistingBlock(collection: string[], id: string, syncedTime: number): Promise<void> {
-    const core = this.core;
-    const blob = await core.read(collection, id);
-    const {history} = core.decoder.decode(blob, {format: 'seq.cbor', history: true});
-    const patches: RemoteBlockPatch[] = [];
-    let time = 0;
-    // TODO: perf: use a binary search to find the first patch to sync.
-    history!.patches.forEach(({v: patch}) => {
-      const id = patch.getId();
-      if (!id) return;
-      // TODO: also filter in SESSION.GLOBAL patches.
-      if (id.sid === core.sid && id.time > syncedTime) {
-        patches.push({blob: patch.toBinary()});
-        time = id.time;
-      }
-    });
-    if (!patches.length) return;
-    const remoteId = [...collection, id].join('/');
-    await this.core.remote.update(remoteId, patches);
-    await this.putMeta(collection, id, {time, ts: Date.now()});
   }
 
   public async lock<T>(

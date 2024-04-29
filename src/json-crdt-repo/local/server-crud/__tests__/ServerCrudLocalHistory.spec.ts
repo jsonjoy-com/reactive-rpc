@@ -157,6 +157,10 @@ describe('.create()', () => {
         await tick(15);
         throw new Error('Remote call failed');
       };
+      remote.remote.update = async (...args) => {
+        await tick(15);
+        throw new Error('Remote call failed');
+      };
       return setup({remote});
     };
 
@@ -215,6 +219,10 @@ describe('.create()', () => {
       const remote = remoteSetup();
       const create = remote.remote.create.bind(remote.remote);
       remote.remote.create = async (...args) => {
+        await tick(500);
+        throw new Error('something went wrong');
+      };
+      remote.remote.update = async (...args) => {
         await tick(500);
         throw new Error('something went wrong');
       };
@@ -283,6 +291,10 @@ describe('.create()', () => {
       const remote = remoteSetup();
       const create = remote.remote.create.bind(remote.remote);
       remote.remote.create = async (...args) => {
+        await tick(200);
+        return create(...args);
+      };
+      remote.remote.update = async (...args) => {
         await tick(200);
         return create(...args);
       };

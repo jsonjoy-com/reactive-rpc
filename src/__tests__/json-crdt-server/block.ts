@@ -141,7 +141,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         stop();
       });
 
-      test('throws BLOCK_NOT_FOUND when "create" flag missing', async () => {
+      test('throws NOT_FOUND when "create" flag missing', async () => {
         const {call, stop} = await setup();
         const id = getId();
         const model = Model.withLogicalClock();
