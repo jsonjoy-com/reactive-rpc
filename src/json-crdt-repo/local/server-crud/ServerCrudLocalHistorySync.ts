@@ -41,7 +41,6 @@ export class ServerCrudLocalHistorySync {
       if (connected) {
         this.syncAll().catch(() => {});
       } else {
-
       }
     });
   }
@@ -74,11 +73,11 @@ export class ServerCrudLocalHistorySync {
               const {k: id, v: patch} = node;
               const patchSid = id.sid;
               const patchTime = id.time;
-              if ((patchSid === core.sid || (patchSid === SESSION.GLOBAL)) && (patchTime > meta.time)) {
+              if ((patchSid === core.sid || patchSid === SESSION.GLOBAL) && patchTime > meta.time) {
                 patches.push({blob: patch.toBinary()});
                 time = patchTime;
               }
-            } while (node = patchTree.next(node));
+            } while ((node = patchTree.next(node)));
           }
           if (!patches.length) {
             await this.putMeta(collection, id, {time, ts: Date.now()});
@@ -155,21 +154,24 @@ export class ServerCrudLocalHistorySync {
     }
   }
 
-  protected async * listDirty(collection: string[] = ['sync', 'dirty']): AsyncIterableIterator<ItemId> {
+  protected async *listDirty(collection: string[] = ['sync', 'dirty']): AsyncIterableIterator<ItemId> {
     for await (const entry of this.core.crud.scan(collection)) {
       if (entry.type === 'collection') yield* this.listDirty([...collection, entry.id]);
       else yield {collection, id: entry.id};
     }
   }
 
-  protected async * syncDirty(): AsyncIterableIterator<SyncResult> {
+  protected async *syncDirty(): AsyncIterableIterator<SyncResult> {
     for await (const block of this.listDirty()) {
-      const {collection: [_sync, _dirty, ...collection], id} = block;
+      const {
+        collection: [_sync, _dirty, ...collection],
+        id,
+      } = block;
       try {
         const success = await this.sync(collection, id);
         yield [block, success];
       } catch (error) {
-        yield [block, false, error];      
+        yield [block, false, error];
       }
     }
   }
@@ -180,9 +182,13 @@ export class ServerCrudLocalHistorySync {
     const list: SyncResultList = [];
     const duration = 30000;
     const start = Date.now();
-    return await locks.lock('sync', duration, 3000)(async () => {
+    return await locks.lock(
+      'sync',
+      duration,
+      3000,
+    )(async () => {
       for await (const result of this.syncDirty()) {
-        if (!this.core.connected$.getValue()) return[];
+        if (!this.core.connected$.getValue()) return [];
         list.push(result);
         const now = Date.now();
         if (now - start + 100 > duration) break;
@@ -192,6 +198,6 @@ export class ServerCrudLocalHistorySync {
   }
 }
 
-export type ItemId = {collection: string[], id: string};
+export type ItemId = {collection: string[]; id: string};
 export type SyncResult = [block: ItemId, success: boolean, err?: Error | unknown];
 export type SyncResultList = SyncResult[];

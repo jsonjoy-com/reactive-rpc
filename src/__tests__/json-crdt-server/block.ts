@@ -159,7 +159,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
               },
             ],
           });
-          throw 'not this error';
+          throw new Error('not this error');
         } catch (error) {
           expect(error).toMatchObject({
             code: 'NOT_FOUND',
