@@ -1926,18 +1926,18 @@ jsesc@^2.5.1:
   resolved "https://registry.yarnpkg.com/jsesc/-/jsesc-2.5.2.tgz#80564d2e483dacf6e8ef209650a67df3f0c283a4"
   integrity sha512-OYu7XEzjkCQ3C5Ps3QIZsQfNpqoJyZZA99wd9aWd05NCtC5pWOkShK2mkL6HXQR6/Cy2lbNdPlZBpuQHXE63gA==
 
-json-joy@^15.4.1:
-  version "15.4.1"
-  resolved "https://registry.yarnpkg.com/json-joy/-/json-joy-15.4.1.tgz#dc57284782213502057c456b828771b8fc855c0c"
-  integrity sha512-o2x8ave2Si0aoamm7Jg3eX7zjOmtFBzJaS8B/j13FTQDjh7EEbngRGv+Gh15p6C7IirXlgdTO09+nIAYeBz1DA==
+json-joy@^15.8.0:
+  version "15.8.0"
+  resolved "https://registry.yarnpkg.com/json-joy/-/json-joy-15.8.0.tgz#423b64501abaaaf20b2ad9f3e826cf55d52d9c5a"
+  integrity sha512-NzFvF7qA3Dv9Gv6rrSg3f18CNjrbVtVzGxui4vP4OJZvQmT6glJEKXkK2exB7if8Npw2Um+9FyEoexcpPSLbjg==
   dependencies:
     "@jsonjoy.com/base64" "^1.1.1"
     "@jsonjoy.com/json-pack" "^1.0.2"
-    "@jsonjoy.com/util" "^1.0.0"
+    "@jsonjoy.com/util" "^1.1.0"
     arg "^5.0.2"
     hyperdyperid "^1.2.0"
     sonic-forest "^1.0.0"
-    thingies "^1.20.0"
+    thingies "^2.0.0"
 
 json-parse-even-better-errors@^2.3.0:
   version "2.3.1"
@@ -2034,11 +2034,14 @@ marked@^4.3.0:
   resolved "https://registry.yarnpkg.com/marked/-/marked-4.3.0.tgz#796362821b019f734054582038b116481b456cf3"
   integrity sha512-PRsaiG84bK+AMvxziE/lCFss8juXjNaWzVbN5tXAm4XjeaS9NAHhop+PjQxz2A9h8Q4M/xGmzP8vqNwy6JeK0A==
 
-memfs@^4.8.1:
-  version "4.8.1"
-  resolved "https://registry.yarnpkg.com/memfs/-/memfs-4.8.1.tgz#1e02c15c4397212a9a1b037fa4324c6f7dd45b47"
-  integrity sha512-7q/AdPzf2WpwPlPL4v1kE2KsJsHl7EF4+hAeVzlyanr2+YnR21NVn9mDqo+7DEaKDRsQy8nvxPlKH4WqMtiO0w==
+memfs@^5.0.0-next.1:
+  version "5.0.0-next.1"
+  resolved "https://registry.yarnpkg.com/memfs/-/memfs-5.0.0-next.1.tgz#fbf85543cbcdda5c2c47a6a20857437f3b8ee29e"
+  integrity sha512-SrXXr7KM5P2xfYbHopapF410Ib8LZS7OPsxfUDvayA/pz/NHirxwfUVFInmSOJvjsxrmm2+VStLYb2AbNaMHLA==
   dependencies:
+    "@jsonjoy.com/json-pack" "^1.0.2"
+    "@jsonjoy.com/util" "^1.1.0"
+    sonic-forest "^1.0.0"
     tslib "^2.0.0"
 
 merge-stream@^2.0.0:
@@ -2502,6 +2505,11 @@ thingies@^1.20.0:
   version "1.20.0"
   resolved "https://registry.yarnpkg.com/thingies/-/thingies-1.20.0.tgz#27bf93397c39c3ff36601197e8cf78f43b7b2319"
   integrity sha512-WvXY4CjHp/Uim2Ri0daqu6jkNTHJTk1H8NvuMQiOL0mgtdkqoSH5fkENy2M6XnvsLOp5iwyPcbmokoBjVb4lnQ==
+
+thingies@^2.0.0, thingies@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/thingies/-/thingies-2.1.0.tgz#e0f771d5bc42e147fe9518be48f667319e748e25"
+  integrity sha512-SASxQdAtapX03qTa1V/kt9UGhQLUoP54luRasJxZoleeAL+PSQsBlIAGNxj1FoayglyCGUhxByFgSn7dh2JFog==
 
 tmpl@1.0.5:
   version "1.0.5"

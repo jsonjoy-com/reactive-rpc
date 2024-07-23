@@ -1,5 +1,6 @@
 import {Model, Patch} from 'json-joy/lib/json-crdt';
 import type * as types from './types';
+import {RpcError} from '../../../../common/rpc/caller';
 
 const tick = new Promise((resolve) => setImmediate(resolve));
 
@@ -12,6 +13,11 @@ export class MemoryStore implements types.Store {
     const snapshot = this.snapshots.get(id);
     if (!snapshot) return;
     return {snapshot};
+  }
+
+  public async exists(id: string): Promise<boolean> {
+    await tick;
+    return this.snapshots.has(id);
   }
 
   public async seq(id: string): Promise<number | undefined> {
@@ -32,7 +38,7 @@ export class MemoryStore implements types.Store {
     if (!Array.isArray(patches) || !patches.length) throw new Error('NO_PATCHES');
     const snapshot = this.snapshots.get(id);
     const existingPatches = this.patches.get(id);
-    if (!snapshot || !existingPatches) throw new Error('BLOCK_NOT_FOUND');
+    if (!snapshot || !existingPatches) throw RpcError.notFound();
     let seq = patches[0].seq;
     const diff = seq - snapshot.seq - 1;
     if (snapshot.seq + 1 < seq) throw new Error('PATCH_SEQ_TOO_HIGH');

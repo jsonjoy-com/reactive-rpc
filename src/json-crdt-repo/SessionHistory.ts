@@ -1,11 +1,11 @@
-import {createRace} from 'thingies/es2020/createRace';
-import {FanOutUnsubscribe} from 'thingies/es2020/fanout';
+import {createRace} from 'thingies/lib/createRace';
+import {FanOutUnsubscribe} from 'thingies/lib/fanout';
 import {InsValOp, Patch} from 'json-joy/lib/json-crdt-patch';
 import {ValNode} from 'json-joy/lib/json-crdt/nodes';
 import {toSchema} from 'json-joy/lib/json-crdt/schema/toSchema';
 import {Log} from 'json-joy/lib/json-crdt/log/Log';
 import {RedoItem, UndoItem, UndoRedoStack} from './UndoRedoStack';
-import type {LocalHistory} from './types';
+import type {LocalHistory} from './local/types';
 
 class Undo implements UndoItem {
   constructor(public readonly undo: () => Redo) {}

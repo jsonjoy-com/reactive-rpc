@@ -14,6 +14,10 @@ export const upd =
         title: 'Patches',
         description: 'The patches to apply to the document.',
       }),
+      t.propOpt('create', t.bool).options({
+        title: 'Create if not exists',
+        description: 'If true, creates a new document if it does not exist.',
+      }),
     );
 
     const Response = t.Object(
@@ -29,8 +33,8 @@ export const upd =
       description: 'Applies patches to an existing document and returns the latest concurrent changes.',
     });
 
-    return r.prop('block.upd', Func, async ({id, patches}) => {
-      const res = await services.blocks.edit(id, patches);
+    return r.prop('block.upd', Func, async ({id, patches, create}) => {
+      const res = await services.blocks.edit(id, patches, !!create);
       const patchesReturn: ResolveType<typeof BlockPatchPartialReturnRef>[] = res.patches.map((patch) => ({
         ts: patch.created,
       }));
