@@ -24,45 +24,38 @@ export class ServerCrudLocalHistory implements LocalHistory {
     id: string = genId(),
   ): Promise<{id: string; remote: Promise<void>}> {
     if (log.end.clock.time <= 1) throw new Error('EMPTY_LOG');
-    const blob = await this.encode(log);
+    const blob = this.encode(log);
     await this.lockForWrite({collection, id}, async () => {
-      await this.core.create(collection, id, blob);
+      await this.core.write(collection, id, blob);
     });
     const remote = (async () => {
-      await this.sync.markDirty(collection, id);
+      const sync = this.sync;
+      await sync.markDirty(collection, id);
       // TODO: use pushNewBlock instead?
-      const success = await this.sync.sync(collection, id);
+      const success = await sync.sync(collection, id);
       if (!success) throw new Error('NOT_SYNCED');
     })();
     remote.catch(() => {});
-    return {
-      id,
-      remote,
-    };
+    return {id, remote};
   }
 
-  protected async encode(log: Log): Promise<Uint8Array> {
-    const encoded = this.core.encoder.encode(log, {
-      format: 'seq.cbor',
-      model: 'binary',
-      history: 'binary',
-      noView: true,
+  public async update(collection: string[], id: string, patches: Patch[]): Promise<{remote: Promise<void>}> {
+    const core = this.core;
+    await this.lockForWrite({collection, id}, async () => {
+      const blob = await core.read(collection, id);
+      const log = this.decode(blob);
+      log.end.applyBatch(patches);
+      const blob2 = this.encode(log);
+      await core.write(collection, id, blob2, 'missing');
     });
-    return encoded;
-  }
-
-  public async update(collection: string[], id: string, patches: Patch[]): Promise<void> {
-    throw new Error('Method not implemented.');
-    // const deps = this.core;
-    // await this.lockBlock({collection, id}, async () => {
-    //   const crudCollection = this.crudCollection(collection, id);
-    //   const blob = await deps.crud.get(crudCollection, DATA_FILE_NAME);
-    //   const decoded = deps.decoder.decode(blob, {format: 'seq.cbor', history: true});
-    //   const log = decoded.history!;
-    //   log.end.applyBatch(patches);
-    //   const blob2 = this.encode(log);
-    //   await deps.crud.put(crudCollection, DATA_FILE_NAME, blob2, {throwIf: 'missing'});
-    // });
+    const remote = (async () => {
+      const sync = this.sync;
+      await sync.markDirty(collection, id);
+      const success = await sync.sync(collection, id);
+      if (!success) throw new Error('NOT_SYNCED');
+    })();
+    remote.catch(() => {});
+    return {remote};
   }
 
   public async delete(collection: string[], id: string): Promise<void> {
@@ -92,6 +85,22 @@ export class ServerCrudLocalHistory implements LocalHistory {
     //   log: history!,
     //   cursor: '',
     // };
+  }
+
+  protected encode(log: Log): Uint8Array {
+    const encoded = this.core.encoder.encode(log, {
+      format: 'seq.cbor',
+      model: 'binary',
+      history: 'binary',
+      noView: true,
+    });
+    return encoded;
+  }
+
+  protected decode(blob: Uint8Array): Log {
+    const decoded = this.core.decoder.decode(blob, {format: 'seq.cbor', history: true});
+    const log = decoded.history!;
+    return log;
   }
 
   protected async lockForWrite(

@@ -26,6 +26,7 @@ describe('.create()', () => {
       id: kit.id,
       remote: expect.any(Promise),
     });
+    await res.remote;
   });
 
   test('stores the new block on remote', async () => {

@@ -1,7 +1,7 @@
 import {timeout} from 'thingies/lib/timeout';
 import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
 import {ts} from 'json-joy/lib/json-crdt-patch';
-import {once} from 'thingies';
+import {once} from 'thingies/lib/once';
 import type {RemoteBlockPatch} from '../../remote/types';
 import type {ServerCrudLocalHistoryCore} from './ServerCrudLocalHistoryCore';
 import type {BlockSyncMetadata} from './types';
@@ -140,7 +140,7 @@ export class ServerCrudLocalHistorySync {
 
   public async markTidy(collection: string[], id: string): Promise<void> {
     const dir = ['sync', 'dirty', ...collection];
-    await this.core.crud.del(dir, id);
+    await this.core.crud.del(dir, id, true);
   }
 
   public async isDirty(collection: string[], id: string): Promise<boolean> {

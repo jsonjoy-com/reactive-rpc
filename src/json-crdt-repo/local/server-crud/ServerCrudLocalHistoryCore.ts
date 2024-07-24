@@ -63,14 +63,9 @@ export class ServerCrudLocalHistoryCore implements ServerCrudLocalHistoryCoreOpt
     return decrypted;
   }
 
-  public async create(collection: string[], id: string, blob: Uint8Array): Promise<void> {
+  public async write(collection: string[], id: string, blob: Uint8Array, throwIf: 'exists' | 'missing' = 'exists'): Promise<void> {
     const crudCollection = this.crudCollection(collection, id);
     const encrypted = await this.encrypt(blob);
-    await this.crud.put(crudCollection, DATA_FILE_NAME, encrypted, {throwIf: 'exists'});
-  }
-
-  public async update(collection: string[], id: string, blob: Uint8Array): Promise<void> {
-    const crudCollection = this.crudCollection(collection, id);
-    await this.crud.put(crudCollection, DATA_FILE_NAME, blob, {throwIf: 'missing'});
+    await this.crud.put(crudCollection, DATA_FILE_NAME, encrypted, {throwIf});
   }
 }
