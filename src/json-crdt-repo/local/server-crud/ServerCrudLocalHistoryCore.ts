@@ -3,11 +3,12 @@ import {CborDecoder} from '@jsonjoy.com/json-pack/lib/cbor/CborDecoder';
 import {LogEncoder} from 'json-joy/lib/json-crdt/log/codec/LogEncoder';
 import {LogDecoder} from 'json-joy/lib/json-crdt/log/codec/LogDecoder';
 import {BehaviorSubject} from 'rxjs';
+import {gzip, ungzip} from '../../../util/gzip';
 import type {CrudApi} from 'memfs/lib/crud/types';
 import type {Locks} from 'thingies/lib/Locks';
 import type {RemoteHistory} from '../../remote/types';
 
-const DATA_FILE_NAME = 'data.seq.cbor';
+const DATA_FILE_NAME = 'data.seq.cbor.gz';
 
 export interface ServerCrudLocalHistoryCoreOpts {
   readonly remote: RemoteHistory;
@@ -40,15 +41,15 @@ export class ServerCrudLocalHistoryCore implements ServerCrudLocalHistoryCoreOpt
     // TODO: Add browser-native compression. Compression should be enabled on the `this.crud` level?
     // TODO: Wrap the blob into `[]` TLV tuple.
     // TODO: Encrypt with user's public key.
-    // const gzipped = await gzip(blob);
-    // return gzipped;
-    return blob;
+    const gzipped = await gzip(blob);
+    return gzipped;
+    // return blob;
   }
 
   public async decrypt(blob: Uint8Array): Promise<Uint8Array> {
-    // const unzipped = await ungzip(blob);
-    // return unzipped;
-    return blob;
+    const unzipped = await ungzip(blob);
+    return unzipped;
+    // return blob;
   }
 
   public crudCollection(collection: string[], id: string): string[] {
