@@ -339,7 +339,7 @@ describe('.create()', () => {
       });
     });
 
-    test.skip('marks item as "dirty" for sync, but synchronizes over time', async () => {
+    test('marks item as "dirty" for sync, but synchronizes over time', async () => {
       const kit = await setupFaultyConnection();
       const res = await kit.local.create(['my', 'col'], kit.log, kit.id);
       try {
@@ -352,7 +352,7 @@ describe('.create()', () => {
       });
       const isDirty = await kit.local.sync.isDirty(['my', 'col'], kit.id);
       expect(isDirty).toBe(true);
-      await tick(200);
+      await until(async () => await kit.local.sync.isDirty(['my', 'col'], kit.id) === false);
       const isDirty2 = await kit.local.sync.isDirty(['my', 'col'], kit.id);
       expect(isDirty2).toBe(false);
     });

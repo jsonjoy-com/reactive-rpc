@@ -36,6 +36,21 @@ export class ServerCrudLocalHistoryCore implements ServerCrudLocalHistoryCoreOpt
     this.connected$ = opts.connected$ ?? new BehaviorSubject(true);
   }
 
+  public async encrypt(blob: Uint8Array): Promise<Uint8Array> {
+    // TODO: Add browser-native compression. Compression should be enabled on the `this.crud` level?
+    // TODO: Wrap the blob into `[]` TLV tuple.
+    // TODO: Encrypt with user's public key.
+    // const gzipped = await gzip(blob);
+    // return gzipped;
+    return blob;
+  }
+
+  public async decrypt(blob: Uint8Array): Promise<Uint8Array> {
+    // const unzipped = await ungzip(blob);
+    // return unzipped;
+    return blob;
+  }
+
   public crudCollection(collection: string[], id: string): string[] {
     return ['blocks', ...collection, id];
   }
@@ -43,12 +58,14 @@ export class ServerCrudLocalHistoryCore implements ServerCrudLocalHistoryCoreOpt
   public async read(collection: string[], id: string): Promise<Uint8Array> {
     const crudCollection = this.crudCollection(collection, id);
     const blob = await this.crud.get(crudCollection, DATA_FILE_NAME);
-    return blob;
+    const decrypted = await this.decrypt(blob);
+    return decrypted;
   }
 
   public async create(collection: string[], id: string, blob: Uint8Array): Promise<void> {
     const crudCollection = this.crudCollection(collection, id);
-    await this.crud.put(crudCollection, DATA_FILE_NAME, blob, {throwIf: 'exists'});
+    const encrypted = await this.encrypt(blob);
+    await this.crud.put(crudCollection, DATA_FILE_NAME, encrypted, {throwIf: 'exists'});
   }
 
   public async update(collection: string[], id: string, blob: Uint8Array): Promise<void> {

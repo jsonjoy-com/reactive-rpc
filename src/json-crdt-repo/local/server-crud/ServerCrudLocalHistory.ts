@@ -24,7 +24,7 @@ export class ServerCrudLocalHistory implements LocalHistory {
     id: string = genId(),
   ): Promise<{id: string; remote: Promise<void>}> {
     if (log.end.clock.time <= 1) throw new Error('EMPTY_LOG');
-    const blob = this.encode(log);
+    const blob = await this.encode(log);
     await this.lockForWrite({collection, id}, async () => {
       await this.core.create(collection, id, blob);
     });
@@ -41,15 +41,14 @@ export class ServerCrudLocalHistory implements LocalHistory {
     };
   }
 
-  protected encode(log: Log): Uint8Array {
-    // TODO: Add browser-native compression. Wrap the blob into `[]` TLV tuple.
-    // TODO: Encrypt with user's public key.
-    return this.core.encoder.encode(log, {
+  protected async encode(log: Log): Promise<Uint8Array> {
+    const encoded = this.core.encoder.encode(log, {
       format: 'seq.cbor',
       model: 'binary',
       history: 'binary',
       noView: true,
     });
+    return encoded;
   }
 
   public async update(collection: string[], id: string, patches: Patch[]): Promise<void> {
