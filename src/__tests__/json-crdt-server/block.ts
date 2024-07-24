@@ -203,7 +203,9 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         expect(Model.fromBinary(block2.block.snapshot.blob).view()).toStrictEqual({
           text: 'Hello World',
         });
-        model.api.str(['text']).del(5, 1).ins(5, ', ');
+        const str = model.api.str(['text']);
+        str.del(5, 1);
+        str.ins(5, ', ');
         const patch4 = model.api.flush();
         model.api.str(['text']).ins(12, '!');
         const patch5 = model.api.flush();
