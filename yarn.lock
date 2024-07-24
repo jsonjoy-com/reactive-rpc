@@ -1926,10 +1926,10 @@ jsesc@^2.5.1:
   resolved "https://registry.yarnpkg.com/jsesc/-/jsesc-2.5.2.tgz#80564d2e483dacf6e8ef209650a67df3f0c283a4"
   integrity sha512-OYu7XEzjkCQ3C5Ps3QIZsQfNpqoJyZZA99wd9aWd05NCtC5pWOkShK2mkL6HXQR6/Cy2lbNdPlZBpuQHXE63gA==
 
-json-joy@^16.18.0:
-  version "16.18.0"
-  resolved "https://registry.yarnpkg.com/json-joy/-/json-joy-16.18.0.tgz#ba92859d3adc957a6087b25237b4d56dd87eaeb9"
-  integrity sha512-gBPgiN9Hg/c4VM/cFx6MTT5FHrGggFcBc8lb789/qFcTb7vZhhSUbbsOXHDYjMwJW+w+8JNl5nCGg6rfwJpNow==
+json-joy@^16.18.1:
+  version "16.18.1"
+  resolved "https://registry.yarnpkg.com/json-joy/-/json-joy-16.18.1.tgz#126814dc3b988adab1dc6bc12424814d07c3e4d3"
+  integrity sha512-LGcAHsQMdo/Me04PETQ0bWtzypMEiUtwdT/zO8K7WpinC88nYsIKnfu6j2prY5qXGjTwsF3uQUzSVWrSXWSiTA==
   dependencies:
     "@jsonjoy.com/base64" "^1.1.1"
     "@jsonjoy.com/json-pack" "^1.0.2"
