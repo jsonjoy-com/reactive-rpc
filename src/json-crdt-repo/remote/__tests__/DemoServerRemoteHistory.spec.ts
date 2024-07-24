@@ -102,6 +102,26 @@ describe('.update()', () => {
     const model2 = Model.fromBinary(read2.block.snapshot.blob);
     expect(model2.view()).toEqual({score: 42});
   });
+
+  test('can create a block using .update() call', async () => {
+    const {remote} = await setup();
+    const id = genId();
+    const model = Model.create();
+    model.api.root({score: 42});
+    const patch = model.api.flush();
+    const blob = patch.toBinary();
+    const update = await remote.update(id, [{blob}]);
+    expect(update).toMatchObject({
+      patches: [
+        {
+          ts: expect.any(Number),
+        },
+      ],
+    });
+    const read = await remote.read(id);
+    const model1 = Model.fromBinary(read.block.snapshot.blob);
+    expect(model1.view()).toEqual({score: 42});
+  });
 });
 
 describe('.scanFwd()', () => {
