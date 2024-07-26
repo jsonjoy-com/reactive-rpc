@@ -8,7 +8,7 @@ import type {CrudApi} from 'memfs/lib/crud/types';
 import type {Locks} from 'thingies/lib/Locks';
 import type {RemoteHistory} from '../../remote/types';
 
-const DATA_FILE_NAME = 'data.seq.cbor.gz';
+const DATA_FILE_NAME = 'latest.seq.cbor.gz';
 
 export interface ServerCrudLocalHistoryCoreOpts {
   readonly remote: RemoteHistory;

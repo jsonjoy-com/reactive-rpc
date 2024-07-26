@@ -15,22 +15,25 @@ export const setup = async (
   } = {},
 ) => {
   const remote = opts.remote ?? remoteSetup();
-  const {fs, vol} = memfs();
-  const printFs = () => {
-    // tslint:disable-next-line no-console
-    console.log(toTreeSync(fs));
+  const createLocal = (sid: number = 12345678) => {
+    const {fs, vol} = memfs();
+    const printFs = () => {
+      // tslint:disable-next-line no-console
+      console.log(toTreeSync(fs));
+    };
+    const crud = new NodeCrud({fs: fs.promises, dir: '/'});
+    const locks = new Locks();
+    const local = new ServerCrudLocalHistory({
+      crud,
+      locks,
+      remote: remote.remote,
+      sid,
+      connected$: new BehaviorSubject(true),
+      ...opts.local,
+    });
+    return {fs, vol, printFs, sid, crud, locks, local};
   };
-  const sid = 123456788;
-  const crud = new NodeCrud({fs: fs.promises, dir: '/'});
-  const locks = new Locks();
-  const local = new ServerCrudLocalHistory({
-    crud,
-    locks,
-    remote: remote.remote,
-    sid,
-    connected$: new BehaviorSubject(true),
-    ...opts.local,
-  });
+  const {fs, vol, printFs, sid, crud, locks, local} = createLocal();
   local.sync.start();
   const log = Log.fromNewModel(Model.create(undefined, sid));
   log.end.api.root({foo: 'bar'});
@@ -47,6 +50,7 @@ export const setup = async (
     printFs,
     crud,
     locks,
+    createLocal,
     local,
     sid,
     log,

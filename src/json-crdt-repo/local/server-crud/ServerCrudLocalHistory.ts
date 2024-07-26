@@ -43,7 +43,8 @@ export class ServerCrudLocalHistory implements LocalHistory {
     const core = this.core;
     await this.lockForWrite({collection, id}, async () => {
       const blob = await core.read(collection, id);
-      const log = this.decode(blob);
+      const decoded = this.core.decoder.decode(blob, {format: 'seq.cbor', history: true});
+      const log = decoded.history!;
       log.end.applyBatch(patches);
       const blob2 = this.encode(log);
       await core.write(collection, id, blob2, 'missing');
@@ -67,24 +68,27 @@ export class ServerCrudLocalHistory implements LocalHistory {
   }
 
   public async read(collection: string[], id: string): Promise<{log: Log; cursor: string}> {
-    throw new Error('Method not implemented.');
-    // const blob = await this.core.read(collection, id);
-    // const {frontier} = this.core.decoder.decode(blob, {format: 'seq.cbor', frontier: true});
-    // return {
-    //   log: frontier!,
-    //   cursor: '1',
-    // };
+    // - Read latest from remote.
+    // - Attempt to sync, just loading the latest, if some recent version exists.
+    const core = this.core;
+    const blob = await core.read(collection, id);
+    const decoded = core.decoder.decode(blob, {format: 'seq.cbor', frontier: true});
+    const log = decoded.frontier!;
+    return {
+      log,
+      cursor: '',
+    };
   }
 
   public async readHistory(collection: string[], id: string, cursor: string): Promise<{log: Log; cursor: string}> {
-    throw new Error('Method not implemented.');
-    // const core = this.core;
-    // const blob = await core.read(collection, id);
-    // const {history} = core.decoder.decode(blob, {format: 'seq.cbor', history: true});
-    // return {
-    //   log: history!,
-    //   cursor: '',
-    // };
+    const core = this.core;
+    const blob = await core.read(collection, id);
+    const decoded = core.decoder.decode(blob, {format: 'seq.cbor', frontier: true, history: true});
+    const log = decoded.frontier!;
+    return {
+      log,
+      cursor: '',
+    };
   }
 
   protected encode(log: Log): Uint8Array {
@@ -95,12 +99,6 @@ export class ServerCrudLocalHistory implements LocalHistory {
       noView: true,
     });
     return encoded;
-  }
-
-  protected decode(blob: Uint8Array): Log {
-    const decoded = this.core.decoder.decode(blob, {format: 'seq.cbor', history: true});
-    const log = decoded.history!;
-    return log;
   }
 
   protected async lockForWrite(
