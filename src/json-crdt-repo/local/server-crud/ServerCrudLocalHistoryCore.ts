@@ -1,9 +1,9 @@
 import {CborEncoder} from '@jsonjoy.com/json-pack/lib/cbor/CborEncoder';
 import {CborDecoder} from '@jsonjoy.com/json-pack/lib/cbor/CborDecoder';
+import {gzip, ungzip} from '@jsonjoy.com/util/lib/compression/gzip';
 import {LogEncoder} from 'json-joy/lib/json-crdt/log/codec/LogEncoder';
 import {LogDecoder} from 'json-joy/lib/json-crdt/log/codec/LogDecoder';
 import {BehaviorSubject} from 'rxjs';
-import {gzip, ungzip} from '../../../util/gzip';
 import type {CrudApi} from 'memfs/lib/crud/types';
 import type {Locks} from 'thingies/lib/Locks';
 import type {RemoteHistory} from '../../remote/types';
