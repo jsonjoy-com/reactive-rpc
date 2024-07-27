@@ -1,10 +1,16 @@
 import type {ITimestampStruct, Model, Patch} from 'json-joy/lib/json-crdt';
 import type {FanOut} from 'thingies/lib/fanout';
 
-export interface LocalRepo {
-  sync(collection: string[], id: string, request: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse>;
+export interface SessionHistoryService {
+  load(collection: string[], id: string): Promise<SessionHistory>;
+  create(collection: string[], id: string, model: Model): Promise<SessionHistory>;
+  sync(collection: string[], id: string, request: SessionHistorySyncRequest): Promise<SessionHistorySyncResponse>;
   del(collection: string[], id: string): Promise<void>;
-  sub(collection: string[], id: string): FanOut<LocalRepoSubData>;
+  sub(collection: string[], id: string): FanOut<void>;
+}
+
+export interface SessionHistory {
+  sync(request: SessionHistorySyncRequest): Promise<SessionHistorySyncResponse>;
 }
 
 /**
@@ -15,7 +21,7 @@ export interface LocalRepo {
  * - When `cursor` and `batch` ar both not set, the call is equivalent to "read".
  * - When `cursor` is set and `batch` is set, the call is equivalent to "update".
  */
-export interface LocalRepoSyncRequest {
+export interface SessionHistorySyncRequest {
   /**
    * Latest known cursor position of already loaded data. If `null`, means that
    * no data was loaded yet. Setting this to `null` will load the latest
@@ -29,7 +35,7 @@ export interface LocalRepoSyncRequest {
   batch?: Patch[];
 }
 
-export interface LocalRepoSyncResponse {
+export interface SessionHistorySyncResponse {
   /**
    * List of changes that the client should apply to the local state.
    */
@@ -41,11 +47,4 @@ export interface LocalRepoSyncResponse {
    * patch set is too large.
    */
   reset?: Model;
-}
-
-export interface LocalRepoSubData {
-  /**
-   * List of changes received from other clients.
-   */
-  batch?: Patch[];
 }

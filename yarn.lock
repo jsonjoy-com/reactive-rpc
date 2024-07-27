@@ -588,6 +588,16 @@
     hyperdyperid "^1.2.0"
     thingies "^1.20.0"
 
+"@jsonjoy.com/json-pack@^1.0.3", "@jsonjoy.com/json-pack@^1.0.4":
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/@jsonjoy.com/json-pack/-/json-pack-1.0.4.tgz#ab59c642a2e5368e8bcfd815d817143d4f3035d0"
+  integrity sha512-aOcSN4MeAtFROysrbqG137b7gaDDSmVrl5mpo6sT/w+kcXpWnzhMjmY/Fh/sDx26NBxyIE7MB1seqLeCAzy9Sg==
+  dependencies:
+    "@jsonjoy.com/base64" "^1.1.1"
+    "@jsonjoy.com/util" "^1.1.2"
+    hyperdyperid "^1.2.0"
+    thingies "^1.20.0"
+
 "@jsonjoy.com/util@^1.0.0":
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/@jsonjoy.com/util/-/util-1.0.0.tgz#417a4e6c112501ac98e3a4e695f5ffa23ba01b2d"
@@ -602,7 +612,7 @@
   dependencies:
     hyperdyperid "^1.2.0"
 
-"@jsonjoy.com/util@^1.3.0":
+"@jsonjoy.com/util@^1.1.2", "@jsonjoy.com/util@^1.3.0":
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/@jsonjoy.com/util/-/util-1.3.0.tgz#e5623885bb5e0c48c1151e4dae422fb03a5887a1"
   integrity sha512-Cebt4Vk7k1xHy87kHY7KSPLT77A7Ev7IfOblyLZhtYEhrdQ6fX4EoLq3xOQ3O/DRMEh2ok5nyC180E+ABS8Wmw==
@@ -1325,6 +1335,18 @@ foreground-child@^3.1.0:
     cross-spawn "^7.0.0"
     signal-exit "^4.0.1"
 
+fs-zoo@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/fs-zoo/-/fs-zoo-1.1.0.tgz#3a3438ebac3af7522ab9d3d3198015a5ce80be99"
+  integrity sha512-N+kRkSmuGjyHJkajjNyuFoBqiUVEJm8Sj3hy2ujX0XR+DL3DeiISzjEgvXs29oa8h0MVlEVJ0ix6LlzXsa8L0w==
+  dependencies:
+    "@jsonjoy.com/json-pack" "^1.0.4"
+    "@jsonjoy.com/util" "^1.3.0"
+    memfs "^4.10.0"
+    sonic-forest "^1.0.3"
+    thingies "^2.1.1"
+    tslib "^2.6.3"
+
 fs.realpath@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/fs.realpath/-/fs.realpath-1.0.0.tgz#1504ad2523158caa40db4a2787cb01411994ea4f"
@@ -2040,6 +2062,16 @@ marked@^4.3.0:
   resolved "https://registry.yarnpkg.com/marked/-/marked-4.3.0.tgz#796362821b019f734054582038b116481b456cf3"
   integrity sha512-PRsaiG84bK+AMvxziE/lCFss8juXjNaWzVbN5tXAm4XjeaS9NAHhop+PjQxz2A9h8Q4M/xGmzP8vqNwy6JeK0A==
 
+memfs@^4.10.0:
+  version "4.11.0"
+  resolved "https://registry.yarnpkg.com/memfs/-/memfs-4.11.0.tgz#6bbecbc05f52a6befb27411a12896536d74f4b91"
+  integrity sha512-+6kz90/YQoZuHvg3rn1CGPMZfEMaU5xe7xIavZMNiom2RNesiI8S37p9O9n+PlIUnUgretjLdM6HnqpZYl3X2g==
+  dependencies:
+    "@jsonjoy.com/json-pack" "^1.0.3"
+    "@jsonjoy.com/util" "^1.3.0"
+    tree-dump "^1.0.1"
+    tslib "^2.0.0"
+
 memfs@^5.0.0-next.1:
   version "5.0.0-next.1"
   resolved "https://registry.yarnpkg.com/memfs/-/memfs-5.0.0-next.1.tgz#fbf85543cbcdda5c2c47a6a20857437f3b8ee29e"
@@ -2392,7 +2424,7 @@ sonic-forest@^1.0.0:
   resolved "https://registry.yarnpkg.com/sonic-forest/-/sonic-forest-1.0.0.tgz#b0b77d9bca76434f4ef87b61042d041da63f3be5"
   integrity sha512-yFO2N4uTUFtgKLw03WWFpN1iEwZySweMsa18XN3Kt0yYrlmVHunC2ZgM+437zDoKISAJHcH3Cg18U7d6tuSgSQ==
 
-sonic-forest@^1.0.2:
+sonic-forest@^1.0.2, sonic-forest@^1.0.3:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/sonic-forest/-/sonic-forest-1.0.3.tgz#81363af60017daba39b794fce24627dc412563cb"
   integrity sha512-dtwajos6IWMEWXdEbW1IkEkyL2gztCAgDplRIX+OT5aRKnEd5e7r7YCxRgXZdhRP1FBdOBf8axeTPhzDv8T4wQ==
@@ -2524,6 +2556,11 @@ thingies@^2.0.0, thingies@^2.1.0:
   resolved "https://registry.yarnpkg.com/thingies/-/thingies-2.1.0.tgz#e0f771d5bc42e147fe9518be48f667319e748e25"
   integrity sha512-SASxQdAtapX03qTa1V/kt9UGhQLUoP54luRasJxZoleeAL+PSQsBlIAGNxj1FoayglyCGUhxByFgSn7dh2JFog==
 
+thingies@^2.1.1:
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/thingies/-/thingies-2.1.1.tgz#f7e3902f41d4f8fda6fdf1a47bab0b77b70fcadd"
+  integrity sha512-0ad16gExX2JBMPXmBQfKOUz7R1KNWAtiY6hjesug4WdV3uV/Qmm/NAu49uQvzV/f3XkMztjq+ncyMoYLPoppVQ==
+
 tmpl@1.0.5:
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/tmpl/-/tmpl-1.0.5.tgz#8683e0b902bb9c20c4f726e3c0b69f36518c07cc"
@@ -2588,6 +2625,11 @@ tslib@^2.0.0, tslib@^2.1.0, tslib@^2.6.2:
   version "2.6.2"
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.6.2.tgz#703ac29425e7b37cd6fd456e92404d46d1f3e4ae"
   integrity sha512-AEYxH93jGFPn/a2iVAwW87VuUIkR1FVUKB77NwMF7nBTDkDrrT/Hpt/IrCJ0QXhW27jTBDcf5ZY7w6RiqTMw2Q==
+
+tslib@^2.6.3:
+  version "2.6.3"
+  resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.6.3.tgz#0438f810ad7a9edcde7a241c3d80db693c8cbfe0"
+  integrity sha512-xNvxJEOUiWPGhUuUdQgAJPKOOJfGnIyKySOc09XkKsgdUV/3E2zvwZYdejjmRgPCgcym1juLH3226yA7sEFJKQ==
 
 tslint-config-common@^1.6.2:
   version "1.6.2"

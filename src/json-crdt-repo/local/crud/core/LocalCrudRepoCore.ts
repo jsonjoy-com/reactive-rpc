@@ -1,16 +1,16 @@
-import {CborEncoder} from '@jsonjoy.com/json-pack/lib/cbor/CborEncoder';
-import {CborDecoder} from '@jsonjoy.com/json-pack/lib/cbor/CborDecoder';
+import {encoder, decoder} from '@jsonjoy.com/json-pack/lib/cbor/shared';
 import {gzip, ungzip} from '@jsonjoy.com/util/lib/compression/gzip';
 import {LogEncoder} from 'json-joy/lib/json-crdt/log/codec/LogEncoder';
 import {LogDecoder} from 'json-joy/lib/json-crdt/log/codec/LogDecoder';
 import {BehaviorSubject} from 'rxjs';
+import type {CborEncoder, CborDecoder} from '@jsonjoy.com/json-pack/lib/cbor';
 import type {CrudApi} from 'memfs/lib/crud/types';
 import type {Locks} from 'thingies/lib/Locks';
-import type {RemoteHistory} from '../../remote/types';
+import type {RemoteHistory} from '../../../remote/types';
 
 const DATA_FILE_NAME = 'latest.seq.cbor.gz';
 
-export interface ServerCrudLocalHistoryCoreOpts {
+export interface LocalCrudRepoCoreOpts {
   readonly remote: RemoteHistory;
   readonly crud: CrudApi;
   readonly locks: Locks;
@@ -18,18 +18,18 @@ export interface ServerCrudLocalHistoryCoreOpts {
   readonly connected$?: BehaviorSubject<boolean>;
 }
 
-export class ServerCrudLocalHistoryCore implements ServerCrudLocalHistoryCoreOpts {
+export class LocalCrudRepoCore implements LocalCrudRepoCoreOpts {
   public readonly remote: RemoteHistory;
   public readonly crud: CrudApi;
   public readonly locks: Locks;
   public readonly sid: number;
-  public readonly cborEncoder = new CborEncoder();
-  public readonly cborDecoder = new CborDecoder();
+  public readonly cborEncoder: CborEncoder = encoder;
+  public readonly cborDecoder: CborDecoder = decoder;
   public readonly encoder: LogEncoder = new LogEncoder({cborEncoder: this.cborEncoder});
   public readonly decoder: LogDecoder = new LogDecoder({cborDecoder: this.cborDecoder});
   public readonly connected$: BehaviorSubject<boolean>;
 
-  constructor(opts: ServerCrudLocalHistoryCoreOpts) {
+  constructor(opts: LocalCrudRepoCoreOpts) {
     this.remote = opts.remote;
     this.crud = opts.crud;
     this.locks = opts.locks;
