@@ -3,16 +3,15 @@ import {gzip, ungzip} from '@jsonjoy.com/util/lib/compression/gzip';
 import {LogEncoder} from 'json-joy/lib/json-crdt/log/codec/LogEncoder';
 import {LogDecoder} from 'json-joy/lib/json-crdt/log/codec/LogDecoder';
 import {BehaviorSubject} from 'rxjs';
-import {genId} from '../util';
+import {LocalRepoSyncRequest, LocalRepoSyncResponse} from '../../types';
+import {patchListBlob} from './util';
+import {BlockMetadata} from '../types';
 import type {Patch} from 'json-joy/lib/json-crdt';
 import type {CrudLocalRepoCipher} from './types';
 import type {CborEncoder, CborDecoder} from '@jsonjoy.com/json-pack/lib/cbor';
 import type {CrudApi} from 'fs-zoo/lib/crud/types';
 import type {Locks} from 'thingies/lib/Locks';
 import type {RemoteHistory} from '../../../remote/types';
-import {LocalRepoSyncRequest, LocalRepoSyncResponse} from '../../types';
-import {patchListBlob} from './util';
-import {BlockMetadata} from '../types';
 
 /**
  * Each JSON CRDT *block* is represented by a collection, which contains
@@ -66,11 +65,11 @@ const enum FileName {
    * the `Future` file, hence the `Future` file is not compressed.
    */
   Future = 'future.seq.cbor',
-}
 
-/** @private */
-const enum RootFolder {
-  Blocks = 'blocks',
+  /**
+   * The name of the root collection, which contains all blocks.
+   */
+  RootFolder = 'blocks',
 }
 
 export interface CrudLocalRepoCoreOpts {
@@ -116,7 +115,7 @@ export class CrudLocalRepoCore {
   }
 
   public blockDir(collection: string[], id: string): string[] {
-    return [RootFolder.Blocks, ...collection, id];
+    return [FileName.RootFolder, ...collection, id];
   }
 
   // public async sync(req: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
@@ -154,8 +153,16 @@ export class CrudLocalRepoCore {
 
   public async sync(req: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
     if (!req.cursor && req.batch) {
-      // TODO: merge if model already exists
-      return await this.create(req.col, req.id, req.batch);
+      // TODO: merge if model already exists.
+      // TODO: time patches with user's sid should be rewritten.
+      try {
+        return await this.create(req.col, req.id, req.batch);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'Exists') {
+          console.log('MERGE EXISTING...');
+        }
+        throw error;
+      }
     } else {
       throw new Error('Method not implemented.');
     }
