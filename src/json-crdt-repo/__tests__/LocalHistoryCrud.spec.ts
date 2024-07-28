@@ -1,7 +1,7 @@
 import {memfs} from 'memfs';
 import {NodeCrud} from 'memfs/lib/node-to-crud';
 import {Locks} from 'thingies/lib/Locks';
-import {ServerCrudLocalHistory} from '../local/server-crud/ServerCrudLocalHistory';
+import {ServerCrudLocalHistory} from '../local/crud/ServerCrudLocalHistory';
 import {setup as remoteSetup} from '../remote/__tests__/setup';
 import {Model} from 'json-joy/lib/json-crdt';
 import {Log} from 'json-joy/lib/json-crdt/log/Log';

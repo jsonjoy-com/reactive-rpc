@@ -1,7 +1,6 @@
-import {ServerCrudLocalHistory, ServerCrudLocalHistoryOpts} from '../ServerCrudLocalHistory';
+import {CrudLocalRepo, ServerCrudLocalHistoryOpts} from '../CrudLocalRepo';
 import {memfs} from 'memfs';
-import {NodeCrud} from 'memfs/lib/node-to-crud';
-import {toTreeSync} from 'memfs/lib/print';
+import {NodeCrud} from 'fs-zoo/lib/node-to-crud';
 import {Locks} from 'thingies/lib/Locks';
 import {Model} from 'json-joy/lib/json-crdt';
 import {Log} from 'json-joy/lib/json-crdt/log/Log';
@@ -15,15 +14,11 @@ export const setup = async (
   } = {},
 ) => {
   const remote = opts.remote ?? remoteSetup();
+  const {fs, vol} = memfs();
   const createLocal = (sid: number = 12345678) => {
-    const {fs, vol} = memfs();
-    const printFs = () => {
-      // tslint:disable-next-line no-console
-      console.log(toTreeSync(fs));
-    };
     const crud = new NodeCrud({fs: fs.promises, dir: '/'});
     const locks = new Locks();
-    const local = new ServerCrudLocalHistory({
+    const local = new CrudLocalRepo({
       crud,
       locks,
       remote: remote.remote,
@@ -31,23 +26,22 @@ export const setup = async (
       connected$: new BehaviorSubject(true),
       ...opts.local,
     });
-    return {fs, vol, printFs, sid, crud, locks, local};
+    return {sid, crud, locks, local};
   };
-  const {fs, vol, printFs, sid, crud, locks, local} = createLocal();
-  local.sync.start();
+  const {sid, crud, locks, local} = createLocal();
+  // local.sync.start();
   const log = Log.fromNewModel(Model.create(undefined, sid));
   log.end.api.root({foo: 'bar'});
   log.end.api.flush();
   const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
   const id = genId();
   const stop = () => {
-    local.sync.stop();
+    // local.sync.stop();
   };
   return {
     remote,
     fs,
     vol,
-    printFs,
     crud,
     locks,
     createLocal,

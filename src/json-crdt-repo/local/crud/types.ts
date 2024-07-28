@@ -1,4 +1,4 @@
-export interface BlockSyncMetadata {
+export interface BlockMetadata {
   /**
    * The latest logical time that was successfully synced with the remote.
    */
@@ -9,4 +9,9 @@ export interface BlockSyncMetadata {
    * in milliseconds.
    */
   ts: number;
+
+  /**
+   * Whether to keep a history of the block.
+   */
+  hist?: boolean;
 }

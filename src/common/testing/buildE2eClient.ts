@@ -63,7 +63,7 @@ export interface BuildE2eClientOptions {
 
 export const buildE2eClient = <Caller extends RpcCaller<any>>(caller: Caller, opt: BuildE2eClientOptions = {}) => {
   const writer = opt.writer ?? new Writer(Fuzzer.randomInt2(opt.writerDefaultBufferKb ?? [4, 4]) * 1024);
-  const codecs = new RpcCodecs(new Codecs(writer), new RpcMessageCodecs());
+  const codecs = new RpcCodecs(new Codecs(writer as any), new RpcMessageCodecs());
   const ctx = new ConnectionContext(
     opt.ip ?? '0.0.0.0',
     opt.ip ?? '',
