@@ -152,6 +152,15 @@ export class CrudLocalRepoCore {
   //     return {remote};
   // }
 
+  public async sync(req: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
+    if (!req.cursor && req.batch) {
+      // TODO: merge if model already exists
+      return await this.create(req.col, req.id, req.batch);
+    } else {
+      throw new Error('Method not implemented.');
+    }
+  }
+
   protected async writeMetadata0(dir: string[], meta: BlockMetadata, frontier: Uint8Array, throwIf?: 'exists' | 'missing'): Promise<void> {
     const cborEncoder = this.cborEncoder;
     const writer = cborEncoder.writer;
@@ -161,7 +170,7 @@ export class CrudLocalRepoCore {
     await this.crud.put(dir, FileName.Metadata, blob, {throwIf});
   }
 
-  public async create(col: string[], id: string, batch?: Patch[]): Promise<LocalRepoSyncResponse> {
+  public async create(col: string[], id: string, batch?: Patch[]): Promise<Pick<LocalRepoSyncResponse, 'remote'>> {
     const dir = this.blockDir(col, id);
     if (!batch || !batch.length) throw new Error('EMPTY_BATCH');
     const frontier = patchListBlob(batch);
@@ -181,13 +190,6 @@ export class CrudLocalRepoCore {
     })();
     remote.catch(() => {});
     return {remote};
-  }
-
-  protected async createMeta(col: string[], id: string): Promise<void> {
-    const meta: BlockMetadata = {
-      time: -1,
-      ts: 0,
-    };
   }
 
   

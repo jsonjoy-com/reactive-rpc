@@ -17,11 +17,7 @@ export class CrudLocalRepo implements LocalRepo {
   }
 
   public async sync(request: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
-    if (!request.cursor && request.batch) {
-      return await this._core.create(request.col, request.id, request.batch);
-    } else {
-      throw new Error('Method not implemented.');
-    }
+    return await this._core.sync(request);
   }
 
   /**
