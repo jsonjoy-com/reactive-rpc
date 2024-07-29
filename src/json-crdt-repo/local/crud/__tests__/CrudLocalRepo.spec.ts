@@ -1,4 +1,4 @@
-import {Model, s, NodeBuilder} from 'json-joy/lib/json-crdt';
+import {Model, s, NodeBuilder, Patch} from 'json-joy/lib/json-crdt';
 import {setup} from './setup';
 
 describe('.sync()', () => {
@@ -22,8 +22,12 @@ describe('.sync()', () => {
       const kit = await setup();
       const local2 = kit.createLocal();
       const model1 = Model.create(schema, kit.sid);
+      const patches1: Patch[] = [];
+      if (model1.api.builder.patch.ops.length) {
+        patches1.push(model1.api.flush());
+      }
       model1.api.root({foo: 'bar'});
-      const patches1 = [model1.api.flush()];
+      patches1.push(model1.api.flush());
       await kit.local.sync({
         col: ['collection'],
         id: kit.id,
@@ -35,8 +39,12 @@ describe('.sync()', () => {
         [metaFile]: expect.any(String),
       });
       const model2 = Model.create(schema, kit.sid);
+      const patches2: Patch[] = [];
+      if (model2.api.builder.patch.ops.length) {
+        patches2.push(model2.api.flush());
+      }
       model2.api.root({foo: 'baz'});
-      const patches2 = [model2.api.flush()];
+      patches2.push(model2.api.flush());
       await local2.local.sync({
         col: ['collection'],
         id: kit.id,
@@ -47,6 +55,11 @@ describe('.sync()', () => {
         [metaFile]: expect.any(String),
       });
       expect(frontier2.length > frontier1.length).toBe(true);
+      const {model} = await kit.local.sync({
+        col: ['collection'],
+        id: kit.id,
+      });
+      expect(model?.view()).toEqual({foo: 'baz'});
     };
 
     test('can merge new block patches, with concurrently created same-ID block from another tab', async () => {

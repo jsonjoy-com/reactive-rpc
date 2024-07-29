@@ -76,13 +76,13 @@ export interface LocalRepoSyncResponse {
    * `Model` is sent when `rebase` patches are not available, or when the
    * patch set is too large.
    */
-  reset?: Model;
+  model?: Model;
 
   /**
    * Promise that resolves when the local changes have been successfully
    * synchronized with the server or remote peers.
    */
-  remote: Promise<void>;
+  remote?: Promise<void>;
 }
 
 export interface LocalRepoSubData {

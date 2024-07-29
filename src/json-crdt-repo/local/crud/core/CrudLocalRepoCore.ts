@@ -2,13 +2,12 @@ import {encoder, decoder} from '@jsonjoy.com/json-pack/lib/cbor/shared';
 import {gzip, ungzip} from '@jsonjoy.com/util/lib/compression/gzip';
 import {LogEncoder} from 'json-joy/lib/json-crdt/log/codec/LogEncoder';
 import {LogDecoder} from 'json-joy/lib/json-crdt/log/codec/LogDecoder';
-import {Log} from 'json-joy/lib/json-crdt/log/Log';
 import {decoder as patchDecoder} from 'json-joy/lib/json-crdt-patch/codec/binary/shared';
 import {BehaviorSubject} from 'rxjs';
 import {LocalRepoSyncRequest, LocalRepoSyncResponse} from '../../types';
 import {patchListBlob} from './util';
 import {BlockMetadata} from '../types';
-import type {Patch} from 'json-joy/lib/json-crdt';
+import {Model, type Patch} from 'json-joy/lib/json-crdt';
 import type {CrudLocalRepoCipher} from './types';
 import type {CborEncoder, CborDecoder} from '@jsonjoy.com/json-pack/lib/cbor';
 import type {CrudApi} from 'fs-zoo/lib/crud/types';
@@ -159,7 +158,6 @@ export class CrudLocalRepoCore {
 
   public async sync(req: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
     if (!req.cursor && req.batch) {
-      // TODO: merge if model already exists.
       // TODO: time patches with user's sid should be rewritten.
       try {
         return await this.create(req.col, req.id, req.batch);
@@ -169,8 +167,15 @@ export class CrudLocalRepoCore {
         }
         throw error;
       }
+    } else if (req.cursor && req.batch) {
+      throw new Error('Not implemented: update');
+    } else if (!req.cursor && !req.batch) {
+      const model = await this.read(req.col, req.id);
+      return {model: model};
+    } else if (req.cursor && !req.batch) {
+      throw new Error('Not implemented: catch up');
     } else {
-      throw new Error('Method not implemented.');
+      throw new Error('INV_SYNC');
     }
   }
 
@@ -185,15 +190,7 @@ export class CrudLocalRepoCore {
     await this.lockModelWrite(col, id, async () => {
       await this.writeMetadata0(dir, meta, frontier, 'exists');
     });
-    // TODO: pef: this could be done in parallel.
-    await this.markDirty(col, id);
-    const remote = (async () => {
-      // const sync = this.sync;
-      // await sync.markDirty(collection, id);
-      // // TODO: use pushNewBlock instead?
-      // const success = await sync.sync(collection, id);
-      // if (!success) throw new Error('NOT_SYNCED');
-    })();
+    const remote = this.markDirtyAndSync(col, id);
     remote.catch(() => {});
     return {remote};
   }
@@ -210,20 +207,47 @@ export class CrudLocalRepoCore {
         const patchNextTick = patchTime + patchSpan + 1;
         if (patchNextTick > nextTick) nextTick = patchNextTick;
       }
+      const sid = this.sid;
       const length = batch.length;
       const rebased: Patch[] = [];
       for (let i = 0; i < length; i++) {
         const patch = batch[i];
-        const rebasedPatch = patch.rebase(nextTick);
-        rebased.push(rebasedPatch);
+        if (patch.getId()?.sid === sid) {
+          const rebasedPatch = patch.rebase(nextTick);
+          rebased.push(rebasedPatch);
+        } else {
+          rebased.push(patch);
+        }
         nextTick += patch.span();
       }
       await this.appendFrontier0(dir, patchListBlob(rebased));
     });
-    const remote = (async () => {
-    })();
+    const remote = this.markDirtyAndSync(col, id);
     remote.catch(() => {});
     return {remote};
+  }
+
+  public async read(col: string[], id: string): Promise<Model> {
+    const dir = this.blockDir(col, id);
+    const [model, {patches}] = await Promise.all([
+      this.readModel(col, id),
+      this.readMetadata1(dir),
+    ]);
+    model.applyBatch(patches);
+    return model;
+  }
+
+  public async readModel(col: string[], id: string): Promise<Model> {
+    const dir = this.blockDir(col, id);
+    try {
+      const blob = await this.crud.get(dir, FileName.Model);
+      const model = Model.load(blob, this.sid);
+      return model;
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'ResourceNotFound')
+        return Model.create(void 0, this.sid); 
+      throw error;
+    }
   }
 
   protected async writeMetadata0(dir: string[], meta: BlockMetadata, frontier: Uint8Array, throwIf?: 'exists' | 'missing'): Promise<void> {
@@ -271,6 +295,11 @@ export class CrudLocalRepoCore {
   public async markDirty(collection: string[], id: string): Promise<void> {
     const dir = [FileName.SyncFolder, FileName.SyncFolderDirty, ...collection];
     await this.crud.put(dir, id, new Uint8Array(0));
+  }
+
+  public async markDirtyAndSync(collection: string[], id: string): Promise<void> {
+    await this.markDirty(collection, id);
+    // TODO: ask remote to sync.
   }
 
   /** Mark block as "clean", was successfully synced with remote. */

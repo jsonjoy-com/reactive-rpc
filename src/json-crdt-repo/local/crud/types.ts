@@ -14,4 +14,6 @@ export interface BlockMetadata {
    * Whether to keep a history of the block.
    */
   hist?: boolean;
+
+  // TODO: Track frontier min/max time in metadata.
 }
