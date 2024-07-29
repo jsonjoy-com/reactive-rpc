@@ -34,9 +34,9 @@ Each block is represented by a collection of files.
 
 ### The metadata file
 
-The only mandatory file is the metadata file, `meta.seq.bin`. The file consists
+The only mandatory file is the metadata file, `meta.seq.cbor`. The file consists
 of a metadata object in the CBOR format, followed by zero or more JSON CRDT
-Patch objects encoded in `binary` format.
+Patch objects encoded in `binary` format, wrapped in CBOR binary values.
 
 Locally applied patches, which have not been confirmed by the server yet, are
 stored in the metadata file, called *frontier*. The new frontier patches can be

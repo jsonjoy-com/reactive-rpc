@@ -1,7 +1,7 @@
 import {Model, s, NodeBuilder, Patch} from 'json-joy/lib/json-crdt';
 import {setup} from './setup';
 
-const META_FILE = 'meta.seq.bin';
+const META_FILE = 'meta.seq.cbor';
 
 describe('.sync()', () => {
   describe('create', () => {

@@ -15,5 +15,13 @@ export interface BlockMetadata {
    */
   hist?: boolean;
 
-  // TODO: Track frontier min/max time in metadata.
+  /**
+   * The minimum logical time of frontier patches.
+   */
+  fmin: number;
+
+  /**
+   * The next maximum available logical time of frontier patches.
+   */
+  fmax: number;
 }

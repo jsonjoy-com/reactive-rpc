@@ -2,12 +2,12 @@ import {encoder, decoder} from '@jsonjoy.com/json-pack/lib/cbor/shared';
 import {gzip, ungzip} from '@jsonjoy.com/util/lib/compression/gzip';
 import {LogEncoder} from 'json-joy/lib/json-crdt/log/codec/LogEncoder';
 import {LogDecoder} from 'json-joy/lib/json-crdt/log/codec/LogDecoder';
-import {decoder as patchDecoder} from 'json-joy/lib/json-crdt-patch/codec/binary/shared';
 import {BehaviorSubject} from 'rxjs';
 import {LocalRepoSyncRequest, LocalRepoSyncResponse} from '../../types';
-import {patchListBlob} from './util';
+import {patchListSpan, patchListStart} from './util';
 import {BlockMetadata} from '../types';
-import {Model, type Patch} from 'json-joy/lib/json-crdt';
+import {Patch} from 'json-joy/lib/json-crdt-patch';
+import {Model} from 'json-joy/lib/json-crdt';
 import type {CrudLocalRepoCipher} from './types';
 import type {CborEncoder, CborDecoder} from '@jsonjoy.com/json-pack/lib/cbor';
 import type {CrudApi} from 'fs-zoo/lib/crud/types';
@@ -44,7 +44,7 @@ const enum FileName {
    * {@link BlockMetadata} object, the rest are {@link Patch} objects serialized
    * using the `binary` codec.
    */
-  Metadata = 'meta.seq.bin',
+  Metadata = 'meta.seq.cbor',
   
   /**
    * The past history of {@link Patch} objects. The history starts either from
@@ -171,7 +171,7 @@ export class CrudLocalRepoCore {
       throw new Error('Not implemented: update');
     } else if (!req.cursor && !req.batch) {
       const model = await this.read(req.col, req.id);
-      return {model: model};
+      return {model};
     } else if (req.cursor && !req.batch) {
       throw new Error('Not implemented: catch up');
     } else {
@@ -179,13 +179,24 @@ export class CrudLocalRepoCore {
     }
   }
 
+  protected patchListBlobSeq(patches: Patch[]): Uint8Array {
+    const encoder = this.cborEncoder;
+    const length = patches.length;
+    for (let i = 0; i < length; i++)
+      encoder.writeBin(patches[i].toBinary());
+    return encoder.writer.flush();
+  }
+
   public async create(col: string[], id: string, batch?: Patch[]): Promise<Pick<LocalRepoSyncResponse, 'remote'>> {
     const dir = this.blockDir(col, id);
     if (!batch || !batch.length) throw new Error('EMPTY_BATCH');
-    const frontier = patchListBlob(batch);
+    const frontier = this.patchListBlobSeq(batch);
+    const [fmin, fmax] = patchListSpan(batch);
     const meta: BlockMetadata = {
       time: -1,
       ts: 0,
+      fmin,
+      fmax,
     };
     await this.lockModelWrite(col, id, async () => {
       await this.writeMetadata0(dir, meta, frontier, 'exists');
@@ -193,6 +204,48 @@ export class CrudLocalRepoCore {
     const remote = this.markDirtyAndSync(col, id);
     remote.catch(() => {});
     return {remote};
+  }
+
+  public async update(col: string[], id: string, batch?: Patch[]): Promise<Pick<LocalRepoSyncResponse, 'remote'>> {
+    const dir = this.blockDir(col, id);
+    if (!batch || !batch.length) throw new Error('EMPTY_BATCH');
+    const time = patchListStart(batch);
+    const {meta} = await this.readMetadata0(dir);
+    if (time >= meta.fmax) return await this.merge(col, id, batch);
+    return await this.rebaseAndMerge(col, id, batch);
+  }
+
+  public async merge(col: string[], id: string, batch?: Patch[]): Promise<Pick<LocalRepoSyncResponse, 'remote'>> {
+    throw new Error('not implemented');
+    // const dir = this.blockDir(col, id);
+    // if (!batch || !batch.length) throw new Error('EMPTY_BATCH');
+    // await this.lockModelWrite(col, id, async () => {
+    //   const {patches} = await this.readMetadata1(dir);
+    //   let nextTick = 0;
+    //   for (const patch of patches) {
+    //     const patchTime = patch.getId()?.time ?? 0;
+    //     const patchSpan = patch.span();
+    //     const patchNextTick = patchTime + patchSpan + 1;
+    //     if (patchNextTick > nextTick) nextTick = patchNextTick;
+    //   }
+    //   const sid = this.sid;
+    //   const length = batch.length;
+    //   const rebased: Patch[] = [];
+    //   for (let i = 0; i < length; i++) {
+    //     const patch = batch[i];
+    //     if (patch.getId()?.sid === sid) {
+    //       const rebasedPatch = patch.rebase(nextTick);
+    //       rebased.push(rebasedPatch);
+    //     } else {
+    //       rebased.push(patch);
+    //     }
+    //     nextTick += patch.span();
+    //   }
+    //   await this.appendFrontier0(dir, patchListBlob(rebased));
+    // });
+    // const remote = this.markDirtyAndSync(col, id);
+    // remote.catch(() => {});
+    // return {remote};
   }
 
   public async rebaseAndMerge(col: string[], id: string, batch?: Patch[]): Promise<Pick<LocalRepoSyncResponse, 'remote'>> {
@@ -220,7 +273,7 @@ export class CrudLocalRepoCore {
         }
         nextTick += patch.span();
       }
-      await this.appendFrontier0(dir, patchListBlob(rebased));
+      await this.appendFrontier1(dir, rebased);
     });
     const remote = this.markDirtyAndSync(col, id);
     remote.catch(() => {});
@@ -263,10 +316,12 @@ export class CrudLocalRepoCore {
     await this.crud.put(dir, FileName.Metadata, frontier, {pos: -1, throwIf: 'missing'});
   }
 
-  // protected async appendFrontier1(dir: string[], patches: Patch[]): Promise<void> {
-  //   const frontier = patchListBlob(patches);
-  //   await this.appendFrontier0(dir, frontier);
-  // }
+  protected async appendFrontier1(dir: string[], patches: Patch[]): Promise<void> {
+    const encoder = this.cborEncoder;
+    for (const patch of patches) encoder.writeAny(patch.toBinary());
+    const frontier = encoder.writer.flush();
+    await this.appendFrontier0(dir, frontier);
+  }
 
   protected async readMetadata0(dir: string[]): Promise<{meta: BlockMetadata; frontier: Uint8Array}> {
     const blob = await this.crud.get(dir, FileName.Metadata);
@@ -284,10 +339,11 @@ export class CrudLocalRepoCore {
   protected async readMetadata1(dir: string[]): Promise<{meta: BlockMetadata; patches: Patch[]}> {
     const {meta, frontier} = await this.readMetadata0(dir);
     const patches: Patch[] = [];
-    const reader = patchDecoder.reader;
+    const decoder = this.cborDecoder;
+    const reader = decoder.reader;
     reader.reset(frontier);
     while (reader.x < frontier.length)
-      patches.push(patchDecoder.readPatch());
+      patches.push(Patch.fromBinary(decoder.val() as Uint8Array));
     return {meta, patches};
   }
 
