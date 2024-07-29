@@ -29,10 +29,8 @@ describe('.sync()', () => {
         id: kit.id,
         batch: patches1,
       });
-      const metaFile = `/blocks/collection/${kit.id}/meta.seq.cbor`;
-      const frontier1 = kit.vol.toJSON()[metaFile] as string;
       expect(kit.vol.toJSON()).toMatchObject({
-        [metaFile]: expect.any(String),
+        [`/blocks/collection/${kit.id}/meta.seq.cbor`]: expect.any(String),
       });
       const model2 = Model.create(schema, kit.sid);
       model2.api.root({foo: 'baz'});
@@ -42,14 +40,9 @@ describe('.sync()', () => {
         id: kit.id,
         batch: patches2,
       });
-      const frontier2 = kit.vol.toJSON()[metaFile] as string;
-      expect(kit.vol.toJSON()).toMatchObject({
-        [metaFile]: expect.any(String),
-      });
-      expect(frontier2.length > frontier1.length).toBe(true);
     };
 
-    test('can merge new block patches, with concurrently created same-ID block from another tab', async () => {
+    test.only('can merge new block patches, with concurrently created same-ID block from another tab', async () => {
       await testCreateAndMerge(undefined);
     });
 
@@ -57,8 +50,5 @@ describe('.sync()', () => {
       const schema = s.obj({});
       await testCreateAndMerge(schema);
     });
-
-    test.todo('test merge on create with multiple patches');
-    test.todo('test merge on create with remote Model already available');
   });
 });

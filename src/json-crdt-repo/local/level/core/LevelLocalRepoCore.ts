@@ -2,16 +2,13 @@ import {encoder, decoder} from '@jsonjoy.com/json-pack/lib/cbor/shared';
 import {gzip, ungzip} from '@jsonjoy.com/util/lib/compression/gzip';
 import {LogEncoder} from 'json-joy/lib/json-crdt/log/codec/LogEncoder';
 import {LogDecoder} from 'json-joy/lib/json-crdt/log/codec/LogDecoder';
-import {Log} from 'json-joy/lib/json-crdt/log/Log';
-import {decoder as patchDecoder} from 'json-joy/lib/json-crdt-patch/codec/binary/shared';
 import {BehaviorSubject} from 'rxjs';
 import {LocalRepoSyncRequest, LocalRepoSyncResponse} from '../../types';
 import {patchListBlob} from './util';
 import {BlockMetadata} from '../types';
 import type {Patch} from 'json-joy/lib/json-crdt';
-import type {CrudLocalRepoCipher} from './types';
+import type {CrudLocalRepoCipher, KV} from './types';
 import type {CborEncoder, CborDecoder} from '@jsonjoy.com/json-pack/lib/cbor';
-import type {CrudApi} from 'fs-zoo/lib/crud/types';
 import type {Locks} from 'thingies/lib/Locks';
 import type {RemoteHistory} from '../../../remote/types';
 
@@ -72,24 +69,20 @@ const enum FileName {
    * The name of the root collection, which contains all blocks.
    */
   RootFolder = 'blocks',
-
-  SyncFolder = 'sync',
-
-  SyncFolderDirty = 'dirty',
 }
 
-export interface CrudLocalRepoCoreOpts {
+export interface LevelLocalRepoCoreOpts {
   readonly remote: RemoteHistory;
-  readonly crud: CrudApi;
+  readonly kv: KV;
   readonly locks: Locks;
   readonly sid: number;
   readonly connected$?: BehaviorSubject<boolean>;
   readonly cipher?: CrudLocalRepoCipher;
 }
 
-export class CrudLocalRepoCore {
+export class LevelLocalRepoCore {
   public readonly remote: RemoteHistory;
-  public readonly crud: CrudApi;
+  readonly kv: KV;
   public readonly locks: Locks;
   public readonly sid: number;
   public readonly cborEncoder: CborEncoder = encoder;
@@ -99,9 +92,9 @@ export class CrudLocalRepoCore {
   public readonly connected$: BehaviorSubject<boolean>;
   protected readonly cipher?: CrudLocalRepoCipher;
 
-  constructor(opts: CrudLocalRepoCoreOpts) {
+  constructor(opts: LevelLocalRepoCoreOpts) {
     this.remote = opts.remote;
-    this.crud = opts.crud;
+    this.kv = opts.kv;
     this.locks = opts.locks;
     this.sid = opts.sid;
     this.connected$ = opts.connected$ ?? new BehaviorSubject(true);
@@ -165,13 +158,41 @@ export class CrudLocalRepoCore {
         return await this.create(req.col, req.id, req.batch);
       } catch (error) {
         if (error instanceof DOMException && error.name === 'Exists') {
-          return await this.rebaseAndMerge(req.col, req.id, req.batch);
+          console.log('MERGE EXISTING...');
         }
         throw error;
       }
     } else {
       throw new Error('Method not implemented.');
     }
+  }
+
+  // protected async writeMetadata0(dir: string[], meta: BlockMetadata, frontier: Uint8Array, throwIf?: 'exists' | 'missing'): Promise<void> {
+  //   const cborEncoder = this.cborEncoder;
+  //   const writer = cborEncoder.writer;
+  //   cborEncoder.writeAny(meta);
+  //   writer.buf(frontier, frontier.length);
+  //   const blob = writer.flush();
+  //   await this.crud.put(dir, FileName.Metadata, blob, {throwIf});
+  // }
+
+
+  protected async writeMeta0(dir: string[], meta: BlockMetadata, throwIf?: 'exists' | 'missing'): Promise<void> {
+    // const cborEncoder = this.cborEncoder;
+    // const writer = cborEncoder.writer;
+    // cborEncoder.writeAny(meta);
+    // writer.buf(frontier, frontier.length);
+    // const blob = writer.flush();
+    // await this.crud.put(dir, FileName.Metadata, blob, {throwIf});
+  }
+
+  protected async writeMetaAndFrontier1(dir: string[], meta: BlockMetadata, frontier: Patch[], throwIf?: 'exists' | 'missing'): Promise<void> {
+    const cborEncoder = this.cborEncoder;
+    const writer = cborEncoder.writer;
+    cborEncoder.writeAny(meta);
+    writer.buf(frontier, frontier.length);
+    const blob = writer.flush();
+    await this.crud.put(dir, FileName.Metadata, blob, {throwIf});
   }
 
   public async create(col: string[], id: string, batch?: Patch[]): Promise<Pick<LocalRepoSyncResponse, 'remote'>> {
@@ -185,8 +206,6 @@ export class CrudLocalRepoCore {
     await this.lockModelWrite(col, id, async () => {
       await this.writeMetadata0(dir, meta, frontier, 'exists');
     });
-    // TODO: pef: this could be done in parallel.
-    await this.markDirty(col, id);
     const remote = (async () => {
       // const sync = this.sync;
       // await sync.markDirty(collection, id);
@@ -197,92 +216,6 @@ export class CrudLocalRepoCore {
     remote.catch(() => {});
     return {remote};
   }
-
-  public async rebaseAndMerge(col: string[], id: string, batch?: Patch[]): Promise<Pick<LocalRepoSyncResponse, 'remote'>> {
-    const dir = this.blockDir(col, id);
-    if (!batch || !batch.length) throw new Error('EMPTY_BATCH');
-    await this.lockModelWrite(col, id, async () => {
-      const {patches} = await this.readMetadata1(dir);
-      let nextTick = 0;
-      for (const patch of patches) {
-        const patchTime = patch.getId()?.time ?? 0;
-        const patchSpan = patch.span();
-        const patchNextTick = patchTime + patchSpan + 1;
-        if (patchNextTick > nextTick) nextTick = patchNextTick;
-      }
-      const length = batch.length;
-      const rebased: Patch[] = [];
-      for (let i = 0; i < length; i++) {
-        const patch = batch[i];
-        const rebasedPatch = patch.rebase(nextTick);
-        rebased.push(rebasedPatch);
-        nextTick += patch.span();
-      }
-      await this.appendFrontier0(dir, patchListBlob(rebased));
-    });
-    const remote = (async () => {
-    })();
-    remote.catch(() => {});
-    return {remote};
-  }
-
-  protected async writeMetadata0(dir: string[], meta: BlockMetadata, frontier: Uint8Array, throwIf?: 'exists' | 'missing'): Promise<void> {
-    const cborEncoder = this.cborEncoder;
-    const writer = cborEncoder.writer;
-    cborEncoder.writeAny(meta);
-    writer.buf(frontier, frontier.length);
-    const blob = writer.flush();
-    await this.crud.put(dir, FileName.Metadata, blob, {throwIf});
-  }
-
-  protected async appendFrontier0(dir: string[], frontier: Uint8Array): Promise<void> {
-    await this.crud.put(dir, FileName.Metadata, frontier, {pos: -1, throwIf: 'missing'});
-  }
-
-  // protected async appendFrontier1(dir: string[], patches: Patch[]): Promise<void> {
-  //   const frontier = patchListBlob(patches);
-  //   await this.appendFrontier0(dir, frontier);
-  // }
-
-  protected async readMetadata0(dir: string[]): Promise<{meta: BlockMetadata; frontier: Uint8Array}> {
-    const blob = await this.crud.get(dir, FileName.Metadata);
-    const decoder = this.cborDecoder;
-    const reader = decoder.reader;
-    reader.reset(blob);
-    const meta = decoder.val() as BlockMetadata;
-    if (!meta || typeof meta !== 'object' || typeof meta.time !== 'number' || typeof meta.ts !== 'number') {
-      throw new Error('CORRUPT_METADATA');
-    }
-    const frontier = blob.subarray(reader.x);
-    return {meta, frontier};
-  }
-
-  protected async readMetadata1(dir: string[]): Promise<{meta: BlockMetadata; patches: Patch[]}> {
-    const {meta, frontier} = await this.readMetadata0(dir);
-    const patches: Patch[] = [];
-    const reader = patchDecoder.reader;
-    reader.reset(frontier);
-    while (reader.x < frontier.length)
-      patches.push(patchDecoder.readPatch());
-    return {meta, patches};
-  }
-
-  /** Mark block as "dirty", has local changes, needs sync with remote. */
-  public async markDirty(collection: string[], id: string): Promise<void> {
-    const dir = [FileName.SyncFolder, FileName.SyncFolderDirty, ...collection];
-    await this.crud.put(dir, id, new Uint8Array(0));
-  }
-
-  /** Mark block as "clean", was successfully synced with remote. */
-  public async markTidy(collection: string[], id: string): Promise<void> {
-    const dir = [FileName.SyncFolder, FileName.SyncFolderDirty, ...collection];
-    await this.crud.del(dir, id, true);
-  }
-
-  // protected async writeMetadata1(dir: string[], meta: BlockMetadata, patches: Patch[], throwIf?: 'exists' | 'missing'): Promise<void> {
-  //   const frontier = patchListBlob(patches);
-  //   await this.writeMetadata0(dir, meta, frontier, throwIf);
-  // }
 
   
 

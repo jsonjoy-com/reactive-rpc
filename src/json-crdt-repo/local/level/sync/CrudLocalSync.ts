@@ -137,6 +137,16 @@ export class CrudLocalSync {
   //   await deps.crud.put(['sync', 'state', ...collection, id], SYNC_FILE_NAME, blob);
   // }
 
+  public async markDirty(collection: string[], id: string): Promise<void> {
+    const dir = ['sync', 'dirty', ...collection];
+    await this.core.crud.put(dir, id, new Uint8Array(0));
+  }
+
+  public async markTidy(collection: string[], id: string): Promise<void> {
+    const dir = ['sync', 'dirty', ...collection];
+    await this.core.crud.del(dir, id, true);
+  }
+
   public async isDirty(collection: string[], id: string): Promise<boolean> {
     const dir = ['sync', 'dirty', ...collection];
     try {
