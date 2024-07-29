@@ -44,7 +44,7 @@ const enum FileName {
    * {@link BlockMetadata} object, the rest are {@link Patch} objects serialized
    * using the `binary` codec.
    */
-  Metadata = 'meta.seq.cbor',
+  Metadata = 'meta.seq.bin',
   
   /**
    * The past history of {@link Patch} objects. The history starts either from

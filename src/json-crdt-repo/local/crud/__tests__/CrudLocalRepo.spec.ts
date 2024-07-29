@@ -1,6 +1,8 @@
 import {Model, s, NodeBuilder, Patch} from 'json-joy/lib/json-crdt';
 import {setup} from './setup';
 
+const META_FILE = 'meta.seq.bin';
+
 describe('.sync()', () => {
   describe('create', () => {
     test('can create a new block', async () => {
@@ -14,7 +16,7 @@ describe('.sync()', () => {
         batch: patches,
       });
       expect(kit.vol.toJSON()).toMatchObject({
-        [`/blocks/collection/${kit.id}/meta.seq.cbor`]: expect.any(String),
+        [`/blocks/collection/${kit.id}/${META_FILE}`]: expect.any(String),
       });
     });
 
@@ -33,7 +35,7 @@ describe('.sync()', () => {
         id: kit.id,
         batch: patches1,
       });
-      const metaFile = `/blocks/collection/${kit.id}/meta.seq.cbor`;
+      const metaFile = `/blocks/collection/${kit.id}/${META_FILE}`;
       const frontier1 = kit.vol.toJSON()[metaFile] as string;
       expect(kit.vol.toJSON()).toMatchObject({
         [metaFile]: expect.any(String),
