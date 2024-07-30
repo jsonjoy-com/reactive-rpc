@@ -14,14 +14,4 @@ export interface BlockMetadata {
    * Whether to keep a history of the block.
    */
   hist?: boolean;
-
-  /**
-   * The minimum logical time of frontier patches.
-   */
-  fmin: number;
-
-  /**
-   * The next maximum available logical time of frontier patches.
-   */
-  fmax: number;
 }

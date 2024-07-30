@@ -157,18 +157,20 @@ export class CrudLocalRepoCore {
   // }
 
   public async sync(req: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
-    if (!req.cursor && req.batch) {
-      // TODO: time patches with user's sid should be rewritten.
-      try {
-        return await this.create(req.col, req.id, req.batch);
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'Exists') {
-          return await this.rebaseAndMerge(req.col, req.id, req.batch);
+    if (req.batch) {
+      const first = req.batch[0];
+      const time = first.getId()?.time;
+      const isNewDocument = time === 1;
+      if (isNewDocument) {
+        try {
+          return await this.create(req.col, req.id, req.batch);
+        } catch (error) {
+          if (error instanceof DOMException && error.name === 'Exists') {
+            return await this.rebaseAndMerge(req.col, req.id, req.batch);
+          }
+          throw error;
         }
-        throw error;
-      }
-    } else if (req.cursor && req.batch) {
-      throw new Error('Not implemented: update');
+      } else return await this.update(req.col, req.id, req.batch);
     } else if (!req.cursor && !req.batch) {
       const model = await this.read(req.col, req.id);
       return {model};
@@ -191,12 +193,9 @@ export class CrudLocalRepoCore {
     const dir = this.blockDir(col, id);
     if (!batch || !batch.length) throw new Error('EMPTY_BATCH');
     const frontier = this.patchListBlobSeq(batch);
-    const [fmin, fmax] = patchListSpan(batch);
     const meta: BlockMetadata = {
       time: -1,
       ts: 0,
-      fmin,
-      fmax,
     };
     await this.lockModelWrite(col, id, async () => {
       await this.writeMetadata0(dir, meta, frontier, 'exists');
@@ -210,42 +209,34 @@ export class CrudLocalRepoCore {
     const dir = this.blockDir(col, id);
     if (!batch || !batch.length) throw new Error('EMPTY_BATCH');
     const time = patchListStart(batch);
-    const {meta} = await this.readMetadata0(dir);
-    if (time >= meta.fmax) return await this.merge(col, id, batch);
+    const tip = await this.readLastPatch(dir);
+    const nextTick = tip ? (tip.getId()?.time ?? 0 + tip.span()) : 0;
+    if (time >= nextTick) {
+      try {
+        return await this.merge(col, id, batch);
+      } catch (error) {
+        if (error instanceof Error && error.message === 'REBASE_REQUIRED')
+          return await this.rebaseAndMerge(col, id, batch);
+        throw error;
+      }
+    }
     return await this.rebaseAndMerge(col, id, batch);
   }
 
   public async merge(col: string[], id: string, batch?: Patch[]): Promise<Pick<LocalRepoSyncResponse, 'remote'>> {
-    throw new Error('not implemented');
-    // const dir = this.blockDir(col, id);
-    // if (!batch || !batch.length) throw new Error('EMPTY_BATCH');
-    // await this.lockModelWrite(col, id, async () => {
-    //   const {patches} = await this.readMetadata1(dir);
-    //   let nextTick = 0;
-    //   for (const patch of patches) {
-    //     const patchTime = patch.getId()?.time ?? 0;
-    //     const patchSpan = patch.span();
-    //     const patchNextTick = patchTime + patchSpan + 1;
-    //     if (patchNextTick > nextTick) nextTick = patchNextTick;
-    //   }
-    //   const sid = this.sid;
-    //   const length = batch.length;
-    //   const rebased: Patch[] = [];
-    //   for (let i = 0; i < length; i++) {
-    //     const patch = batch[i];
-    //     if (patch.getId()?.sid === sid) {
-    //       const rebasedPatch = patch.rebase(nextTick);
-    //       rebased.push(rebasedPatch);
-    //     } else {
-    //       rebased.push(patch);
-    //     }
-    //     nextTick += patch.span();
-    //   }
-    //   await this.appendFrontier0(dir, patchListBlob(rebased));
-    // });
-    // const remote = this.markDirtyAndSync(col, id);
-    // remote.catch(() => {});
-    // return {remote};
+    const dir = this.blockDir(col, id);
+    if (!batch || !batch.length) throw new Error('EMPTY_BATCH');
+    const frontier = this.encodeFrontier(batch);
+    const time = patchListStart(batch);
+    await this.lockModelWrite(col, id, async () => {
+      const tip = await this.readLastPatch(dir);
+      const nextTick = tip ? (tip.getId()?.time ?? 0 + tip.span()) : 0;
+      if (time < nextTick) throw new Error('REBASE_REQUIRED');
+      await this.appendFrontier0(dir, frontier);
+    });
+    const remote = this.markDirtyAndSync(col, id);
+    remote.catch(() => {});
+    return {remote};
   }
 
   public async rebaseAndMerge(col: string[], id: string, batch?: Patch[]): Promise<Pick<LocalRepoSyncResponse, 'remote'>> {
@@ -317,10 +308,15 @@ export class CrudLocalRepoCore {
   }
 
   protected async appendFrontier1(dir: string[], patches: Patch[]): Promise<void> {
+    const frontier = this.encodeFrontier(patches);
+    await this.appendFrontier0(dir, frontier);
+  }
+
+  protected encodeFrontier(patches: Patch[]): Uint8Array {
     const encoder = this.cborEncoder;
     for (const patch of patches) encoder.writeAny(patch.toBinary());
     const frontier = encoder.writer.flush();
-    await this.appendFrontier0(dir, frontier);
+    return frontier;
   }
 
   protected async readMetadata0(dir: string[]): Promise<{meta: BlockMetadata; frontier: Uint8Array}> {
@@ -345,6 +341,14 @@ export class CrudLocalRepoCore {
     while (reader.x < frontier.length)
       patches.push(Patch.fromBinary(decoder.val() as Uint8Array));
     return {meta, patches};
+  }
+
+  protected async readLastPatch(dir: string[]): Promise<undefined | Patch> {
+    // TODO: perf: read only the last patch.
+    const {patches} = await this.readMetadata1(dir);
+    const length = patches.length;
+    if (!length) return void 0;
+    return patches[length - 1];
   }
 
   /** Mark block as "dirty", has local changes, needs sync with remote. */
