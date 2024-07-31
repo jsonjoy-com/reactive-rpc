@@ -6,13 +6,11 @@ import {once} from 'thingies/lib/once';
 // import type {ServerCrudLocalHistoryCore} from './ServerCrudLocalHistoryCore';
 // import type {BlockSyncMetadata} from './types';
 import type {Subscription} from 'rxjs';
-import {CrudLocalRepoCore} from '../core/CrudLocalRepoCore';
-import {RemoteBlockPatch} from '../../../remote/types';
+import {LevelLocalRepoCore} from '../core/LevelLocalRepoCore';
+// import {RemoteBlockPatch} from '../../../remote/types';
 // import {BlockSyncMetadata} from '../types';
 
-const SYNC_FILE_NAME = 'sync.cbor';
-
-export interface CrudLocalSyncOpts {
+export interface LevelLocalRepoSyncOpts {
   /**
    * Number of milliseconds after which remote calls are considered timed out.
    */
@@ -29,13 +27,13 @@ export interface CrudLocalSyncOpts {
   syncLoopMaxBackoff?: number;
 }
 
-export class CrudLocalSync {
+export class LevelLocalRepoSync {
   // private syncLoopTimer: any = 0;
   private _conSub: Subscription | undefined = undefined;
 
   constructor(
-    protected readonly opts: CrudLocalSyncOpts,
-    protected readonly core: CrudLocalRepoCore,
+    protected readonly opts: LevelLocalRepoSyncOpts,
+    protected readonly core: LevelLocalRepoCore,
   ) {}
 
   @once
@@ -137,32 +135,24 @@ export class CrudLocalSync {
   //   await deps.crud.put(['sync', 'state', ...collection, id], SYNC_FILE_NAME, blob);
   // }
 
-  public async markDirty(collection: string[], id: string): Promise<void> {
-    const dir = ['sync', 'dirty', ...collection];
-    await this.core.crud.put(dir, id, new Uint8Array(0));
-  }
-
-  public async markTidy(collection: string[], id: string): Promise<void> {
-    const dir = ['sync', 'dirty', ...collection];
-    await this.core.crud.del(dir, id, true);
-  }
-
   public async isDirty(collection: string[], id: string): Promise<boolean> {
-    const dir = ['sync', 'dirty', ...collection];
-    try {
-      await this.core.crud.info(dir, id);
-      return true;
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'ResourceNotFound') return false;
-      throw error;
-    }
+    throw new Error('not implemented');
+    // const dir = ['sync', 'dirty', ...collection];
+    // try {
+    //   await this.core.crud.info(dir, id);
+    //   return true;
+    // } catch (error) {
+    //   if (error instanceof DOMException && error.name === 'ResourceNotFound') return false;
+    //   throw error;
+    // }
   }
 
   protected async *listDirty(collection: string[] = ['sync', 'dirty']): AsyncIterableIterator<ItemId> {
-    for await (const entry of this.core.crud.scan(collection)) {
-      if (entry.type === 'collection') yield* this.listDirty([...collection, entry.id]);
-      else yield {collection, id: entry.id};
-    }
+    throw new Error('not implemented');
+    // for await (const entry of this.core.crud.scan(collection)) {
+    //   if (entry.type === 'collection') yield* this.listDirty([...collection, entry.id]);
+    //   else yield {collection, id: entry.id};
+    // }
   }
 
   protected async *syncDirty(): AsyncIterableIterator<SyncResult> {

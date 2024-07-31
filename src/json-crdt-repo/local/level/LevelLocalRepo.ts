@@ -1,19 +1,19 @@
 import {CrudLocalRepoCore, CrudLocalRepoCoreOpts} from './core/CrudLocalRepoCore';
-import {CrudLocalSync, CrudLocalSyncOpts} from './sync/CrudLocalSync';
+import {LevelLocalRepoSync, LevelLocalRepoSyncOpts} from './sync/CrudLocalSync';
 import {FanOut} from 'thingies/lib/fanout';
 import type {LocalRepo, LocalRepoSubData, LocalRepoSyncRequest, LocalRepoSyncResponse} from '../types';
 
 export interface LevelLocalRepoOpts extends CrudLocalRepoCoreOpts {
-  sync?: CrudLocalSyncOpts;
+  sync?: LevelLocalRepoSyncOpts;
 }
 
 export class LevelLocalRepo implements LocalRepo {
   protected readonly _core: CrudLocalRepoCore;
-  protected readonly _sync: CrudLocalSync;
+  protected readonly _sync: LevelLocalRepoSync;
 
   constructor(opts: LevelLocalRepoOpts) {
     this._core = new CrudLocalRepoCore(opts);
-    this._sync = new CrudLocalSync(opts.sync ?? {}, this._core);
+    this._sync = new LevelLocalRepoSync(opts.sync ?? {}, this._core);
   }
 
   public async sync(request: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {

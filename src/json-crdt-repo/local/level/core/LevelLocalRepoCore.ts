@@ -5,75 +5,16 @@ import {LogDecoder} from 'json-joy/lib/json-crdt/log/codec/LogDecoder';
 import {BehaviorSubject} from 'rxjs';
 import {LocalRepoSyncRequest, LocalRepoSyncResponse} from '../../types';
 import {patchListBlob} from './util';
-import {BlockMetadata} from '../types';
+import {BinStrLevel, BlockMetadata} from '../types';
 import type {Patch} from 'json-joy/lib/json-crdt';
-import type {CrudLocalRepoCipher, KV} from './types';
+import type {CrudLocalRepoCipher} from './types';
 import type {CborEncoder, CborDecoder} from '@jsonjoy.com/json-pack/lib/cbor';
 import type {Locks} from 'thingies/lib/Locks';
 import type {RemoteHistory} from '../../../remote/types';
 
-/**
- * Each JSON CRDT *block* is represented by a collection, which contains
- * multiple resources (files).
- * 
- * The only required resources is the `Metadata` file, which stores some local
- * metadata and local operations, which have not yet been synced to the remote.
- * 
- * The `Model` file stores the latest server-confirmed state of the block.
- * 
- * Optionally, the block can store full or partial history of all edits. That
- * history is stored in `Past` and `Future` files.
- * 
- * @private
- */
-const enum FileName {
-  /**
-   * Store JSON CRDT metadata and view of the latest state confirmed by the
-   * remote (server). Stores the `Model` in `binary` codec.
-   */
-  Model = 'model.crdt',
-
-  /**
-   * Stores local metadata (required for syncing and other data) and the list of
-   * patches, which were created locally and not yet synced to the remote
-   * (the frontier).
-   * 
-   * The file stores a sequence of CBOR values. The first value is the
-   * {@link BlockMetadata} object, the rest are {@link Patch} objects serialized
-   * using the `binary` codec.
-   */
-  Metadata = 'meta.seq.cbor',
-  
-  /**
-   * The past history of {@link Patch} objects. The history starts either from
-   * the beginning of time, or contains the starting document {@link Model}. The
-   * history is encoded in {@link Log} format.
-   * 
-   * The history can be treated as immutable, hence it is stored in a compressed
-   * ".gz" CBOR sequence file.
-   */
-  Past = 'past.seq.cbor.gz',
-
-  /**
-   * The list of {@link Patch} objects starting from the point where `Past` ends
-   * and runs until either the `Model` is reached, or terminates earlier if
-   * there is a gap in the history. That gap can be loaded from the remote.
-   *
-   * The `Future` history does not contain the *frontier* stored in `Metadata.
-   * Once the frontier patches are synced to the remote, they can be appended to
-   * the `Future` file, hence the `Future` file is not compressed.
-   */
-  Future = 'future.seq.cbor',
-
-  /**
-   * The name of the root collection, which contains all blocks.
-   */
-  RootFolder = 'blocks',
-}
-
 export interface LevelLocalRepoCoreOpts {
   readonly remote: RemoteHistory;
-  readonly kv: KV;
+  readonly kv: BinStrLevel;
   readonly locks: Locks;
   readonly sid: number;
   readonly connected$?: BehaviorSubject<boolean>;
@@ -82,7 +23,7 @@ export interface LevelLocalRepoCoreOpts {
 
 export class LevelLocalRepoCore {
   public readonly remote: RemoteHistory;
-  readonly kv: KV;
+  readonly kv: BinStrLevel;
   public readonly locks: Locks;
   public readonly sid: number;
   public readonly cborEncoder: CborEncoder = encoder;
@@ -165,34 +106,6 @@ export class LevelLocalRepoCore {
     } else {
       throw new Error('Method not implemented.');
     }
-  }
-
-  // protected async writeMetadata0(dir: string[], meta: BlockMetadata, frontier: Uint8Array, throwIf?: 'exists' | 'missing'): Promise<void> {
-  //   const cborEncoder = this.cborEncoder;
-  //   const writer = cborEncoder.writer;
-  //   cborEncoder.writeAny(meta);
-  //   writer.buf(frontier, frontier.length);
-  //   const blob = writer.flush();
-  //   await this.crud.put(dir, FileName.Metadata, blob, {throwIf});
-  // }
-
-
-  protected async writeMeta0(dir: string[], meta: BlockMetadata, throwIf?: 'exists' | 'missing'): Promise<void> {
-    // const cborEncoder = this.cborEncoder;
-    // const writer = cborEncoder.writer;
-    // cborEncoder.writeAny(meta);
-    // writer.buf(frontier, frontier.length);
-    // const blob = writer.flush();
-    // await this.crud.put(dir, FileName.Metadata, blob, {throwIf});
-  }
-
-  protected async writeMetaAndFrontier1(dir: string[], meta: BlockMetadata, frontier: Patch[], throwIf?: 'exists' | 'missing'): Promise<void> {
-    const cborEncoder = this.cborEncoder;
-    const writer = cborEncoder.writer;
-    cborEncoder.writeAny(meta);
-    writer.buf(frontier, frontier.length);
-    const blob = writer.flush();
-    await this.crud.put(dir, FileName.Metadata, blob, {throwIf});
   }
 
   public async create(col: string[], id: string, batch?: Patch[]): Promise<Pick<LocalRepoSyncResponse, 'remote'>> {
