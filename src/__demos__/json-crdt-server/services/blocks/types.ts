@@ -1,14 +1,53 @@
+/**
+ * Represents a state snapshot of a block at a certain point in time.
+ */
 export interface StoreSnapshot {
+  /** Block ID. */
   id: string;
+
+  /** Sequence number. The seq number of the last applied {@link StoreBatch}. */
   seq: number;
-  created: number;
-  updated: number;
+
+  /** Timestamp in (milliseconds) when the snapshot was created. */
+  ts: number;
+
+  /** The state of the snapshot encoded in algorithm-specific format. */
   blob: Uint8Array;
 }
 
-export interface StorePatch {
+/**
+ * Represents a list of changes to apply to a block.
+ */
+export interface StoreBatch {
+  /**
+   * Server enforced sequence number. The client must provide a sequence number
+   * that is greater than the current sequence number of the block.
+   */
   seq: number;
-  created: number;
+
+  /** Timestamp (in milliseconds) when the batch was processed by the server. */
+  ts: number;
+
+  /** Timestamp (in milliseconds) when the batch was created by the client. */
+  cts?: number;
+
+  /**
+   * A list of atomic changes to apply to the block.
+   */
+  patches: StorePatch[];
+}
+
+/**
+ * Represents an atomic change unit in algorithm-specific format.
+ */
+export interface StorePatch {
+  /** Time (in milliseconds) when the patch was created by the client. */
+  cts?: number;
+
+  /** Client set, optional, user ID, who created the patch. */
+  uid?: string;
+
+  /** The patch contents in algorithm-specific format. */
   blob: Uint8Array;
 }
 
@@ -17,10 +56,10 @@ export interface Store {
    * Create a new block.
    *
    * @param id Block ID.
-   * @param patches Initial patches to apply to a new block.
+   * @param batch Initial patches to apply to a new block.
    * @returns Newly created block data.
    */
-  create(id: string, snapshot: StoreSnapshot, patches: StorePatch[]): Promise<void>;
+  create(id: string, snapshot: StoreSnapshot, batch: StoreBatch): Promise<void>;
 
   /**
    * Retrieve an existing block.
@@ -39,23 +78,23 @@ export interface Store {
   seq(id: string): Promise<number | undefined>;
 
   /**
-   * Edit an existing block by applying new patches.
+   * Edit an existing block by applying a new batch.
    *
    * @param id Block ID.
-   * @param patches Patches to apply to the block.
+   * @param batch Patches to apply to the block.
    * @returns Updated block data.
    */
-  edit(id: string, patches: StorePatch[]): Promise<StoreApplyResult>;
+  edit(id: string, batch: StoreBatch): Promise<StoreApplyResult>;
 
   /**
-   * Retrieve the history of patches for a block.
+   * Retrieve the history of batches for a block.
    *
    * @param id Block ID.
    * @param min Minimum sequence number.
    * @param max Maximum sequence number.
-   * @returns List of patches.
+   * @returns List of batches.
    */
-  history(id: string, min: number, max: number): Promise<StorePatch[]>;
+  history(id: string, min: number, max: number): Promise<StoreBatch[]>;
 
   /**
    * Remove a block.
