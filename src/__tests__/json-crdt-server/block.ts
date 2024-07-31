@@ -453,7 +453,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
       test('can load a block', async () => {
         const {call, stop} = await setup();
         const id = getId();
-        const model = Model.withLogicalClock();
+        const model = Model.create();
         model.api.root({
           text: 'Hell',
         });
@@ -502,7 +502,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
       test('can read a block view', async () => {
         const {call, stop} = await setup();
         const id = getId();
-        const model = Model.withLogicalClock();
+        const model = Model.create();
         model.api.root({
           text: 'Hell',
         });
