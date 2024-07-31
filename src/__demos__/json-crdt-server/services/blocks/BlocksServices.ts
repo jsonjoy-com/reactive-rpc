@@ -88,6 +88,14 @@ export class BlocksServices {
     return result;
   }
 
+  public async view(id: string) {
+    const {store} = this;
+    const result = await store.get(id);
+    if (!result) throw RpcError.fromCode(RpcErrorCodes.NOT_FOUND);
+    const model = Model.load(result.snapshot.blob);
+    return model.view();
+  }
+
   public async remove(id: string) {
     const deleted = await this.store.remove(id);
     const msg: TBlockDeleteEvent = ['del'];

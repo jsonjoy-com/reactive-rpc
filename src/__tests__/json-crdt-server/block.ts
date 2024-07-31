@@ -497,5 +497,50 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         stop();
       });
     });
+
+    describe('block.view', () => {
+      test('can read a block view', async () => {
+        const {call, stop} = await setup();
+        const id = getId();
+        const model = Model.withLogicalClock();
+        model.api.root({
+          text: 'Hell',
+        });
+        const patch1 = model.api.flush();
+        await call('block.new', {
+          id,
+          patches: [
+            {
+              blob: patch1.toBinary(),
+            },
+          ],
+        });
+        model.api.str(['text']).ins(4, 'o');
+        const patch2 = model.api.flush();
+        model.api.obj([]).set({
+          age: 26,
+        });
+        const patch3 = model.api.flush();
+        await call('block.upd', {
+          id,
+          patches: [
+            {
+              blob: patch2.toBinary(),
+            },
+            {
+              blob: patch3.toBinary(),
+            },
+          ],
+        });
+        const res = await call('block.view', {id});
+        expect(res).toMatchObject({
+          view: {
+            text: 'Hello',
+            age: 26,
+          },
+        });
+        stop();
+      });
+    });
   });
 };

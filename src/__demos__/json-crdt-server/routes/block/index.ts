@@ -1,5 +1,6 @@
 import {new_} from './methods/new';
 import {get} from './methods/get';
+import {view} from './methods/view';
 import {upd} from './methods/upd';
 import {del} from './methods/del';
 import {scan} from './methods/scan';
@@ -41,9 +42,10 @@ export const block =
     return (
     ( new_(d)
     ( get(d)
+    ( view(d)
     ( upd(d)
     ( del(d)
     ( listen(d)
     ( scan(d)
-    ( r ))))))));
+    ( r )))))))));
   };
