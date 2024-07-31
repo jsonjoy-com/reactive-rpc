@@ -11,6 +11,9 @@ export interface StoreSnapshot {
   /** Timestamp in (milliseconds) when the snapshot was created. */
   ts: number;
 
+  /** Timestamp in (milliseconds) when the snapshot was last updated. */
+  uts: number;
+
   /** The state of the snapshot encoded in algorithm-specific format. */
   blob: Uint8Array;
 }
@@ -51,6 +54,8 @@ export interface StorePatch {
   blob: Uint8Array;
 }
 
+export type StoreIncomingBatch = Omit<StoreBatch, 'seq' | 'ts'> & Partial<Pick<StoreBatch, 'seq'>>;
+
 export interface Store {
   /**
    * Create a new block.
@@ -59,7 +64,7 @@ export interface Store {
    * @param batch Initial patches to apply to a new block.
    * @returns Newly created block data.
    */
-  create(id: string, snapshot: StoreSnapshot, batch: StoreBatch): Promise<void>;
+  create(id: string, snapshot: StoreSnapshot, batch: StoreIncomingBatch): Promise<void>;
 
   /**
    * Retrieve an existing block.
@@ -84,7 +89,7 @@ export interface Store {
    * @param batch Patches to apply to the block.
    * @returns Updated block data.
    */
-  edit(id: string, batch: StoreBatch): Promise<StoreApplyResult>;
+  edit(id: string, batch: StoreIncomingBatch): Promise<StoreApplyResult>;
 
   /**
    * Retrieve the history of batches for a block.
@@ -111,4 +116,5 @@ export interface StoreGetResult {
 
 export interface StoreApplyResult {
   snapshot: StoreSnapshot;
+  batch: StoreBatch;
 }

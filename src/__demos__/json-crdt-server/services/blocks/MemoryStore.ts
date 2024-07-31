@@ -6,7 +6,7 @@ const tick = new Promise((resolve) => setImmediate(resolve));
 
 export class MemoryStore implements types.Store {
   protected readonly snapshots = new Map<string, types.StoreSnapshot>();
-  protected readonly patches = new Map<string, types.StorePatch[]>();
+  protected readonly batches = new Map<string, types.StoreBatch[]>();
 
   public async get(id: string): Promise<types.StoreGetResult | undefined> {
     await tick;
@@ -25,40 +25,47 @@ export class MemoryStore implements types.Store {
     return this.snapshots.get(id)?.seq;
   }
 
-  public async create(id: string, model: types.StoreSnapshot, patches: types.StorePatch[]): Promise<void> {
+  public async create(id: string, model: types.StoreSnapshot, {cts, patches}: types.StoreIncomingBatch): Promise<void> {
     await tick;
     if (!Array.isArray(patches)) throw new Error('NO_PATCHES');
     if (this.snapshots.has(id)) throw new Error('BLOCK_EXISTS');
+    const batch: types.StoreBatch = {
+      seq: 0,
+      ts: Date.now(),
+      cts,
+      patches,
+    };
     this.snapshots.set(id, model);
-    this.patches.set(id, patches);
+    this.batches.set(id, [batch]);
   }
 
-  public async edit(id: string, patches: types.StorePatch[]): Promise<types.StoreApplyResult> {
+  public async edit(id: string, {seq = 0, cts, patches}: types.StoreIncomingBatch): Promise<types.StoreApplyResult> {
     await tick;
     if (!Array.isArray(patches) || !patches.length) throw new Error('NO_PATCHES');
     const snapshot = this.snapshots.get(id);
-    const existingPatches = this.patches.get(id);
-    if (!snapshot || !existingPatches) throw RpcError.notFound();
-    let seq = patches[0].seq;
-    const diff = seq - snapshot.seq - 1;
+    const existingBatches = this.batches.get(id);
+    if (!snapshot || !existingBatches) throw RpcError.notFound();
     if (snapshot.seq + 1 < seq) throw new Error('PATCH_SEQ_TOO_HIGH');
     const model = Model.fromBinary(snapshot.blob);
     for (const patch of patches) {
-      if (seq !== patch.seq) throw new Error('PATCHES_OUT_OF_ORDER');
       model.applyPatch(Patch.fromBinary(patch.blob));
-      patch.seq -= diff;
-      seq++;
     }
-    snapshot.seq += patches.length;
+    const batch: types.StoreBatch = {
+      seq: snapshot.seq + 1,
+      ts: Date.now(),
+      cts,
+      patches,
+    };
+    snapshot.seq = batch.seq;
     snapshot.blob = model.toBinary();
-    snapshot.updated = Date.now();
-    for (const patch of patches) existingPatches.push(patch);
-    return {snapshot};
+    snapshot.uts = batch.ts;
+    existingBatches.push(batch);
+    return {snapshot, batch};
   }
 
-  public async history(id: string, min: number, max: number): Promise<types.StorePatch[]> {
+  public async history(id: string, min: number, max: number): Promise<types.StoreBatch[]> {
     await tick;
-    const patches = this.patches.get(id);
+    const patches = this.batches.get(id);
     if (!patches) return [];
     return patches.slice(min, max + 1);
   }
@@ -70,23 +77,23 @@ export class MemoryStore implements types.Store {
 
   private removeSync(id: string): boolean {
     this.snapshots.delete(id);
-    return this.patches.delete(id);
+    return this.batches.delete(id);
   }
 
-  public stats(): {blocks: number; patches: number} {
+  public stats(): {blocks: number; batches: number} {
     return {
       blocks: this.snapshots.size,
-      patches: [...this.patches.values()].reduce((acc, v) => acc + v.length, 0),
+      batches: [...this.batches.values()].reduce((acc, v) => acc + v.length, 0),
     };
   }
 
   public async removeOlderThan(ts: number): Promise<void> {
     await tick;
-    for (const [id, snapshot] of this.snapshots) if (snapshot.created < ts) this.removeSync(id);
+    for (const [id, snapshot] of this.snapshots) if (snapshot.ts < ts) this.removeSync(id);
   }
 
   public async removeAccessedBefore(ts: number): Promise<void> {
     await tick;
-    for (const [id, snapshot] of this.snapshots) if (snapshot.updated < ts) this.removeSync(id);
+    for (const [id, snapshot] of this.snapshots) if (snapshot.uts < ts) this.removeSync(id);
   }
 }
