@@ -127,8 +127,16 @@ export class RpcMessageStreamProcessor<Ctx = unknown> {
   };
 
   public stop(reason: RpcErrorCodes = RpcErrorCodes.STOP) {
-    this.send = (() => {}) as any;
-    for (const call of this.activeStreamCalls.values()) call.req$.error(RpcError.valueFromCode(reason));
+    this.send = <any>(() => {});
+    for (const call of this.activeStreamCalls.values()) {
+      try {
+        call.req$.error(RpcError.valueFromCode(reason));
+        call.stop$.next(null);
+      } catch (error) {
+        // tslint:disable-next-line no-console
+        console.error('STOPPING_ERROR', error);
+      }
+    }
     this.activeStreamCalls.clear();
   }
 
