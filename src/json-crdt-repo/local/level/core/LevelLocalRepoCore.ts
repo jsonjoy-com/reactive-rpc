@@ -42,7 +42,7 @@ export class LevelLocalRepoCore {
     this.cipher = opts.cipher;
   }
 
-  public async encrypt(blob: Uint8Array): Promise<Uint8Array> {   
+  public async encrypt(blob: Uint8Array): Promise<Uint8Array> {
     blob = await gzip(blob);
     if (this.cipher) blob = await this.cipher.encrypt(blob);
     return blob;
@@ -55,7 +55,8 @@ export class LevelLocalRepoCore {
   }
 
   public blockDir(collection: string[], id: string): string[] {
-    return [FileName.RootFolder, ...collection, id];
+    return [];
+    // return [FileName.RootFolder, ...collection, id];
   }
 
   // public async sync(req: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
@@ -99,7 +100,7 @@ export class LevelLocalRepoCore {
         return await this.create(req.col, req.id, req.batch);
       } catch (error) {
         if (error instanceof DOMException && error.name === 'Exists') {
-          console.log('MERGE EXISTING...');
+          // console.log('MERGE EXISTING...');
         }
         throw error;
       }
@@ -109,28 +110,27 @@ export class LevelLocalRepoCore {
   }
 
   public async create(col: string[], id: string, batch?: Patch[]): Promise<Pick<LocalRepoSyncResponse, 'remote'>> {
-    const dir = this.blockDir(col, id);
-    if (!batch || !batch.length) throw new Error('EMPTY_BATCH');
-    const frontier = patchListBlob(batch);
-    const meta: BlockMetadata = {
-      time: -1,
-      ts: 0,
-    };
-    await this.lockModelWrite(col, id, async () => {
-      await this.writeMetadata0(dir, meta, frontier, 'exists');
-    });
-    const remote = (async () => {
-      // const sync = this.sync;
-      // await sync.markDirty(collection, id);
-      // // TODO: use pushNewBlock instead?
-      // const success = await sync.sync(collection, id);
-      // if (!success) throw new Error('NOT_SYNCED');
-    })();
-    remote.catch(() => {});
-    return {remote};
+    throw new Error('not implemented');
+    // const dir = this.blockDir(col, id);
+    // if (!batch || !batch.length) throw new Error('EMPTY_BATCH');
+    // const frontier = patchListBlob(batch);
+    // const meta: BlockMetadata = {
+    //   time: -1,
+    //   ts: 0,
+    // };
+    // await this.lockModelWrite(col, id, async () => {
+    //   await this.writeMetadata0(dir, meta, frontier, 'exists');
+    // });
+    // const remote = (async () => {
+    //   // const sync = this.sync;
+    //   // await sync.markDirty(collection, id);
+    //   // // TODO: use pushNewBlock instead?
+    //   // const success = await sync.sync(collection, id);
+    //   // if (!success) throw new Error('NOT_SYNCED');
+    // })();
+    // remote.catch(() => {});
+    // return {remote};
   }
-
-  
 
   // public async sync(collection: string[], id: string, request: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
   //   throw new Error('Method not implemented.');

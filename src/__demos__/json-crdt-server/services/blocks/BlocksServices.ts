@@ -15,8 +15,7 @@ const validateBatch = (batch: StoreIncomingBatch) => {
   if (!Array.isArray(patches)) throw RpcError.validation('INVALID_PATCHES');
   if (patches.length > 100) throw RpcError.validation('TOO_MANY_PATCHES');
   if (patches.length < 1) throw RpcError.validation('TOO_FEW_PATCHES');
-  for (const patch of patches)
-    if (patch.blob.length > 2000) throw RpcError.validation('patch blob too large');
+  for (const patch of patches) if (patch.blob.length > 2000) throw RpcError.validation('patch blob too large');
 };
 
 export class BlocksServices {
@@ -40,7 +39,7 @@ export class BlocksServices {
       return await this.store.create(snapshot);
     }
     validateBatch(batch);
-    const patches = batch.patches.map(p => Patch.fromBinary(p.blob));
+    const patches = batch.patches.map((p) => Patch.fromBinary(p.blob));
     const model = Model.fromPatches(patches);
     const snapshot: StoreSnapshot = {
       id,
@@ -96,7 +95,12 @@ export class BlocksServices {
     return deleted;
   }
 
-  public async scan(id: string, includeStartModel: boolean, offset: number | undefined, limit: number | undefined = 10) {
+  public async scan(
+    id: string,
+    includeStartModel: boolean,
+    offset: number | undefined,
+    limit: number | undefined = 10,
+  ) {
     const {store} = this;
     if (typeof offset !== 'number') offset = await store.seq(id);
     if (typeof offset !== 'number') throw RpcError.fromCode(RpcErrorCodes.NOT_FOUND);
@@ -120,7 +124,7 @@ export class BlocksServices {
       if (offset !== 0) {
         const historicBatches = await store.history(id, 0, offset - 1);
         for (const batch of historicBatches) {
-          model.applyBatch(batch.patches.map(p => Patch.fromBinary(p.blob)));
+          model.applyBatch(batch.patches.map((p) => Patch.fromBinary(p.blob)));
         }
       }
       return {batches, model: model.toBinary()};
@@ -141,7 +145,7 @@ export class BlocksServices {
     const snapshot = get.snapshot;
     const seq = snapshot.seq + 1;
     const model = Model.fromBinary(snapshot.blob);
-    const patches = batch.patches.map(p => Patch.fromBinary(p.blob));
+    const patches = batch.patches.map((p) => Patch.fromBinary(p.blob));
     model.applyBatch(patches);
     const newSnapshot: StoreIncomingSnapshot = {
       id,

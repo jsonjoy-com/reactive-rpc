@@ -1,7 +1,7 @@
 import {timeout} from 'thingies/lib/timeout';
 
 const timeout2 = <T>(ms: number, promise: Promise<T>): Promise<T | undefined> =>
-    timeout(ms, promise).catch(() => undefined);
+  timeout(ms, promise).catch(() => undefined);
 
 export interface UndoItem {
   undo(): RedoItem | Promise<RedoItem>;

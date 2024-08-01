@@ -17,15 +17,15 @@ import type {RemoteHistory} from '../../../remote/types';
 /**
  * Each JSON CRDT *block* is represented by a collection, which contains
  * multiple resources (files).
- * 
+ *
  * The only required resources is the `Metadata` file, which stores some local
  * metadata and local operations, which have not yet been synced to the remote.
- * 
+ *
  * The `Model` file stores the latest server-confirmed state of the block.
- * 
+ *
  * Optionally, the block can store full or partial history of all edits. That
  * history is stored in `Past` and `Future` files.
- * 
+ *
  * @private
  */
 const enum FileName {
@@ -39,18 +39,18 @@ const enum FileName {
    * Stores local metadata (required for syncing and other data) and the list of
    * patches, which were created locally and not yet synced to the remote
    * (the frontier).
-   * 
+   *
    * The file stores a sequence of CBOR values. The first value is the
    * {@link BlockMetadata} object, the rest are {@link Patch} objects serialized
    * using the `binary` codec.
    */
   Metadata = 'meta.seq.cbor',
-  
+
   /**
    * The past history of {@link Patch} objects. The history starts either from
    * the beginning of time, or contains the starting document {@link Model}. The
    * history is encoded in {@link Log} format.
-   * 
+   *
    * The history can be treated as immutable, hence it is stored in a compressed
    * ".gz" CBOR sequence file.
    */
@@ -107,7 +107,7 @@ export class CrudLocalRepoCore {
     this.cipher = opts.cipher;
   }
 
-  public async encrypt(blob: Uint8Array): Promise<Uint8Array> {   
+  public async encrypt(blob: Uint8Array): Promise<Uint8Array> {
     blob = await gzip(blob);
     if (this.cipher) blob = await this.cipher.encrypt(blob);
     return blob;
@@ -184,8 +184,7 @@ export class CrudLocalRepoCore {
   protected patchListBlobSeq(patches: Patch[]): Uint8Array {
     const encoder = this.cborEncoder;
     const length = patches.length;
-    for (let i = 0; i < length; i++)
-      encoder.writeBin(patches[i].toBinary());
+    for (let i = 0; i < length; i++) encoder.writeBin(patches[i].toBinary());
     return encoder.writer.flush();
   }
 
@@ -239,7 +238,11 @@ export class CrudLocalRepoCore {
     return {remote};
   }
 
-  public async rebaseAndMerge(col: string[], id: string, batch?: Patch[]): Promise<Pick<LocalRepoSyncResponse, 'remote'>> {
+  public async rebaseAndMerge(
+    col: string[],
+    id: string,
+    batch?: Patch[],
+  ): Promise<Pick<LocalRepoSyncResponse, 'remote'>> {
     const dir = this.blockDir(col, id);
     if (!batch || !batch.length) throw new Error('EMPTY_BATCH');
     await this.lockModelWrite(col, id, async () => {
@@ -273,10 +276,7 @@ export class CrudLocalRepoCore {
 
   public async read(col: string[], id: string): Promise<Model> {
     const dir = this.blockDir(col, id);
-    const [model, {patches}] = await Promise.all([
-      this.readModel(col, id),
-      this.readMetadata1(dir),
-    ]);
+    const [model, {patches}] = await Promise.all([this.readModel(col, id), this.readMetadata1(dir)]);
     model.applyBatch(patches);
     return model;
   }
@@ -288,13 +288,17 @@ export class CrudLocalRepoCore {
       const model = Model.load(blob, this.sid);
       return model;
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'ResourceNotFound')
-        return Model.create(void 0, this.sid); 
+      if (error instanceof DOMException && error.name === 'ResourceNotFound') return Model.create(void 0, this.sid);
       throw error;
     }
   }
 
-  protected async writeMetadata0(dir: string[], meta: BlockMetadata, frontier: Uint8Array, throwIf?: 'exists' | 'missing'): Promise<void> {
+  protected async writeMetadata0(
+    dir: string[],
+    meta: BlockMetadata,
+    frontier: Uint8Array,
+    throwIf?: 'exists' | 'missing',
+  ): Promise<void> {
     const cborEncoder = this.cborEncoder;
     const writer = cborEncoder.writer;
     cborEncoder.writeAny(meta);
@@ -338,8 +342,7 @@ export class CrudLocalRepoCore {
     const decoder = this.cborDecoder;
     const reader = decoder.reader;
     reader.reset(frontier);
-    while (reader.x < frontier.length)
-      patches.push(Patch.fromBinary(decoder.val() as Uint8Array));
+    while (reader.x < frontier.length) patches.push(Patch.fromBinary(decoder.val() as Uint8Array));
     return {meta, patches};
   }
 
@@ -372,8 +375,6 @@ export class CrudLocalRepoCore {
   //   const frontier = patchListBlob(patches);
   //   await this.writeMetadata0(dir, meta, frontier, throwIf);
   // }
-
-  
 
   // public async sync(collection: string[], id: string, request: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
   //   throw new Error('Method not implemented.');

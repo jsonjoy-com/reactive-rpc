@@ -64,7 +64,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
                 blob: patch2.toBinary(),
               },
             ],
-          }
+          },
         });
         expect(newResponse).toMatchObject({
           snapshot: {
@@ -133,13 +133,13 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
                 blob: patch1.toBinary(),
               },
             ],
-          }
+          },
         });
         expect(result).toMatchObject({
           batch: {
             seq: 0,
             ts: expect.any(Number),
-          }
+          },
         });
         stop();
       });
@@ -334,9 +334,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
           if (emits[0][0] === 'upd') {
             expect(emits[0][1].batch).toMatchObject({
               ts: expect.any(Number),
-              patches: [
-                {blob: patch1.toBinary()},
-              ],
+              patches: [{blob: patch1.toBinary()}],
             });
           }
           model.api.root({
@@ -358,9 +356,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
             expect(emits[1][1].batch.patches.length).toBe(1);
             expect(emits[1][1].batch).toMatchObject({
               ts: expect.any(Number),
-              patches: [
-                {blob: patch2.toBinary()},
-              ],
+              patches: [{blob: patch2.toBinary()}],
             });
           }
           stop();
@@ -396,9 +392,11 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
             expect(emits[1][1].batch.patches.length).toBe(1);
             expect(emits[1][1].batch).toMatchObject({
               ts: expect.any(Number),
-              patches: [{
-                blob: patch1.toBinary(),
-              }],
+              patches: [
+                {
+                  blob: patch1.toBinary(),
+                },
+              ],
             });
           }
           stop();
@@ -413,7 +411,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
           });
           await call('block.new', {id});
           await until(() => emits.length === 1);
-          expect(emits).toEqual([['new']])
+          expect(emits).toEqual([['new']]);
           stop();
         });
 
@@ -427,10 +425,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
           await call('block.new', {id});
           await call('block.del', {id});
           await until(() => emits.length === 2);
-          expect(emits).toEqual([
-            ['new'],
-            ['del'],
-          ]);
+          expect(emits).toEqual([['new'], ['del']]);
           stop();
         });
       });
@@ -484,7 +479,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
                 {
                   blob: patch1.toBinary(),
                 },
-              ]
+              ],
             },
             {
               ts: expect.any(Number),
@@ -495,7 +490,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
                 {
                   blob: patch3.toBinary(),
                 },
-              ]
+              ],
             },
           ],
         });

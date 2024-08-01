@@ -13,11 +13,15 @@ export const scan =
         title: 'Starting Sequence Number',
         description: 'The sequence number to start from. Defaults to the latest sequence number.',
       }),
-      t.propOpt('limit', t.num.options({
-        format: 'u16',
-        gte: 0,
-        lte: 1000,
-      }))
+      t
+        .propOpt(
+          'limit',
+          t.num.options({
+            format: 'u16',
+            gte: 0,
+            lte: 1000,
+          }),
+        )
         .options({
           title: 'Number of Patches',
           description:

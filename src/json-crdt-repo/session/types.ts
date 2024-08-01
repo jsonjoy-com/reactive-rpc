@@ -16,7 +16,7 @@ export interface SessionHistory {
 /**
  * A single "sync" call servers as three different operations: "create", "read",
  * and "update".
- * 
+ *
  * - When `cursor` is not set and `batch` is set, the call is equivalent to "create".
  * - When `cursor` and `batch` ar both not set, the call is equivalent to "read".
  * - When `cursor` is set and `batch` is set, the call is equivalent to "update".

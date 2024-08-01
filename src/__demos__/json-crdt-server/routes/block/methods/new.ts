@@ -1,9 +1,4 @@
-import {
-  BlockIdRef,
-  NewBlockSnapshotResponseRef,
-  BlockBatchPartialRef,
-  BlockBatchRef,
-} from '../schema';
+import {BlockIdRef, NewBlockSnapshotResponseRef, BlockBatchPartialRef, BlockBatchRef} from '../schema';
 import type {RouteDeps, Router, RouterBase} from '../../types';
 
 export const new_ =
@@ -22,10 +17,7 @@ export const new_ =
     );
 
     const Response = t
-      .Object(
-        t.prop('snapshot', NewBlockSnapshotResponseRef),
-        t.propOpt('batch', BlockBatchRef),
-      )
+      .Object(t.prop('snapshot', NewBlockSnapshotResponseRef), t.propOpt('batch', BlockBatchRef))
       .options({
         title: 'New block creation response',
         description:

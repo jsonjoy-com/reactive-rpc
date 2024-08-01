@@ -24,7 +24,10 @@ export class MemoryStore implements types.Store {
     return this.snapshots.get(id)?.seq;
   }
 
-  public async create(snapshot: types.StoreSnapshot, batch?: types.StoreIncomingBatch): Promise<types.StoreCreateResult> {
+  public async create(
+    snapshot: types.StoreSnapshot,
+    batch?: types.StoreIncomingBatch,
+  ): Promise<types.StoreCreateResult> {
     const {id} = snapshot;
     await tick;
     if (this.snapshots.has(id)) throw new Error('BLOCK_EXISTS');
@@ -44,7 +47,10 @@ export class MemoryStore implements types.Store {
     return {snapshot};
   }
 
-  public async push(snapshot0: types.StoreIncomingSnapshot, batch0: types.StoreIncomingBatch): Promise<types.StorePushResult> {
+  public async push(
+    snapshot0: types.StoreIncomingSnapshot,
+    batch0: types.StoreIncomingBatch,
+  ): Promise<types.StorePushResult> {
     const {id, seq} = snapshot0;
     const {patches} = batch0;
     await tick;

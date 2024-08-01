@@ -4,8 +4,7 @@ import {InsValOp, Patch} from 'json-joy/lib/json-crdt-patch';
 import {ValNode} from 'json-joy/lib/json-crdt/nodes';
 import {toSchema} from 'json-joy/lib/json-crdt/schema/toSchema';
 import {Log} from 'json-joy/lib/json-crdt/log/Log';
-import {RedoItem, UndoItem, UndoRedoStack} from './UndoRedoStack';
-import type {LocalHistory} from './local/types';
+import {RedoItem, UndoItem, UndoRedoStack} from '../undo-redo/UndoRedoStack';
 
 class Undo implements UndoItem {
   constructor(public readonly undo: () => Redo) {}
@@ -19,7 +18,7 @@ export class SessionHistory {
   constructor(
     public readonly collection: string[],
     public readonly id: string,
-    protected readonly local: LocalHistory,
+    // protected readonly local: ServerCrudLocalHistoryOpts,
   ) {}
 
   private readonly __onPatchRace = createRace();
