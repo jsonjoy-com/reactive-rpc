@@ -9,6 +9,8 @@ import {ConnectionContext} from '../context';
 import {RpcMessageCodecs} from '../../common/codec/RpcMessageCodecs';
 import {RpcValue} from '../../common/messages/Value';
 import {RpcCodecs} from '../../common/codec/RpcCodecs';
+import {Printable} from 'sonic-forest/lib/print/types';
+import {printTree} from 'sonic-forest/lib/print/printTree';
 import {type ReactiveRpcMessage, RpcMessageStreamProcessor, ReactiveRpcClientMessage} from '../../common';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
 import type * as types from './types';
@@ -60,7 +62,7 @@ export interface RpcAppOptions {
   logger?: types.ServerLogger;
 }
 
-export class RpcApp<Ctx extends ConnectionContext> {
+export class RpcApp<Ctx extends ConnectionContext> implements Printable {
   public readonly codecs: RpcCodecs;
   protected readonly app: types.TemplatedApp;
   protected readonly maxRequestBodySize: number;
@@ -279,5 +281,18 @@ export class RpcApp<Ctx extends ConnectionContext> {
         logger.error('SERVER_START', new Error(`Failed to listen on ${port} port.`));
       }
     });
+  }
+
+  // ---------------------------------------------------------------- Printable
+
+  public toString(tab: string = ''): string {
+    return (
+      `${this.constructor.name}` +
+      printTree(tab, [
+        (tab) => this.router.toString(tab),
+        () => '',
+        (tab) => (this.options.caller as unknown as Printable).toString(tab),
+      ])
+    );
   }
 }
