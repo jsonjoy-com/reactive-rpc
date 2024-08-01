@@ -6,13 +6,11 @@ import {del} from './methods/del';
 import {scan} from './methods/scan';
 import {listen} from './methods/listen';
 import {
-  Block,
   BlockId,
   BlockPatch,
   BlockPatchPartial,
   BlockPatchPartialReturn,
   BlockCur,
-  BlockNew,
   BlockSnapshot,
   NewBlockSnapshotResponse,
   BlockEvent,
@@ -31,8 +29,6 @@ export const block =
     system.alias('BlockId', BlockId);
     system.alias('BlockCur', BlockCur);
     system.alias('BlockBatchSeq', BlockBatchSeq);
-    system.alias('BlockNew', BlockNew);
-    system.alias('Block', Block);
 
     system.alias('BlockSnapshot', BlockSnapshot);
     system.alias('NewBlockSnapshotResponse', NewBlockSnapshotResponse);

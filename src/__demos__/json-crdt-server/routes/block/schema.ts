@@ -84,6 +84,10 @@ export const BlockBatchRef = t.Ref<typeof BlockBatch>('BlockBatch');
 
 export const BlockSnapshot = t
   .Object(
+    t.prop('id', BlockIdRef).options({
+      title: 'Block ID',
+      description: 'The ID of the block.',
+    }),
     t.prop('blob', t.bin).options({
       title: 'Snapshot Blob',
       description: 'A serialized JSON CRDT model.',
@@ -106,21 +110,11 @@ export const BlockSnapshotRef = t.Ref<typeof BlockSnapshot>('BlockSnapshot');
 export const NewBlockSnapshotResponse = BlockSnapshot.omit('blob');
 export const NewBlockSnapshotResponseRef = t.Ref<typeof NewBlockSnapshotResponse>('NewBlockSnapshotResponse');
 
-// ---------------------------------------------------------------------- Block
-
-// prettier-ignore
-export const BlockNew = t.Object(
-  t.prop('id', t.Ref<typeof BlockId>('BlockId')),
-  t.prop('ts', t.num.options({format: 'u'})),
-);
-export const BlockNewRef = t.Ref<typeof BlockNew>('BlockNew');
-
-export const Block = BlockNew.extend(
-  t.Object(t.prop('snapshot', BlockSnapshotRef), t.prop('tip', t.Array(BlockPatchRef))),
-);
-export const BlockRef = t.Ref<typeof Block>('Block');
-
 // --------------------------------------------------------------------- Events
+
+export const BlockCreateEvent = t
+  .Tuple(t.Const(<const>'new').options({title: 'Event Type'}))
+  .options({title: 'Creation Event'});
 
 export const BlockDeleteEvent = t
   .Tuple(t.Const(<const>'del').options({title: 'Event Type'}))
@@ -140,12 +134,13 @@ export const BlockUpdateEvent = t
   )
   .options({title: 'Update Event'});
 
-export const BlockEvent = t.Or(BlockUpdateEvent, BlockDeleteEvent).options({
+export const BlockEvent = t.Or(BlockCreateEvent, BlockUpdateEvent, BlockDeleteEvent).options({
   title: 'Block Event',
   description: 'A collection of possible events that can happen to a block.',
 });
 export const BlockEventRef = t.Ref<typeof BlockEvent>('BlockEvent');
 
 export type TBlockDeleteEvent = ResolveType<typeof BlockDeleteEvent>;
+export type TBlockCreateEvent = ResolveType<typeof BlockCreateEvent>;
 export type TBlockUpdateEvent = ResolveType<typeof BlockUpdateEvent>;
 export type TBlockEvent = ResolveType<typeof BlockEvent>;

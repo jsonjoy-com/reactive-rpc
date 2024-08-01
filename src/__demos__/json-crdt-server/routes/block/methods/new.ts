@@ -15,7 +15,7 @@ export const new_ =
         description:
           'The ID of the new block. Must be a unique ID, if the block already exists it will return an error.',
       }),
-      t.prop('batch', BlockBatchPartialRef).options({
+      t.propOpt('batch', BlockBatchPartialRef).options({
         title: 'Batch',
         description: 'A collection of patches to apply to the new block.',
       }),

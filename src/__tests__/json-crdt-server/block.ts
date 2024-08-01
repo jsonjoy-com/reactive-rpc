@@ -18,32 +18,23 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
       test('can create an empty block', async () => {
         const {call, stop} = await setup();
         const id = getId();
-        const response1 = await call('block.new', {id, patches: []});
+        const response1 = await call('block.new', {id});
         expect(response1).toMatchObject({
-          block: {
-            id,
-            ts: expect.any(Number),
-          },
           snapshot: {
-            cur: -1,
+            seq: -1,
             ts: expect.any(Number),
           },
-          patches: [],
         });
         const response2 = await call('block.get', {id});
         expect(response2).toMatchObject({
-          block: {
-            id,
-            ts: response1.block.ts,
-            snapshot: {
-              blob: expect.any(Uint8Array),
-              cur: -1,
-              ts: expect.any(Number),
-            },
-            tip: [],
+          snapshot: {
+            seq: -1,
+            ts: expect.any(Number),
+            blob: expect.any(Uint8Array),
           },
+          tip: [],
         });
-        const model2 = Model.fromBinary(response2.block.snapshot.blob);
+        const model2 = Model.fromBinary(response2.snapshot.blob);
         expect(model2.view()).toBe(undefined);
         expect(model2.clock.sid).toBe(SESSION.GLOBAL);
         stop();
@@ -51,7 +42,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
 
       test('can create a block with value', async () => {
         const {call, stop} = await setup();
-        const model = Model.withLogicalClock();
+        const model = Model.create();
         const id = getId();
         model.api.root({
           name: 'Super Woman',
@@ -62,31 +53,39 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
           age: 26,
         });
         const patch2 = model.api.flush();
-        await call('block.new', {
+        const newResponse = await call('block.new', {
           id,
-          patches: [
-            {
-              blob: patch1.toBinary(),
-            },
-            {
-              blob: patch2.toBinary(),
-            },
-          ],
+          batch: {
+            patches: [
+              {
+                blob: patch1.toBinary(),
+              },
+              {
+                blob: patch2.toBinary(),
+              },
+            ],
+          }
+        });
+        expect(newResponse).toMatchObject({
+          snapshot: {
+            seq: 0,
+            ts: expect.any(Number),
+          },
+          batch: {
+            seq: 0,
+            ts: expect.any(Number),
+          },
         });
         const res = await call('block.get', {id});
         expect(res).toMatchObject({
-          block: {
-            id,
+          snapshot: {
+            seq: 0,
+            blob: expect.any(Uint8Array),
             ts: expect.any(Number),
-            snapshot: {
-              blob: expect.any(Uint8Array),
-              cur: 1,
-              ts: expect.any(Number),
-            },
-            tip: [],
           },
+          tip: [],
         });
-        const model2 = Model.fromBinary(res.block.snapshot.blob);
+        const model2 = Model.fromBinary(res.snapshot.blob);
         expect(model2.view()).toStrictEqual({
           name: 'Super Woman',
           age: 26,
@@ -99,10 +98,13 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
       test('can remove an existing block', async () => {
         const {call, stop} = await setup();
         const id = getId();
-        await call('block.new', {id, patches: []});
-        const {block} = await call('block.get', {id});
-        expect(block.id).toBe(id);
-        await call('block.del', {id});
+        await call('block.new', {id});
+        const {snapshot} = await call('block.get', {id});
+        expect(snapshot.id).toBe(id);
+        const res1 = await call('block.del', {id});
+        expect(res1.success).toBe(true);
+        const res2 = await call('block.del', {id});
+        expect(res2.success).toBe(false);
         try {
           await call('block.get', {id});
           throw new Error('not this error');
@@ -117,7 +119,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
       test('can create a new block', async () => {
         const {call, stop} = await setup();
         const id = getId();
-        const model = Model.withLogicalClock();
+        const model = Model.create();
         model.api.root({
           text: 'Hell',
         });
@@ -125,18 +127,19 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         const result = await call('block.upd', {
           create: true,
           id,
-          patches: [
-            {
-              blob: patch1.toBinary(),
-            },
-          ],
+          batch: {
+            patches: [
+              {
+                blob: patch1.toBinary(),
+              },
+            ],
+          }
         });
         expect(result).toMatchObject({
-          patches: [
-            {
-              ts: expect.any(Number),
-            },
-          ],
+          batch: {
+            seq: 0,
+            ts: expect.any(Number),
+          }
         });
         stop();
       });
@@ -144,20 +147,22 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
       test('throws NOT_FOUND when "create" flag missing', async () => {
         const {call, stop} = await setup();
         const id = getId();
-        const model = Model.withLogicalClock();
+        const model = Model.create();
         model.api.root({
           text: 'Hell',
         });
         const patch1 = model.api.flush();
         try {
-          const result = await call('block.upd', {
+          await call('block.upd', {
             create: false,
             id,
-            patches: [
-              {
-                blob: patch1.toBinary(),
-              },
-            ],
+            batch: {
+              patches: [
+                {
+                  blob: patch1.toBinary(),
+                },
+              ],
+            },
           });
           throw new Error('not this error');
         } catch (error) {
@@ -178,11 +183,13 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         const patch1 = model.api.flush();
         const newResult = await call('block.new', {
           id,
-          patches: [
-            {
-              blob: patch1.toBinary(),
-            },
-          ],
+          batch: {
+            patches: [
+              {
+                blob: patch1.toBinary(),
+              },
+            ],
+          },
         });
         model.api.str(['text']).ins(4, 'o');
         const patch2 = model.api.flush();
@@ -190,17 +197,19 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         const patch3 = model.api.flush();
         await call('block.upd', {
           id,
-          patches: [
-            {
-              blob: patch2.toBinary(),
-            },
-            {
-              blob: patch3.toBinary(),
-            },
-          ],
+          batch: {
+            patches: [
+              {
+                blob: patch2.toBinary(),
+              },
+              {
+                blob: patch3.toBinary(),
+              },
+            ],
+          },
         });
         const block2 = await call('block.get', {id});
-        expect(Model.fromBinary(block2.block.snapshot.blob).view()).toStrictEqual({
+        expect(Model.fromBinary(block2.snapshot.blob).view()).toStrictEqual({
           text: 'Hello World',
         });
         const str = model.api.str(['text']);
@@ -211,17 +220,19 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         const patch5 = model.api.flush();
         await call('block.upd', {
           id,
-          patches: [
-            {
-              blob: patch4.toBinary(),
-            },
-            {
-              blob: patch5.toBinary(),
-            },
-          ],
+          batch: {
+            patches: [
+              {
+                blob: patch4.toBinary(),
+              },
+              {
+                blob: patch5.toBinary(),
+              },
+            ],
+          },
         });
         const block3 = await call('block.get', {id});
-        expect(Model.fromBinary(block3.block.snapshot.blob).view()).toStrictEqual({
+        expect(Model.fromBinary(block3.snapshot.blob).view()).toStrictEqual({
           text: 'Hello, World!',
         });
         stop();
@@ -239,30 +250,34 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         const patch1 = model.api.flush();
         await call('block.new', {
           id,
-          patches: [
-            {
-              blob: patch1.toBinary(),
-            },
-          ],
+          batch: {
+            patches: [
+              {
+                blob: patch1.toBinary(),
+              },
+            ],
+          },
         });
 
         // User 2
         const block2 = await call('block.get', {id});
-        const model2 = Model.fromBinary(block2.block.snapshot.blob).fork();
+        const model2 = Model.fromBinary(block2.snapshot.blob).fork();
         model2.api.str(['text']).ins(4, ' yeah!');
         const patch2User2 = model2.api.flush();
         await call('block.upd', {
           id,
-          patches: [
-            {
-              blob: patch2User2.toBinary(),
-            },
-          ],
+          batch: {
+            patches: [
+              {
+                blob: patch2User2.toBinary(),
+              },
+            ],
+          },
         });
         expect(model2.view()).toStrictEqual({text: 'Hell yeah!'});
 
         const block3 = await call('block.get', {id});
-        const model3 = Model.fromBinary(block3.block.snapshot.blob).fork();
+        const model3 = Model.fromBinary(block3.snapshot.blob).fork();
         expect(model3.view()).toStrictEqual({text: 'Hell yeah!'});
 
         // User 1
@@ -270,20 +285,22 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         const patch2 = model.api.flush();
         model.api.str(['text']).ins(5, ' World');
         const patch3 = model.api.flush();
-        const {patches} = await call('block.upd', {
+        await call('block.upd', {
           id,
-          patches: [
-            {
-              blob: patch2.toBinary(),
-            },
-            {
-              blob: patch3.toBinary(),
-            },
-          ],
+          batch: {
+            patches: [
+              {
+                blob: patch2.toBinary(),
+              },
+              {
+                blob: patch3.toBinary(),
+              },
+            ],
+          },
         });
 
         const block4 = await call('block.get', {id});
-        const model4 = Model.fromBinary(block4.block.snapshot.blob).fork();
+        const model4 = Model.fromBinary(block4.snapshot.blob).fork();
         expect(model4.view()).not.toStrictEqual({text: 'Hell yeah!'});
         stop();
       });
@@ -294,11 +311,11 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         test('can listen for block changes', async () => {
           const {call, call$, stop} = await setup();
           const id = getId();
-          await call('block.new', {id, patches: []});
+          await call('block.new', {id});
           await tick(11);
           const emits: TBlockEvent[] = [];
           call$('block.listen', {id}).subscribe(({event}) => emits.push(event));
-          const model = Model.withLogicalClock();
+          const model = Model.create();
           model.api.root({
             text: 'Hell',
           });
@@ -307,16 +324,19 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
           expect(emits.length).toBe(0);
           await call('block.upd', {
             id,
-            patches: [{blob: patch1.toBinary()}],
+            batch: {
+              patches: [{blob: patch1.toBinary()}],
+            },
           });
           await until(() => emits.length === 1);
           expect(emits.length).toBe(1);
           expect(emits[0][0]).toBe('upd');
           if (emits[0][0] === 'upd') {
-            expect(emits[0][1].patches.length).toBe(1);
-            expect(emits[0][1].patches[0]).toMatchObject({
+            expect(emits[0][1].batch).toMatchObject({
               ts: expect.any(Number),
-              blob: patch1.toBinary(),
+              patches: [
+                {blob: patch1.toBinary()},
+              ],
             });
           }
           model.api.root({
@@ -327,16 +347,20 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
           expect(emits.length).toBe(1);
           await call('block.upd', {
             id,
-            patches: [{blob: patch2.toBinary()}],
+            batch: {
+              patches: [{blob: patch2.toBinary()}],
+            },
           });
           await until(() => emits.length === 2);
           expect(emits.length).toBe(2);
           expect(emits[1][0]).toBe('upd');
           if (emits[1][0] === 'upd') {
-            expect(emits[1][1].patches.length).toBe(1);
-            expect(emits[1][1].patches[0]).toMatchObject({
+            expect(emits[1][1].batch.patches.length).toBe(1);
+            expect(emits[1][1].batch).toMatchObject({
               ts: expect.any(Number),
-              blob: patch2.toBinary(),
+              patches: [
+                {blob: patch2.toBinary()},
+              ],
             });
           }
           stop();
@@ -356,22 +380,40 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
           expect(emits.length).toBe(0);
           await call('block.new', {
             id,
-            patches: [
-              {
-                blob: patch1.toBinary(),
-              },
-            ],
+            batch: {
+              patches: [
+                {
+                  blob: patch1.toBinary(),
+                },
+              ],
+            },
           });
-          await until(() => emits.length === 1);
-          expect(emits.length).toBe(1);
-          expect(emits[0][0]).toBe('upd');
-          if (emits[0][0] === 'upd') {
-            expect(emits[0][1].patches.length).toBe(1);
-            expect(emits[0][1].patches[0]).toMatchObject({
+          await until(() => emits.length === 2);
+          expect(emits.length).toBe(2);
+          expect(emits[0]).toEqual(['new']);
+          expect(emits[1][0]).toBe('upd');
+          if (emits[1][0] === 'upd') {
+            expect(emits[1][1].batch.patches.length).toBe(1);
+            expect(emits[1][1].batch).toMatchObject({
               ts: expect.any(Number),
-              blob: patch1.toBinary(),
+              patches: [{
+                blob: patch1.toBinary(),
+              }],
             });
           }
+          stop();
+        });
+
+        test('can receive creation events', async () => {
+          const {call, call$, stop} = await setup();
+          const emits: TBlockEvent[] = [];
+          const id = getId();
+          call$('block.listen', {id}).subscribe(({event}) => {
+            emits.push(event);
+          });
+          await call('block.new', {id});
+          await until(() => emits.length === 1);
+          expect(emits).toEqual([['new']])
           stop();
         });
 
@@ -382,12 +424,13 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
           call$('block.listen', {id}).subscribe(({event}) => {
             emits.push(event);
           });
-          await call('block.new', {id, patches: []});
-          await until(() => emits.length === 1);
-          await tick(3);
+          await call('block.new', {id});
           await call('block.del', {id});
           await until(() => emits.length === 2);
-          expect(emits[1][0]).toBe('del');
+          expect(emits).toEqual([
+            ['new'],
+            ['del'],
+          ]);
           stop();
         });
       });
@@ -404,11 +447,13 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         const patch1 = model.api.flush();
         await call('block.new', {
           id,
-          patches: [
-            {
-              blob: patch1.toBinary(),
-            },
-          ],
+          batch: {
+            patches: [
+              {
+                blob: patch1.toBinary(),
+              },
+            ],
+          },
         });
         await tick(11);
         model.api.str(['text']).ins(4, 'o');
@@ -419,29 +464,38 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         const patch3 = model.api.flush();
         await call('block.upd', {
           id,
-          patches: [
-            {
-              blob: patch2.toBinary(),
-            },
-            {
-              blob: patch3.toBinary(),
-            },
-          ],
+          batch: {
+            patches: [
+              {
+                blob: patch2.toBinary(),
+              },
+              {
+                blob: patch3.toBinary(),
+              },
+            ],
+          },
         });
-        const history = await call('block.scan', {id, cur: 0, limit: 3});
+        const history = await call('block.scan', {id, seq: 0, limit: 3});
         expect(history).toMatchObject({
-          patches: [
+          batches: [
             {
               ts: expect.any(Number),
-              blob: patch1.toBinary(),
+              patches: [
+                {
+                  blob: patch1.toBinary(),
+                },
+              ]
             },
             {
               ts: expect.any(Number),
-              blob: patch2.toBinary(),
-            },
-            {
-              ts: expect.any(Number),
-              blob: patch3.toBinary(),
+              patches: [
+                {
+                  blob: patch2.toBinary(),
+                },
+                {
+                  blob: patch3.toBinary(),
+                },
+              ]
             },
           ],
         });
@@ -460,11 +514,13 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         const patch1 = model.api.flush();
         await call('block.new', {
           id,
-          patches: [
-            {
-              blob: patch1.toBinary(),
-            },
-          ],
+          batch: {
+            patches: [
+              {
+                blob: patch1.toBinary(),
+              },
+            ],
+          },
         });
         model.api.str(['text']).ins(4, 'o');
         const patch2 = model.api.flush();
@@ -474,25 +530,26 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         const patch3 = model.api.flush();
         await call('block.upd', {
           id,
-          patches: [
-            {
-              blob: patch2.toBinary(),
-            },
-            {
-              blob: patch3.toBinary(),
-            },
-          ],
+          batch: {
+            patches: [
+              {
+                blob: patch2.toBinary(),
+              },
+              {
+                blob: patch3.toBinary(),
+              },
+            ],
+          },
         });
         const result = await call('block.get', {id});
         expect(result).toMatchObject({
-          block: {
+          snapshot: {
             id,
-            snapshot: {
-              blob: expect.any(Uint8Array),
-              cur: 2,
-              ts: expect.any(Number),
-            },
+            seq: 1,
+            blob: expect.any(Uint8Array),
+            ts: expect.any(Number),
           },
+          tip: [],
         });
         stop();
       });
@@ -509,11 +566,13 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         const patch1 = model.api.flush();
         await call('block.new', {
           id,
-          patches: [
-            {
-              blob: patch1.toBinary(),
-            },
-          ],
+          batch: {
+            patches: [
+              {
+                blob: patch1.toBinary(),
+              },
+            ],
+          },
         });
         model.api.str(['text']).ins(4, 'o');
         const patch2 = model.api.flush();
@@ -523,14 +582,16 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         const patch3 = model.api.flush();
         await call('block.upd', {
           id,
-          patches: [
-            {
-              blob: patch2.toBinary(),
-            },
-            {
-              blob: patch3.toBinary(),
-            },
-          ],
+          batch: {
+            patches: [
+              {
+                blob: patch2.toBinary(),
+              },
+              {
+                blob: patch3.toBinary(),
+              },
+            ],
+          },
         });
         const res = await call('block.view', {id});
         expect(res).toMatchObject({

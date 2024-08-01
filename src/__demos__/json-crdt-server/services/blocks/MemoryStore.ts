@@ -86,8 +86,8 @@ export class MemoryStore implements types.Store {
   }
 
   private removeSync(id: string): boolean {
-    this.snapshots.delete(id);
-    return this.batches.delete(id);
+    this.batches.delete(id);
+    return this.snapshots.delete(id);
   }
 
   public stats(): {blocks: number; batches: number} {

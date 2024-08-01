@@ -5,7 +5,7 @@ import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
 import type {StoreSnapshot, StoreIncomingBatch, StoreBatch, StoreIncomingSnapshot} from './types';
 import type {Services} from '../Services';
 import type {Observable} from 'rxjs';
-import type {TBlockEvent, TBlockUpdateEvent, TBlockDeleteEvent} from '../../routes/block/schema';
+import type {TBlockEvent, TBlockUpdateEvent, TBlockDeleteEvent, TBlockCreateEvent} from '../../routes/block/schema';
 
 const BLOCK_TTL = 1000 * 60 * 30; // 30 minutes
 
@@ -36,6 +36,7 @@ export class BlocksServices {
         ts: now,
         uts: now,
       };
+      this.__emitNew(id);
       return await this.store.create(snapshot);
     }
     validateBatch(batch);
@@ -49,8 +50,17 @@ export class BlocksServices {
       uts: now,
     };
     const res = await this.store.create(snapshot, batch);
+    this.__emitNew(id);
     if (res.batch) this.__emitUpd(id, res.batch);
     return res;
+  }
+
+  private __emitNew(id: string) {
+    const msg: TBlockCreateEvent = ['new'];
+    this.services.pubsub.publish(`__block:${id}`, msg).catch((error) => {
+      // tslint:disable-next-line:no-console
+      console.error('Error publishing new block', error);
+    });
   }
 
   private __emitUpd(id: string, batch: StoreBatch) {
@@ -127,7 +137,7 @@ export class BlocksServices {
     validateBatch(batch);
     const {store} = this;
     const get = await store.get(id);
-    if (!get) throw RpcError.fromCode(RpcErrorCodes.NOT_FOUND);
+    if (!get) throw RpcError.notFound();
     const snapshot = get.snapshot;
     const seq = snapshot.seq + 1;
     const model = Model.fromBinary(snapshot.blob);

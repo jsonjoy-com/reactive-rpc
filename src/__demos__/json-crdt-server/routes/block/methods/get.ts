@@ -1,5 +1,5 @@
 import {ResolveType} from 'json-joy/lib/json-type';
-import {BlockRef, BlockIdRef} from '../schema';
+import {BlockIdRef, BlockSnapshotRef, BlockBatchRef} from '../schema';
 import type {RouteDeps, Router, RouterBase} from '../../types';
 
 export const get =
@@ -12,7 +12,10 @@ export const get =
       }),
     );
 
-    const Response = t.Object(t.prop('block', BlockRef));
+    const Response = t.Object(
+      t.prop('snapshot', BlockSnapshotRef),
+      t.prop('tip', t.Array(BlockBatchRef)),
+    );
 
     const Func = t.Function(Request, Response).options({
       title: 'Read Block',
@@ -22,16 +25,8 @@ export const get =
     return r.prop('block.get', Func, async ({id}) => {
       const {snapshot} = await services.blocks.get(id);
       const response: ResolveType<typeof Response> = {
-        block: {
-          id: snapshot.id,
-          ts: snapshot.ts,
-          snapshot: {
-            blob: snapshot.blob,
-            cur: snapshot.seq,
-            ts: snapshot.ts,
-          },
-          tip: [],
-        },
+        snapshot,
+        tip: [],
       };
       return response;
     });
