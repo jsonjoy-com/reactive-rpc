@@ -86,9 +86,10 @@ export class BlocksServices {
     return deleted;
   }
 
-  public async scan(id: string, offset: number | undefined, limit: number | undefined = 10) {
+  public async scan(id: string, includeStartModel: boolean, offset: number | undefined, limit: number | undefined = 10) {
     const {store} = this;
     if (typeof offset !== 'number') offset = await store.seq(id);
+    if (typeof offset !== 'number') throw RpcError.fromCode(RpcErrorCodes.NOT_FOUND);
     let min: number = 0,
       max: number = 0;
     if (!limit || Math.round(limit) !== limit) throw RpcError.badRequest('INVALID_LIMIT');
@@ -103,8 +104,18 @@ export class BlocksServices {
       min = 0;
       max = Math.abs(limit);
     }
-    const patches = await store.history(id, min, max);
-    return {patches};
+    const batches = await store.history(id, min, max);
+    if (includeStartModel) {
+      const model = Model.create(void 0, SESSION.GLOBAL);
+      if (offset !== 0) {
+        const historicBatches = await store.history(id, 0, offset - 1);
+        for (const batch of historicBatches) {
+          model.applyBatch(batch.patches.map(p => Patch.fromBinary(p.blob)));
+        }
+      }
+      return {batches, model: model.toBinary()};
+    }
+    return {batches};
   }
 
   public async edit(id: string, batch: StoreIncomingBatch, createIfNotExists: boolean) {

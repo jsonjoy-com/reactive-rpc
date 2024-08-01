@@ -1,6 +1,6 @@
 import {ResolveType} from 'json-joy/lib/json-type';
+import {BlockBatchPartialRef, BlockBatchPartialReturnRef, BlockBatchSeqRef, BlockIdRef} from '../schema';
 import type {RouteDeps, Router, RouterBase} from '../../types';
-import {BlockIdRef, BlockPatchPartialRef, BlockPatchPartialReturnRef} from '../schema';
 
 export const upd =
   ({t, services}: RouteDeps) =>
@@ -10,20 +10,24 @@ export const upd =
         title: 'Document ID',
         description: 'The ID of the document to apply the patch to.',
       }),
-      t.prop('patches', t.Array(BlockPatchPartialRef)).options({
-        title: 'Patches',
-        description: 'The patches to apply to the document.',
+      t.prop('batch', BlockBatchPartialRef).options({
+        title: 'Batch',
+        description: 'The batch of changes to apply to the document.',
       }),
       t.propOpt('create', t.bool).options({
-        title: 'Create if not exists',
+        title: 'Create, if not Exists',
         description: 'If true, creates a new document if it does not exist.',
+      }),
+      t.propOpt('seq', BlockBatchSeqRef).options({
+        title: 'Sequence Number',
+        description: 'The last sequence number the client has seen.',
       }),
     );
 
     const Response = t.Object(
-      t.prop('patches', t.Array(BlockPatchPartialReturnRef)).options({
-        title: 'Latest patches',
-        description: 'The list of patches that the client might have missed and should apply to the document.',
+      t.propOpt('batch', BlockBatchPartialReturnRef).options({
+        title: 'Committed Batch Parts',
+        description: 'Parts of committed batch which were generated on the server.',
       }),
     );
 
@@ -33,13 +37,15 @@ export const upd =
       description: 'Applies patches to an existing document and returns the latest concurrent changes.',
     });
 
-    return r.prop('block.upd', Func, async ({id, patches, create}) => {
-      const res = await services.blocks.edit(id, patches, !!create);
-      const patchesReturn: ResolveType<typeof BlockPatchPartialReturnRef>[] = res.patches.map((patch) => ({
-        ts: patch.created,
-      }));
-      return {
-        patches: patchesReturn,
-      };
+    return r.prop('block.upd', Func, async ({id, batch, create}) => {
+      const res = await services.blocks.edit(id, batch, !!create);
+      const response: ResolveType<typeof Response> = {};
+      if (res.batch) {
+        response.batch = {
+          seq: res.batch.seq,
+          ts: res.batch.ts,
+        };
+      }
+      return response;
     });
   };

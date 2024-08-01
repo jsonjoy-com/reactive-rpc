@@ -24,11 +24,11 @@ export const get =
       const response: ResolveType<typeof Response> = {
         block: {
           id: snapshot.id,
-          ts: snapshot.created,
+          ts: snapshot.ts,
           snapshot: {
             blob: snapshot.blob,
             cur: snapshot.seq,
-            ts: snapshot.created,
+            ts: snapshot.ts,
           },
           tip: [],
         },

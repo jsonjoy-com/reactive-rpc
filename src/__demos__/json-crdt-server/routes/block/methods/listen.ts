@@ -1,4 +1,4 @@
-import {map, switchMap, tap} from 'rxjs';
+import {map, switchMap} from 'rxjs';
 import {BlockEventRef, BlockIdRef} from '../schema';
 import type {RouteDeps, Router, RouterBase} from '../../types';
 

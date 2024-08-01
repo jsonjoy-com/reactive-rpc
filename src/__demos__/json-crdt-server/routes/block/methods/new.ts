@@ -1,9 +1,8 @@
 import {
   BlockIdRef,
-  BlockPatchPartialRef,
-  BlockPatchPartialReturnRef,
-  BlockNewRef,
   NewBlockSnapshotResponseRef,
+  BlockBatchPartialRef,
+  BlockBatchRef,
 } from '../schema';
 import type {RouteDeps, Router, RouterBase} from '../../types';
 
@@ -16,20 +15,16 @@ export const new_ =
         description:
           'The ID of the new block. Must be a unique ID, if the block already exists it will return an error.',
       }),
-      t.prop('patches', t.Array(BlockPatchPartialRef)).options({
-        title: 'Patches',
-        description: 'The patches to apply to the document.',
+      t.prop('batch', BlockBatchPartialRef).options({
+        title: 'Batch',
+        description: 'A collection of patches to apply to the new block.',
       }),
     );
 
     const Response = t
       .Object(
-        t.prop('block', BlockNewRef),
         t.prop('snapshot', NewBlockSnapshotResponseRef),
-        t.prop('patches', t.Array(BlockPatchPartialReturnRef)).options({
-          title: 'Patches',
-          description: 'The list of patches to apply to the newly created block.',
-        }),
+        t.propOpt('batch', BlockBatchRef),
       )
       .options({
         title: 'New block creation response',
@@ -44,20 +39,8 @@ export const new_ =
         'Creates a new block out of supplied patches. A block starts empty with an `undefined` state, and patches are applied to it.',
     });
 
-    return r.prop('block.new', Func, async ({id, patches}) => {
-      const res = await services.blocks.create(id, patches);
-      return {
-        block: {
-          id: res.snapshot.id,
-          ts: res.snapshot.created,
-        },
-        snapshot: {
-          cur: res.snapshot.seq,
-          ts: res.snapshot.created,
-        },
-        patches: res.patches.map((patch) => ({
-          ts: patch.created,
-        })),
-      };
+    return r.prop('block.new', Func, async ({id, batch}) => {
+      const res = await services.blocks.create(id, batch);
+      return res;
     });
   };

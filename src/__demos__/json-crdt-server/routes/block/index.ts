@@ -16,6 +16,10 @@ import {
   BlockSnapshot,
   NewBlockSnapshotResponse,
   BlockEvent,
+  BlockBatch,
+  BlockBatchPartial,
+  BlockBatchPartialReturn,
+  BlockBatchSeq,
 } from './schema';
 import type {RouteDeps, Router, RouterBase} from '../types';
 
@@ -26,6 +30,7 @@ export const block =
 
     system.alias('BlockId', BlockId);
     system.alias('BlockCur', BlockCur);
+    system.alias('BlockBatchSeq', BlockBatchSeq);
     system.alias('BlockNew', BlockNew);
     system.alias('Block', Block);
 
@@ -35,6 +40,9 @@ export const block =
     system.alias('BlockPatch', BlockPatch);
     system.alias('BlockPatchPartial', BlockPatchPartial);
     system.alias('BlockPatchPartialReturn', BlockPatchPartialReturn);
+    system.alias('BlockBatch', BlockBatch);
+    system.alias('BlockBatchPartial', BlockBatchPartial);
+    system.alias('BlockBatchPartialReturn', BlockBatchPartialReturn);
 
     system.alias('BlockEvent', BlockEvent);
 
