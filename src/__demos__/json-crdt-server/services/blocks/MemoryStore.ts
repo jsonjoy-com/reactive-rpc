@@ -1,6 +1,5 @@
-import {Model, Patch} from 'json-joy/lib/json-crdt';
-import type * as types from './types';
 import {RpcError} from '../../../../common/rpc/caller';
+import type * as types from './types';
 
 const tick = new Promise((resolve) => setImmediate(resolve));
 
@@ -25,42 +24,53 @@ export class MemoryStore implements types.Store {
     return this.snapshots.get(id)?.seq;
   }
 
-  public async create(id: string, model: types.StoreSnapshot, {cts, patches}: types.StoreIncomingBatch): Promise<void> {
+  public async create(snapshot: types.StoreSnapshot, batch?: types.StoreIncomingBatch): Promise<types.StoreCreateResult> {
+    const {id} = snapshot;
     await tick;
-    if (!Array.isArray(patches)) throw new Error('NO_PATCHES');
     if (this.snapshots.has(id)) throw new Error('BLOCK_EXISTS');
-    const batch: types.StoreBatch = {
-      seq: 0,
-      ts: Date.now(),
-      cts,
-      patches,
-    };
-    this.snapshots.set(id, model);
-    this.batches.set(id, [batch]);
+    this.snapshots.set(id, snapshot);
+    if (batch) {
+      const {cts, patches} = batch;
+      if (!Array.isArray(patches)) throw new Error('NO_PATCHES');
+      const batch2: types.StoreBatch = {
+        seq: 0,
+        ts: Date.now(),
+        cts,
+        patches,
+      };
+      this.batches.set(id, [batch2]);
+      return {snapshot, batch: batch2};
+    }
+    return {snapshot};
   }
 
-  public async edit(id: string, {seq = 0, cts, patches}: types.StoreIncomingBatch): Promise<types.StoreApplyResult> {
+  public async push(snapshot0: types.StoreIncomingSnapshot, batch0: types.StoreIncomingBatch): Promise<types.StorePushResult> {
+    const {id, seq} = snapshot0;
+    const {patches} = batch0;
     await tick;
     if (!Array.isArray(patches) || !patches.length) throw new Error('NO_PATCHES');
     const snapshot = this.snapshots.get(id);
-    const existingBatches = this.batches.get(id);
-    if (!snapshot || !existingBatches) throw RpcError.notFound();
-    if (snapshot.seq + 1 < seq) throw new Error('PATCH_SEQ_TOO_HIGH');
-    const model = Model.fromBinary(snapshot.blob);
-    for (const patch of patches) {
-      model.applyPatch(Patch.fromBinary(patch.blob));
+    if (!snapshot) throw RpcError.notFound();
+    if (snapshot.seq + 1 !== seq) throw new Error('PATCH_SEQ_INV');
+    let existingBatches = this.batches.get(id);
+    if (!existingBatches) {
+      if (snapshot.seq !== -1) throw new Error('CORRUPT_BLOCK');
+      existingBatches = [];
+      this.batches.set(id, existingBatches);
     }
-    const batch: types.StoreBatch = {
-      seq: snapshot.seq + 1,
-      ts: Date.now(),
-      cts,
+    if (existingBatches.length !== seq) throw new Error('CORRUPT_BLOCK');
+    const now = Date.now();
+    snapshot.seq = seq;
+    snapshot.blob = snapshot0.blob;
+    snapshot.uts = now;
+    const batch1: types.StoreBatch = {
+      seq,
+      ts: now,
+      cts: batch0.cts,
       patches,
     };
-    snapshot.seq = batch.seq;
-    snapshot.blob = model.toBinary();
-    snapshot.uts = batch.ts;
-    existingBatches.push(batch);
-    return {snapshot, batch};
+    existingBatches.push(batch1);
+    return {snapshot, batch: batch1};
   }
 
   public async history(id: string, min: number, max: number): Promise<types.StoreBatch[]> {

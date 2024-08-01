@@ -2,17 +2,21 @@ import {MemoryStore} from './MemoryStore';
 import {RpcError, RpcErrorCodes} from '../../../../common/rpc/caller';
 import {Model, Patch} from 'json-joy/lib/json-crdt';
 import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
-import type {StoreSnapshot, StorePatch} from './types';
+import type {StoreSnapshot, StoreIncomingBatch, StoreBatch, StoreIncomingSnapshot} from './types';
 import type {Services} from '../Services';
 import type {Observable} from 'rxjs';
 import type {TBlockEvent, TBlockUpdateEvent, TBlockDeleteEvent} from '../../routes/block/schema';
 
 const BLOCK_TTL = 1000 * 60 * 30; // 30 minutes
 
-const validatePatches = (patches: Pick<StorePatch, 'blob'>[]) => {
-  for (const patch of patches) {
+const validateBatch = (batch: StoreIncomingBatch) => {
+  if (!batch || typeof batch !== 'object' || Array.isArray(batch)) throw RpcError.validation('INVALID_BATCH');
+  const {patches} = batch;
+  if (!Array.isArray(patches)) throw RpcError.validation('INVALID_PATCHES');
+  if (patches.length > 100) throw RpcError.validation('TOO_MANY_PATCHES');
+  if (patches.length < 1) throw RpcError.validation('TOO_FEW_PATCHES');
+  for (const patch of patches)
     if (patch.blob.length > 2000) throw RpcError.validation('patch blob too large');
-  }
 };
 
 export class BlocksServices {
@@ -20,61 +24,37 @@ export class BlocksServices {
 
   constructor(protected readonly services: Services) {}
 
-  public async create(id: string, partialPatches: Pick<StorePatch, 'blob'>[]) {
+  public async create(id: string, batch?: StoreIncomingBatch) {
     this.maybeGc();
-    validatePatches(partialPatches);
-    if (!Array.isArray(partialPatches)) throw new Error('INVALID_PATCHES');
-    const length = partialPatches.length;
     const now = Date.now();
-    if (!length) {
-      const model = Model.withLogicalClock(SESSION.GLOBAL);
+    if (!batch) {
+      const model = Model.create(void 0, SESSION.GLOBAL);
       const snapshot: StoreSnapshot = {
         id,
         seq: -1,
         blob: model.toBinary(),
-        created: now,
-        updated: now,
+        ts: now,
+        uts: now,
       };
-      return await this.__create(id, snapshot, []);
+      return await this.store.create(snapshot);
     }
-    const rawPatches: Patch[] = [];
-    const patches: StorePatch[] = [];
-    let seq = 0;
-    for (; seq < length; seq++) {
-      const blob = partialPatches[seq].blob;
-      rawPatches.push(Patch.fromBinary(blob));
-      patches.push({seq, created: now, blob});
-    }
-    const model = Model.fromPatches(rawPatches);
+    validateBatch(batch);
+    const patches = batch.patches.map(p => Patch.fromBinary(p.blob));
+    const model = Model.fromPatches(patches);
     const snapshot: StoreSnapshot = {
       id,
-      seq: seq - 1,
+      seq: 0,
       blob: model.toBinary(),
-      created: now,
-      updated: now,
+      ts: now,
+      uts: now,
     };
-    return await this.__create(id, snapshot, patches);
+    const res = await this.store.create(snapshot, batch);
+    if (res.batch) this.__emitUpd(id, res.batch);
+    return res;
   }
 
-  private async __create(id: string, snapshot: StoreSnapshot, patches: StorePatch[]) {
-    await this.store.create(id, snapshot, patches);
-    this.__emitUpd(id, patches);
-    return {
-      snapshot,
-      patches,
-    };
-  }
-
-  private __emitUpd(id: string, patches: StorePatch[]) {
-    const msg: TBlockUpdateEvent = [
-      'upd',
-      {
-        patches: patches.map((patch) => ({
-          blob: patch.blob,
-          ts: patch.created,
-        })),
-      },
-    ];
+  private __emitUpd(id: string, batch: StoreBatch) {
+    const msg: TBlockUpdateEvent = ['upd', {batch}];
     this.services.pubsub.publish(`__block:${id}`, msg).catch((error) => {
       // tslint:disable-next-line:no-console
       console.error('Error publishing block patches', error);
@@ -127,35 +107,31 @@ export class BlocksServices {
     return {patches};
   }
 
-  public async edit(id: string, patches: Pick<StorePatch, 'blob'>[], createIfNotExists: boolean) {
+  public async edit(id: string, batch: StoreIncomingBatch, createIfNotExists: boolean) {
     if (createIfNotExists) {
       const exists = await this.store.exists(id);
-      if (!exists) {
-        return await this.create(id, patches);
-      }
+      if (!exists) return await this.create(id, batch);
     }
     this.maybeGc();
-    if (!Array.isArray(patches)) throw RpcError.validation('patches must be an array');
-    if (!patches.length) throw RpcError.validation('patches must not be empty');
-    validatePatches(patches);
+    validateBatch(batch);
     const {store} = this;
-    const seq = (await store.seq(id)) ?? -1;
-    const fullPatches: StorePatch[] = [];
-    const now = Date.now();
-    for (let i = 0; i < patches.length; i++) {
-      const seqNum = seq + i;
-      const patch = patches[i];
-      fullPatches.push({seq: seqNum, created: now, blob: patch.blob});
-    }
-    const {snapshot} = await store.edit(id, fullPatches);
-    this.__emitUpd(id, fullPatches);
-    const expectedBlockSeq = seq + patches.length - 1;
-    const hadConcurrentEdits = snapshot.seq !== expectedBlockSeq;
-    let patchesBack: StorePatch[] = [];
-    if (hadConcurrentEdits) patchesBack = await store.history(id, seq, snapshot.seq);
+    const get = await store.get(id);
+    if (!get) throw RpcError.fromCode(RpcErrorCodes.NOT_FOUND);
+    const snapshot = get.snapshot;
+    const seq = snapshot.seq + 1;
+    const model = Model.fromBinary(snapshot.blob);
+    const patches = batch.patches.map(p => Patch.fromBinary(p.blob));
+    model.applyBatch(patches);
+    const newSnapshot: StoreIncomingSnapshot = {
+      id,
+      seq,
+      blob: model.toBinary(),
+    };
+    const res = await store.push(newSnapshot, batch);
+    this.__emitUpd(id, res.batch);
     return {
-      snapshot,
-      patches: patchesBack,
+      snapshot: res.snapshot,
+      batch: res.batch,
     };
   }
 

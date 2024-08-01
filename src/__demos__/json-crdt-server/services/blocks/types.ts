@@ -54,7 +54,8 @@ export interface StorePatch {
   blob: Uint8Array;
 }
 
-export type StoreIncomingBatch = Omit<StoreBatch, 'seq' | 'ts'> & Partial<Pick<StoreBatch, 'seq'>>;
+export type StoreIncomingSnapshot = Omit<StoreSnapshot, 'ts' | 'uts'>;
+export type StoreIncomingBatch = Omit<StoreBatch, 'seq' | 'ts'>;
 
 export interface Store {
   /**
@@ -64,7 +65,16 @@ export interface Store {
    * @param batch Initial patches to apply to a new block.
    * @returns Newly created block data.
    */
-  create(id: string, snapshot: StoreSnapshot, batch: StoreIncomingBatch): Promise<void>;
+  create(snapshot: StoreIncomingSnapshot, batch: StoreIncomingBatch): Promise<StoreCreateResult>;
+
+  /**
+   * Push changes to an existing block.
+   *
+   * @param id Block ID.
+   * @param batch Patches to apply to the block.
+   * @returns Updated block data.
+   */
+  push(snapshot: StoreIncomingSnapshot, batch: StoreIncomingBatch): Promise<StorePushResult>;
 
   /**
    * Retrieve an existing block.
@@ -81,15 +91,6 @@ export interface Store {
    * @returns Block sequence number, or `undefined` if the block does not exist.
    */
   seq(id: string): Promise<number | undefined>;
-
-  /**
-   * Edit an existing block by applying a new batch.
-   *
-   * @param id Block ID.
-   * @param batch Patches to apply to the block.
-   * @returns Updated block data.
-   */
-  edit(id: string, batch: StoreIncomingBatch): Promise<StoreApplyResult>;
 
   /**
    * Retrieve the history of batches for a block.
@@ -110,11 +111,16 @@ export interface Store {
   remove(id: string): Promise<boolean>;
 }
 
+export interface StoreCreateResult {
+  snapshot: StoreSnapshot;
+  batch?: StoreBatch;
+}
+
 export interface StoreGetResult {
   snapshot: StoreSnapshot;
 }
 
-export interface StoreApplyResult {
+export interface StorePushResult {
   snapshot: StoreSnapshot;
   batch: StoreBatch;
 }
