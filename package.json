@@ -99,7 +99,7 @@
     "tslint-config-common": "^1.6.2",
     "typedoc": "^0.25.13",
     "typescript": "^5.4.5",
-    "uWebSockets.js": "uNetworking/uWebSockets.js#v20.23.0",
+    "uWebSockets.js": "uNetworking/uWebSockets.js#v20.44.0",
     "websocket": "^1.0.34",
     "ws": "^8.16.0"
   },
