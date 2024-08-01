@@ -1,5 +1,4 @@
 import * as msg from '../messages';
-import {subscribeCompleteObserver} from '../util/subscribeCompleteObserver';
 import {TimedQueue} from '../util/TimedQueue';
 import {RpcErrorCodes, RpcError} from './caller/error';
 import {RpcValue} from '../messages/Value';
@@ -152,14 +151,24 @@ export class RpcMessageStreamProcessor<Ctx = unknown> {
   private createStreamCall(id: number, name: string, ctx: Ctx): Call<unknown, unknown> {
     const call = this.caller.createCall(name, ctx);
     this.activeStreamCalls.set(id, call);
-    subscribeCompleteObserver<RpcValue>(call.res$, {
+    call.res$.subscribe({
       next: (value: RpcValue) => this.sendDataMessage(id, value),
       error: (error: unknown) => this.onStreamError(id, error as RpcValue),
-      complete: (value: RpcValue | undefined) => {
+      complete: () => {
         this.activeStreamCalls.delete(id);
-        this.sendCompleteMessage(id, value);
+        this.sendCompleteMessage(id, undefined);
       },
     });
+    // subscribeCompleteObserver<RpcValue>(call.res$, {
+    //   next: (value: RpcValue) => {
+    //     this.sendDataMessage(id, value);
+    //   },
+    //   error: (error: unknown) => this.onStreamError(id, error as RpcValue),
+    //   complete: (value: RpcValue | undefined) => {
+    //     this.activeStreamCalls.delete(id);
+    //     this.sendCompleteMessage(id, value);
+    //   },
+    // });
     call.reqUnsubscribe$.subscribe(() => {
       if (this.activeStreamCalls.has(id)) this.sendUnsubscribeMessage(id);
     });
