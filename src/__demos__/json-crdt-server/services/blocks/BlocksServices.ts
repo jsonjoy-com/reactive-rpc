@@ -33,7 +33,6 @@ export class BlocksServices {
         seq: -1,
         blob: model.toBinary(),
         ts: now,
-        uts: now,
       };
       this.__emitNew(id);
       return await this.store.create(snapshot);
@@ -46,7 +45,6 @@ export class BlocksServices {
       seq: 0,
       blob: model.toBinary(),
       ts: now,
-      uts: now,
     };
     const res = await this.store.create(snapshot, batch);
     this.__emitNew(id);
@@ -81,7 +79,7 @@ export class BlocksServices {
     const {store} = this;
     const result = await store.get(id);
     if (!result) throw RpcError.fromCode(RpcErrorCodes.NOT_FOUND);
-    const model = Model.load(result.snapshot.blob);
+    const model = Model.load(result.block.snapshot.blob);
     return model.view();
   }
 
@@ -142,7 +140,7 @@ export class BlocksServices {
     const {store} = this;
     const get = await store.get(id);
     if (!get) throw RpcError.notFound();
-    const snapshot = get.snapshot;
+    const snapshot = get.block.snapshot;
     const seq = snapshot.seq + 1;
     const model = Model.fromBinary(snapshot.blob);
     const patches = batch.patches.map((p) => Patch.fromBinary(p.blob));

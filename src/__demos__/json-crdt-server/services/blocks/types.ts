@@ -1,3 +1,23 @@
+export interface StoreBlock {
+  /** Block ID. */
+  id: string;
+
+  /** Timestamp in (milliseconds) when the block was created. */
+  ts: number;
+
+  /** Timestamp in (milliseconds) when the block was last updated. */
+  uts: number;
+
+  /** The latest snapshot of the block. */
+  snapshot: StoreSnapshot;
+
+  /**
+   * The latest changes that have been stored, but not yet applied to the the
+   * latest snapshot.
+   */
+  tip: StoreBatch[];
+}
+
 /**
  * Represents a state snapshot of a block at a certain point in time.
  */
@@ -11,8 +31,8 @@ export interface StoreSnapshot {
   /** Timestamp in (milliseconds) when the snapshot was created. */
   ts: number;
 
-  /** Timestamp in (milliseconds) when the snapshot was last updated. */
-  uts: number;
+  // /** Timestamp in (milliseconds) when the snapshot was last updated. */
+  // uts: number;
 
   /** The state of the snapshot encoded in algorithm-specific format. */
   blob: Uint8Array;
@@ -112,15 +132,15 @@ export interface Store {
 }
 
 export interface StoreCreateResult {
-  snapshot: StoreSnapshot;
+  block: StoreBlock;
   batch?: StoreBatch;
-}
-
-export interface StoreGetResult {
-  snapshot: StoreSnapshot;
 }
 
 export interface StorePushResult {
   snapshot: StoreSnapshot;
   batch: StoreBatch;
+}
+
+export interface StoreGetResult {
+  block: StoreBlock;
 }

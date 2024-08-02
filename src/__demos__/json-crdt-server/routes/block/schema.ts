@@ -110,6 +110,23 @@ export const BlockSnapshotRef = t.Ref<typeof BlockSnapshot>('BlockSnapshot');
 export const NewBlockSnapshotResponse = BlockSnapshot.omit('blob');
 export const NewBlockSnapshotResponseRef = t.Ref<typeof NewBlockSnapshotResponse>('NewBlockSnapshotResponse');
 
+// ---------------------------------------------------------------------- Block
+
+// prettier-ignore
+export const BlockNew = t.Object(
+  t.prop('id', t.Ref<typeof BlockId>('BlockId')),
+  t.prop('ts', t.num.options({format: 'u'})),
+  t.prop('uts', t.num.options({format: 'u'})),
+);
+export const BlockNewRef = t.Ref<typeof BlockNew>('BlockNew');
+
+// prettier-ignore
+export const Block = BlockNew.extend(t.Object(
+  t.prop('snapshot', BlockSnapshotRef),
+  t.prop('tip', t.Array(BlockBatchRef)),
+));
+export const BlockRef = t.Ref<typeof Block>('Block');
+
 // --------------------------------------------------------------------- Events
 
 export const BlockCreateEvent = t

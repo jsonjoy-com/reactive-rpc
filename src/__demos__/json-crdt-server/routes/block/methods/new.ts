@@ -16,13 +16,14 @@ export const new_ =
       }),
     );
 
-    const Response = t
-      .Object(t.prop('snapshot', NewBlockSnapshotResponseRef), t.propOpt('batch', BlockBatchRef))
-      .options({
-        title: 'New block creation response',
-        description:
-          'The response object for the new block creation, contains server generated metadata without blobs supplied by the client.',
-      });
+    // prettier-ignore
+    const Response = t.Object(
+      t.prop('block', NewBlockSnapshotResponseRef),
+    ).options({
+      title: 'New block creation response',
+      description:
+        'The response object for the new block creation, contains server generated metadata without blobs supplied by the client.',
+    });
 
     const Func = t.Function(Request, Response).options({
       title: 'Create Block',
@@ -32,7 +33,14 @@ export const new_ =
     });
 
     return r.prop('block.new', Func, async ({id, batch}) => {
-      const res = await services.blocks.create(id, batch);
-      return res;
+      const {block} = await services.blocks.create(id, batch);
+      const snapshot = block.snapshot;
+      return {
+        block: {
+          id,
+          seq: snapshot.seq,
+          ts: snapshot.ts,
+        },
+      };
     });
   };
