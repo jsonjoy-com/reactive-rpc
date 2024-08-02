@@ -1,8 +1,8 @@
-import {MemoryStore} from './MemoryStore';
+import {MemoryStore} from './store/MemoryStore';
 import {RpcError, RpcErrorCodes} from '../../../../common/rpc/caller';
 import {Model, Patch} from 'json-joy/lib/json-crdt';
 import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
-import type {StoreSnapshot, StoreIncomingBatch, StoreBatch, StoreIncomingSnapshot} from './types';
+import type {StoreSnapshot, StoreIncomingBatch, StoreBatch, StoreIncomingSnapshot, Store} from './store/types';
 import type {Services} from '../Services';
 import type {Observable} from 'rxjs';
 import type {TBlockEvent, TBlockUpdateEvent, TBlockDeleteEvent, TBlockCreateEvent} from '../../routes/block/schema';
@@ -19,9 +19,10 @@ const validateBatch = (batch: StoreIncomingBatch) => {
 };
 
 export class BlocksServices {
-  protected readonly store = new MemoryStore();
-
-  constructor(protected readonly services: Services) {}
+  constructor(
+    protected readonly services: Services,
+    protected readonly store: Store = new MemoryStore(),
+  ) {}
 
   public async create(id: string, batch?: StoreIncomingBatch) {
     this.maybeGc();

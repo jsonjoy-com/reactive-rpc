@@ -1,9 +1,16 @@
+import {MemoryLevel} from 'memory-level';
 import {buildE2eClient} from '../../../common/testing/buildE2eClient';
 import {createCaller} from '../routes';
+import {LevelStore} from '../services/blocks/store/level/LevelStore';
 import {Services} from '../services/Services';
 
 export const setup = async () => {
-  const services = new Services();
+  const kv = new MemoryLevel<string, Uint8Array>({
+    keyEncoding: 'utf8',
+    valueEncoding: 'view',
+  });
+  const store = new LevelStore(<any>kv);
+  const services = new Services(store);
   const {caller} = createCaller(services);
   const {client} = buildE2eClient(caller, {
     writerDefaultBufferKb: [1, 32],

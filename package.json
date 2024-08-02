@@ -88,6 +88,7 @@
     "@types/jest": "^29.5.12",
     "@types/ws": "^8.5.10",
     "benchmark": "^2.1.4",
+    "classic-level": "^1.4.1",
     "jest": "^29.7.0",
     "prettier": "^3.2.5",
     "rimraf": "^5.0.5",

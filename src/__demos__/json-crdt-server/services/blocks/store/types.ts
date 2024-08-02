@@ -85,7 +85,7 @@ export interface Store {
    * @param batch Initial patches to apply to a new block.
    * @returns Newly created block data.
    */
-  create(snapshot: StoreIncomingSnapshot, batch: StoreIncomingBatch): Promise<StoreCreateResult>;
+  create(snapshot: StoreIncomingSnapshot, batch?: StoreIncomingBatch): Promise<StoreCreateResult>;
 
   /**
    * Push changes to an existing block.
@@ -103,6 +103,13 @@ export interface Store {
    * @returns Block data, or `undefined` if the block does not exist.
    */
   get(id: string): Promise<StoreGetResult | undefined>;
+
+  /**
+   * Retrieve the existence of a block.
+   *
+   * @param id Block ID.
+   */
+  exists(id: string): Promise<boolean>;
 
   /**
    * Retrieve the sequence number of a block.
@@ -129,6 +136,20 @@ export interface Store {
    * @returns `true` if the block was removed, `false` if the block did not exist.
    */
   remove(id: string): Promise<boolean>;
+
+  /**
+   * Remove all blocks that have not been accessed since the given timestamp.
+   *
+   * @param ts Timestamp in milliseconds.
+   */
+  removeAccessedBefore(ts: number): Promise<void>;
+
+  /**
+   * Retrieve statistics about the store.
+   *
+   * @returns Number of blocks and batches.
+   */
+  stats(): {blocks: number; batches: number};
 }
 
 export interface StoreCreateResult {

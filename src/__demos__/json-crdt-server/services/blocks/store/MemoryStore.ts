@@ -1,4 +1,4 @@
-import {RpcError} from '../../../../common/rpc/caller';
+import {RpcError} from '../../../../../common/rpc/caller';
 import type * as types from './types';
 
 const tick = new Promise((resolve) => setImmediate(resolve));
