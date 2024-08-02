@@ -3,12 +3,16 @@ import {buildE2eClient} from '../../../common/testing/buildE2eClient';
 import {createCaller} from '../routes';
 import {LevelStore} from '../services/blocks/store/level/LevelStore';
 import {Services} from '../services/Services';
+import {ClassicLevel} from 'classic-level';
+
 
 export const setup = async () => {
-  const kv = new MemoryLevel<string, Uint8Array>({
-    keyEncoding: 'utf8',
-    valueEncoding: 'view',
-  });
+  const kv = new ClassicLevel<string, Uint8Array>('./db', { valueEncoding: 'view' })
+  const open = kv.open();
+  // const kv = new MemoryLevel<string, Uint8Array>({
+  //   keyEncoding: 'utf8',
+  //   valueEncoding: 'view',
+  // });
   const store = new LevelStore(<any>kv);
   const services = new Services(store);
   const {caller} = createCaller(services);
@@ -21,7 +25,9 @@ export const setup = async () => {
   });
   const call = client.call.bind(client);
   const call$ = client.call$.bind(client);
-  const stop = () => {};
+  const stop = async () => {
+    await kv.close();
+  };
   return {call, call$, stop};
 };
 

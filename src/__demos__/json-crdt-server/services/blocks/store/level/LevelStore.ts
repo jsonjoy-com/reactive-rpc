@@ -44,7 +44,7 @@ export class LevelStore implements types.Store {
       const block = this.codec.decoder.decode(blob) as types.StoreBlock;
       return {block};
     } catch (error) {
-      if (error instanceof Error && (error as any).code === 'LEVEL_NOT_FOUND') return;
+      if (error && typeof error === 'object' && (error as any).code === 'LEVEL_NOT_FOUND') return;
       throw error;
     }
   }

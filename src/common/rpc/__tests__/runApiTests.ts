@@ -5,6 +5,7 @@ import {RpcError} from '../caller';
 
 export interface ApiTestSetupResult extends Pick<StreamingRpcClient, 'call' | 'call$' | 'stop'> {
   client: Pick<StreamingRpcClient, 'call' | 'call$' | 'stop'>;
+  stop: () => Promise<void>;
 }
 
 export type ApiTestSetup = () => ApiTestSetupResult | Promise<ApiTestSetupResult>;

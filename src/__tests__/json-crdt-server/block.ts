@@ -8,7 +8,7 @@ import type {TBlockEvent} from '../../__demos__/json-crdt-server/routes/block/sc
 
 const sid = Math.random().toString(36).slice(2);
 let seq = 0;
-const getId = () => `${sid}-${Date.now().toString(36)}-${seq++}`;
+const getId = () => `${sid}-${Date.now().toString(36)}-${seq++}-${Math.random().toString(36).slice(2)}`;
 
 export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} = {}) => {
   const setup = _setup as JsonCrdtTestSetup;
@@ -40,7 +40,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         const model2 = Model.fromBinary(response2.block.snapshot.blob);
         expect(model2.view()).toBe(undefined);
         expect(model2.clock.sid).toBe(SESSION.GLOBAL);
-        stop();
+        await stop();
       });
 
       test('can create a block with value', async () => {
@@ -91,7 +91,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
           name: 'Super Woman',
           age: 26,
         });
-        stop();
+        await stop();
       });
     });
 
@@ -112,7 +112,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         } catch (err: any) {
           expect(err.errno).toBe(RpcErrorCodes.NOT_FOUND);
         }
-        stop();
+        await stop();
       });
     });
 
@@ -142,7 +142,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
             ts: expect.any(Number),
           },
         });
-        stop();
+        await stop();
       });
 
       test('throws NOT_FOUND when "create" flag missing', async () => {
@@ -171,7 +171,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
             code: 'NOT_FOUND',
           });
         }
-        stop();
+        await stop();
       });
 
       test('can edit a document sequentially', async () => {
@@ -236,7 +236,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         expect(Model.fromBinary(block3.block.snapshot.blob).view()).toStrictEqual({
           text: 'Hello, World!',
         });
-        stop();
+        await stop();
       });
 
       test('can edit a document concurrently', async () => {
@@ -303,7 +303,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         const block4 = await call('block.get', {id});
         const model4 = Model.fromBinary(block4.block.snapshot.blob).fork();
         expect(model4.view()).not.toStrictEqual({text: 'Hell yeah!'});
-        stop();
+        await stop();
       });
     });
 
@@ -360,7 +360,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
               patches: [{blob: patch2.toBinary()}],
             });
           }
-          stop();
+          await stop();
         });
 
         test('can subscribe before block is created', async () => {
@@ -400,7 +400,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
               ],
             });
           }
-          stop();
+          await stop();
         });
 
         test('can receive creation events', async () => {
@@ -413,7 +413,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
           await call('block.new', {id});
           await until(() => emits.length === 1);
           expect(emits).toEqual([['new']]);
-          stop();
+          await stop();
         });
 
         test('can receive deletion events', async () => {
@@ -427,7 +427,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
           await call('block.del', {id});
           await until(() => emits.length === 2);
           expect(emits).toEqual([['new'], ['del']]);
-          stop();
+          await stop();
         });
       });
     }
@@ -495,7 +495,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
             },
           ],
         });
-        stop();
+        await stop();
       });
     });
 
@@ -549,7 +549,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
             tip: [],
           }
         });
-        stop();
+        await stop();
       });
     });
 
@@ -598,7 +598,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
             age: 26,
           },
         });
-        stop();
+        await stop();
       });
     });
   });
