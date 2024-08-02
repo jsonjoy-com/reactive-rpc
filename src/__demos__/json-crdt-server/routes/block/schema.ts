@@ -82,29 +82,35 @@ export const BlockBatchRef = t.Ref<typeof BlockBatch>('BlockBatch');
 
 // ------------------------------------------------------------------- Snapshot
 
-export const BlockSnapshot = t
-  .Object(
-    t.prop('id', BlockIdRef).options({
-      title: 'Block ID',
-      description: 'The ID of the block.',
-    }),
-    t.prop('blob', t.bin).options({
-      title: 'Snapshot Blob',
-      description: 'A serialized JSON CRDT model.',
-    }),
-    t.prop('seq', BlockCurRef).options({
-      title: 'Snapshot Cursor',
-      description: 'The cursor of the snapshot, representing the position in the history.',
-    }),
-    t.prop('ts', t.num.options({format: 'u'})).options({
-      title: 'Snapshot Creation Time',
-      description: 'The time when the snapshot was created, in milliseconds since the Unix epoch.',
-    }),
-  )
-  .options({
-    title: 'Block Snapshot',
-    description: "A snapshot of the block's state at a certain point in time.",
-  });
+export const BlockSnapshotReturn = t.Object(
+  t.prop('id', BlockIdRef).options({
+    title: 'Block ID',
+    description: 'The ID of the block.',
+  }),
+  t.prop('seq', BlockCurRef).options({
+    title: 'Snapshot Cursor',
+    description: 'The cursor of the snapshot, representing the position in the history.',
+  }),
+  t.prop('ts', t.num.options({format: 'u'})).options({
+    title: 'Snapshot Creation Time',
+    description: 'The time when the snapshot was created, in milliseconds since the Unix epoch.',
+  }),
+).options({
+  title: 'Block Snapshot Return',
+  description: "Partial snapshot returned on creation, doesn't include the blob.",
+});
+export const BlockSnapshotReturnRef = t.Ref<typeof BlockSnapshotReturn>('BlockSnapshotReturn');
+
+// prettier-ignore
+export const BlockSnapshot = BlockSnapshotReturn.extend(t.Object(
+  t.prop('blob', t.bin).options({
+    title: 'Snapshot Blob',
+    description: 'A serialized JSON CRDT model.',
+  }),
+)).options({
+  title: 'Block Snapshot',
+  description: "A snapshot of the block's state at a certain point in time.",
+});
 export const BlockSnapshotRef = t.Ref<typeof BlockSnapshot>('BlockSnapshot');
 
 export const NewBlockSnapshotResponse = BlockSnapshot.omit('blob');

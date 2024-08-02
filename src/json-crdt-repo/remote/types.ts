@@ -32,8 +32,8 @@ import type {Observable} from 'rxjs';
 export interface RemoteHistory<
   Cursor = unknown,
   B extends RemoteBlock<Cursor> = RemoteBlock<Cursor>,
-  S extends RemoteBlockSnapshot<Cursor> = RemoteBlockSnapshot<Cursor>,
-  P extends RemoteBlockPatch = RemoteBlockPatch,
+  S extends RemoteSnapshot<Cursor> = RemoteSnapshot<Cursor>,
+  P extends RemotePatch = RemotePatch,
 > {
   /**
    * Load the latest snapshot of the block, and any unmerged "tip" of patches
@@ -120,47 +120,62 @@ export interface RemoteBlock<Cursor> {
   /**
    * The latest snapshot of the block.
    */
-  snapshot: RemoteBlockSnapshot<Cursor>;
+  snapshot: RemoteSnapshot<Cursor>;
 
   /**
    * The latest patches that have been stored, but not yet applied to the the
    * latest snapshot. The client should apply these patches to the snapshot
    * to get the latest state of the block.
    */
-  tip: RemoteBlockPatch[];
+  tip: RemotePatch[];
 }
 
 /**
  * A snapshot of the block's state at a certain point in time.
  */
-export interface RemoteBlockSnapshot<Cursor> {
-  /**
-   * The content of the snapshot.
-   */
-  blob: Uint8Array;
-
+export interface RemoteSnapshot<Cursor = unknown> {
   /**
    * The cursor of the snapshot, representing the position in the history.
    */
-  cur: Cursor;
+  seq: Cursor;
 
   /**
    * Unix timestamp when the snapshot was created.
    */
   ts?: number;
+
+  /**
+   * The content of the snapshot. Model encoded in `binary` format.
+   */
+  blob: Uint8Array;
+}
+
+/**
+ * A batch of patches that have been applied to the block.
+ */
+export interface RemoteBatch<Cursor = unknown> {
+  /**
+   * The cursor of the batch, representing the position in the remote history.
+   */
+  seq: Cursor;
+
+  /**
+   * Unix timestamp when the batch was created.
+   */
+  ts: number;
+
+  /**
+   * The patches that have been applied to the block.
+   */
+  patches: RemotePatch[];
 }
 
 /**
  * A patch is a change to the block's state.
  */
-export interface RemoteBlockPatch {
+export interface RemotePatch {
   /**
-   * The content of the patch.
+   * The content of the patch. Patch objects encoded in `binary` format.
    */
   blob: Uint8Array;
-
-  /**
-   * Unix timestamp when the patch was created.
-   */
-  ts?: number;
 }

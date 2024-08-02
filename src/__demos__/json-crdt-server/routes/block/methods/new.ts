@@ -1,4 +1,4 @@
-import {BlockIdRef, NewBlockSnapshotResponseRef, BlockBatchPartialRef, BlockBatchRef} from '../schema';
+import {BlockIdRef, BlockBatchPartialRef, BlockSnapshotReturnRef} from '../schema';
 import type {RouteDeps, Router, RouterBase} from '../../types';
 
 export const new_ =
@@ -18,7 +18,7 @@ export const new_ =
 
     // prettier-ignore
     const Response = t.Object(
-      t.prop('block', NewBlockSnapshotResponseRef),
+      t.prop('snapshot', BlockSnapshotReturnRef),
     ).options({
       title: 'New block creation response',
       description:
@@ -36,7 +36,7 @@ export const new_ =
       const {block} = await services.blocks.create(id, batch);
       const snapshot = block.snapshot;
       return {
-        block: {
+        snapshot: {
           id,
           seq: snapshot.seq,
           ts: snapshot.ts,

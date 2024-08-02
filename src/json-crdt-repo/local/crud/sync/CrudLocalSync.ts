@@ -7,7 +7,7 @@ import {once} from 'thingies/lib/once';
 // import type {BlockSyncMetadata} from './types';
 import type {Subscription} from 'rxjs';
 import {CrudLocalRepoCore} from '../core/CrudLocalRepoCore';
-import {RemoteBlockPatch} from '../../../remote/types';
+import {RemotePatch} from '../../../remote/types';
 // import {BlockSyncMetadata} from '../types';
 
 const SYNC_FILE_NAME = 'sync.cbor';

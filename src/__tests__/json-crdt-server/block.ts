@@ -21,20 +21,23 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         const response1 = await call('block.new', {id});
         expect(response1).toMatchObject({
           snapshot: {
+            id,
             seq: -1,
             ts: expect.any(Number),
           },
         });
         const response2 = await call('block.get', {id});
         expect(response2).toMatchObject({
-          snapshot: {
-            seq: -1,
+          block: {
             ts: expect.any(Number),
-            blob: expect.any(Uint8Array),
-          },
-          tip: [],
+            snapshot: {
+              seq: -1,
+              blob: expect.any(Uint8Array),
+            },
+            tip: [],
+          }
         });
-        const model2 = Model.fromBinary(response2.snapshot.blob);
+        const model2 = Model.fromBinary(response2.block.snapshot.blob);
         expect(model2.view()).toBe(undefined);
         expect(model2.clock.sid).toBe(SESSION.GLOBAL);
         stop();
@@ -71,21 +74,19 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
             seq: 0,
             ts: expect.any(Number),
           },
-          batch: {
-            seq: 0,
-            ts: expect.any(Number),
-          },
         });
         const res = await call('block.get', {id});
         expect(res).toMatchObject({
-          snapshot: {
-            seq: 0,
-            blob: expect.any(Uint8Array),
-            ts: expect.any(Number),
-          },
-          tip: [],
+          block: {
+            snapshot: {
+              seq: 0,
+              blob: expect.any(Uint8Array),
+              ts: expect.any(Number),
+            },
+            tip: [],
+          }
         });
-        const model2 = Model.fromBinary(res.snapshot.blob);
+        const model2 = Model.fromBinary(res.block.snapshot.blob);
         expect(model2.view()).toStrictEqual({
           name: 'Super Woman',
           age: 26,
@@ -99,7 +100,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         const {call, stop} = await setup();
         const id = getId();
         await call('block.new', {id});
-        const {snapshot} = await call('block.get', {id});
+        const {block: {snapshot}} = await call('block.get', {id});
         expect(snapshot.id).toBe(id);
         const res1 = await call('block.del', {id});
         expect(res1.success).toBe(true);
@@ -209,7 +210,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
           },
         });
         const block2 = await call('block.get', {id});
-        expect(Model.fromBinary(block2.snapshot.blob).view()).toStrictEqual({
+        expect(Model.fromBinary(block2.block.snapshot.blob).view()).toStrictEqual({
           text: 'Hello World',
         });
         const str = model.api.str(['text']);
@@ -232,7 +233,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
           },
         });
         const block3 = await call('block.get', {id});
-        expect(Model.fromBinary(block3.snapshot.blob).view()).toStrictEqual({
+        expect(Model.fromBinary(block3.block.snapshot.blob).view()).toStrictEqual({
           text: 'Hello, World!',
         });
         stop();
@@ -243,7 +244,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         const id = getId();
 
         // User 1
-        const model = Model.withLogicalClock();
+        const model = Model.create();
         model.api.root({
           text: 'Hell',
         });
@@ -261,7 +262,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
 
         // User 2
         const block2 = await call('block.get', {id});
-        const model2 = Model.fromBinary(block2.snapshot.blob).fork();
+        const model2 = Model.fromBinary(block2.block.snapshot.blob).fork();
         model2.api.str(['text']).ins(4, ' yeah!');
         const patch2User2 = model2.api.flush();
         await call('block.upd', {
@@ -277,7 +278,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         expect(model2.view()).toStrictEqual({text: 'Hell yeah!'});
 
         const block3 = await call('block.get', {id});
-        const model3 = Model.fromBinary(block3.snapshot.blob).fork();
+        const model3 = Model.fromBinary(block3.block.snapshot.blob).fork();
         expect(model3.view()).toStrictEqual({text: 'Hell yeah!'});
 
         // User 1
@@ -300,7 +301,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         });
 
         const block4 = await call('block.get', {id});
-        const model4 = Model.fromBinary(block4.snapshot.blob).fork();
+        const model4 = Model.fromBinary(block4.block.snapshot.blob).fork();
         expect(model4.view()).not.toStrictEqual({text: 'Hell yeah!'});
         stop();
       });
@@ -538,13 +539,15 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         });
         const result = await call('block.get', {id});
         expect(result).toMatchObject({
-          snapshot: {
-            id,
-            seq: 1,
-            blob: expect.any(Uint8Array),
-            ts: expect.any(Number),
-          },
-          tip: [],
+          block: {
+            snapshot: {
+              id,
+              seq: 1,
+              blob: expect.any(Uint8Array),
+              ts: expect.any(Number),
+            },
+            tip: [],
+          }
         });
         stop();
       });

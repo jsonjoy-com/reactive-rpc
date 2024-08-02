@@ -18,6 +18,8 @@ import {
   BlockBatchPartial,
   BlockBatchPartialReturn,
   BlockBatchSeq,
+  BlockSnapshotReturn,
+  Block,
 } from './schema';
 import type {RouteDeps, Router, RouterBase} from '../types';
 
@@ -30,6 +32,9 @@ export const block =
     system.alias('BlockCur', BlockCur);
     system.alias('BlockBatchSeq', BlockBatchSeq);
 
+    system.alias('Block', Block);
+
+    system.alias('BlockSnapshotReturn', BlockSnapshotReturn);
     system.alias('BlockSnapshot', BlockSnapshot);
     system.alias('NewBlockSnapshotResponse', NewBlockSnapshotResponse);
 
