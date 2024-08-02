@@ -433,7 +433,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
     }
 
     describe('block.scan', () => {
-      test.only('can retrieve change history', async () => {
+      test('can retrieve change history', async () => {
         const {call, stop} = await setup();
         const id = getId();
         const model = Model.create();
@@ -472,30 +472,29 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
           },
         });
         const history = await call('block.scan', {id, seq: 0, limit: 3});
-        console.log(history);
-        // expect(history).toMatchObject({
-        //   batches: [
-        //     {
-        //       ts: expect.any(Number),
-        //       patches: [
-        //         {
-        //           blob: patch1.toBinary(),
-        //         },
-        //       ],
-        //     },
-        //     {
-        //       ts: expect.any(Number),
-        //       patches: [
-        //         {
-        //           blob: patch2.toBinary(),
-        //         },
-        //         {
-        //           blob: patch3.toBinary(),
-        //         },
-        //       ],
-        //     },
-        //   ],
-        // });
+        expect(history).toMatchObject({
+          batches: [
+            {
+              ts: expect.any(Number),
+              patches: [
+                {
+                  blob: patch1.toBinary(),
+                },
+              ],
+            },
+            {
+              ts: expect.any(Number),
+              patches: [
+                {
+                  blob: patch2.toBinary(),
+                },
+                {
+                  blob: patch3.toBinary(),
+                },
+              ],
+            },
+          ],
+        });
         stop();
       });
     });

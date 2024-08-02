@@ -134,7 +134,10 @@ export class BlocksServices {
   public async edit(id: string, batch: StoreIncomingBatch, createIfNotExists: boolean) {
     if (createIfNotExists) {
       const exists = await this.store.exists(id);
-      if (!exists) return await this.create(id, batch);
+      if (!exists) {
+        const res = await this.create(id, batch);
+        return {snapshot: res.block.snapshot, batch: res.batch};
+      }
     }
     this.maybeGc();
     validateBatch(batch);

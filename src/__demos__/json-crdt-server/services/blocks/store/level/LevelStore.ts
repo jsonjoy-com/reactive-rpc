@@ -92,7 +92,7 @@ export class LevelStore implements types.Store {
         const batchBlob = this.codec.encoder.encode(batch2);
         const batchKey = this.batchKey(id, 0);
         await this.kv.put(batchKey, batchBlob);
-        return {block, batch} as types.StoreCreateResult;
+        return {block, batch: batch2} as types.StoreCreateResult;
       }
       return {block};
     });
@@ -127,7 +127,7 @@ export class LevelStore implements types.Store {
         patches,
       };
       const batchBlob = encoder.encode(batch1);
-      const batchKey = this.batchKey(id, 0);
+      const batchKey = this.batchKey(id, seq);
       await this.kv.put(batchKey, batchBlob);
       return {snapshot, batch: batch1};
     });
@@ -137,13 +137,11 @@ export class LevelStore implements types.Store {
     const from = this.batchKey(id, min);
     const to = this.batchKey(id, max);
     const list: types.StoreBatch[] = [];
-    console.log(from, to);
     const decoder = this.codec.decoder;
     for await (const blob of this.kv.values({gte: from, lte: to})) {
       const batch = decoder.decode(blob) as types.StoreBatch;
       list.push(batch);
     }
-    console.log(list);
     return list;
   }
 
