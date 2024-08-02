@@ -28,7 +28,7 @@ runApiTests(() => {
   const client = setup().client;
   const call = client.call.bind(client);
   const call$ = client.call$.bind(client);
-  const stop = client.stop.bind(client);
+  const stop = async () => void client.stop.bind(client);
   return {
     call,
     call$,

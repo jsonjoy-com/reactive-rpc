@@ -1,4 +1,4 @@
-import {ApiTestSetup} from '../../../common/rpc/__tests__/runApiTests';
+import {ApiTestSetup, ApiTestSetupResult} from '../../../common/rpc/__tests__/runApiTests';
 import {runUtilTests} from '../../json-crdt-server/util';
 import {runPubsubTests} from '../../json-crdt-server/pubsub';
 import {runPresenceTests} from '../../json-crdt-server/presence';
