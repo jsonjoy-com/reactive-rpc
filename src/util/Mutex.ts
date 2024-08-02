@@ -1,20 +1,20 @@
 import {Defer} from 'thingies/lib/Defer';
 
-class Entry {
+class Entry<T> {
   constructor(
-    public readonly code: () => Promise<void>,
-    public readonly future: Defer<void>,
+    public readonly code: () => Promise<T>,
+    public readonly future: Defer<T>,
   ) {}
 }
 
 export class Mutex {
-  protected readonly queue = new Map<string, Entry[]>();
+  protected readonly queue = new Map<string, Entry<unknown>[]>();
 
-  public readonly acquire = async (key: string, code: () => Promise<void>): Promise<void> => {
+  public readonly acquire = async <T>(key: string, code: () => Promise<T>): Promise<T> => {
     const queue = this.queue.get(key);
-    const entry = new Entry(code, new Defer<void>());
+    const entry = new Entry(code, new Defer<T>());
     if (queue instanceof Array) {
-      queue.push(entry);
+      queue.push(entry as Entry<unknown>);
     } else {
       this.queue.set(key, []);
       this.run(key, entry).catch(() => {});
@@ -22,10 +22,10 @@ export class Mutex {
     return await entry.future.promise;
   };
 
-  protected async run(key: string, entry: Entry): Promise<void> {
+  protected async run<T>(key: string, entry: Entry<T>): Promise<void> {
     try {
-      await entry.code();
-      entry.future.resolve();
+      const result = await entry.code();
+      entry.future.resolve(result);
     } catch (error) {
       entry.future.reject(error);
     } finally {
