@@ -32,6 +32,10 @@ export class LevelStore implements types.Store {
     return this.batchBase(id) + seqFormatted;
   }
 
+  protected touchKey(id: string) {
+    return 'uts!' + id + '!';
+  }
+
   public async get(id: string): Promise<types.StoreGetResult | undefined> {
     const key = this.snapshotKey(id);
     try {
@@ -52,16 +56,14 @@ export class LevelStore implements types.Store {
   }
 
   public async seq(id: string): Promise<number | undefined> {
-    return await this.mutex.acquire(id, () => this.seqUnsafe(id));
-  }
-
-  protected async seqUnsafe(id: string): Promise<number | undefined> {
-    const base = this.batchBase(id);
-    const keys = await this.kv.keys({lt: base + '~', limit: 1, reverse: true}).all();
-    if (!keys || keys.length < 1) return;
-    const key = keys[0];
-    const seq = +key.slice(base.length);
-    return seq;
+    return await this.mutex.acquire(id, async () => {
+      const base = this.batchBase(id);
+      const keys = await this.kv.keys({lt: base + '~', limit: 1, reverse: true}).all();
+      if (!keys || keys.length < 1) return;
+      const key = keys[0];
+      const seq = +key.slice(base.length);
+      return seq;
+    });
   }
 
   public async create(
@@ -94,6 +96,7 @@ export class LevelStore implements types.Store {
         await this.kv.put(batchKey, batchBlob);
         return {block, batch: batch2} as types.StoreCreateResult;
       }
+      this.touch(id, now).catch(() => {});
       return {block};
     });
   }
@@ -129,6 +132,7 @@ export class LevelStore implements types.Store {
       const batchBlob = encoder.encode(batch1);
       const batchKey = this.batchKey(id, seq);
       await this.kv.put(batchKey, batchBlob);
+      this.touch(id, now).catch(() => {});
       return {snapshot, batch: batch1};
     });
   }
@@ -149,20 +153,40 @@ export class LevelStore implements types.Store {
     const exists = await this.exists(id);
     if (!exists) return false;
     const base = this.keyBase(id);
-    return await this.mutex.acquire(id, async () => {
+    const success = await this.mutex.acquire(id, async () => {
       await this.kv.clear({
         gte: base,
         lte: base + '~',
       });
       return true;
     });
+    const touchKey = this.touchKey(id);
+    this.kv.del(touchKey).catch(() => {});
+    return success;
   }
 
   public stats(): {blocks: number; batches: number} {
     return {blocks: 0, batches: 0};
   }
 
-  public async removeAccessedBefore(ts: number): Promise<void> {
-    console.warn('removeAccessedBefore not implemented');
+  public async removeAccessedBefore(ts: number, limit: number = 10): Promise<void> {
+    const from = this.touchKey('');
+    const to = from + '~';
+    const decoder = this.codec.decoder;
+    let cnt = 0;
+    for await (const [key, blob] of this.kv.iterator({gte: from, lte: to})) {
+      const value = Number(decoder.decode(blob));
+      if (ts >= value) continue;
+      cnt++;
+      const id = key.slice(from.length);
+      this.remove(id).catch(() => {});
+      if (cnt >= limit) return;
+    }
+  }
+
+  protected async touch(id: string, time: number): Promise<void> {
+    const key = this.touchKey(id);
+    const blob = this.codec.encoder.encode(time);
+    await this.kv.put(key, blob);
   }
 }

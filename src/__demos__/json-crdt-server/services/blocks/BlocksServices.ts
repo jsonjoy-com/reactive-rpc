@@ -171,7 +171,7 @@ export class BlocksServices {
   }
 
   private maybeGc(): void {
-    if (Math.random() < 0.05)
+    if (Math.random() < 0.01)
       this.gc().catch((error) => {
         // tslint:disable-next-line:no-console
         console.error('Error running gc', error);
@@ -181,6 +181,6 @@ export class BlocksServices {
   private async gc(): Promise<void> {
     const ts = Date.now() - BLOCK_TTL;
     const {store} = this;
-    await store.removeAccessedBefore(ts);
+    await store.removeAccessedBefore(ts, 10);
   }
 }

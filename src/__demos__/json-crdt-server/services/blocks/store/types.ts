@@ -142,7 +142,7 @@ export interface Store {
    *
    * @param ts Timestamp in milliseconds.
    */
-  removeAccessedBefore(ts: number): Promise<void>;
+  removeAccessedBefore(ts: number, limit: number): Promise<void>;
 
   /**
    * Retrieve statistics about the store.

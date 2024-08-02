@@ -113,8 +113,13 @@ export class MemoryStore implements types.Store {
     for (const [id, block] of this.blocks) if (block.data.ts < ts) this.removeSync(id);
   }
 
-  public async removeAccessedBefore(ts: number): Promise<void> {
+  public async removeAccessedBefore(ts: number, limit = 10): Promise<void> {
     await tick;
-    for (const [id, block] of this.blocks) if (block.data.uts < ts) this.removeSync(id);
+    let cnt = 0;
+    for (const [id, block] of this.blocks) if (block.data.uts < ts) {
+      this.removeSync(id);
+      cnt++;
+      if (cnt >= limit) return;
+    }
   }
 }
