@@ -5,9 +5,9 @@ import {CborJsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/cbor';
 import {LocalRepoSyncRequest, LocalRepoSyncResponse} from '../../types';
 import {BinStrLevel, BinStrLevelOperation, BlockMetadata} from '../types';
 import {Model, Patch} from 'json-joy/lib/json-crdt';
+import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
 import type {CrudLocalRepoCipher} from './types';
 import type {Locks} from 'thingies/lib/Locks';
-import type {RemoteHistory} from '../../../remote/types';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
 
 
@@ -64,16 +64,14 @@ const enum BlockKeyFragment {
 }
 
 export interface LevelLocalRepoCoreOpts {
-  readonly remote: RemoteHistory;
-  readonly kv: BinStrLevel;
   readonly locks: Locks;
+  readonly kv: BinStrLevel;
   readonly sid: number;
   readonly connected$?: BehaviorSubject<boolean>;
   readonly cipher?: CrudLocalRepoCipher;
 }
 
 export class LevelLocalRepoCore {
-  public readonly remote: RemoteHistory;
   readonly kv: BinStrLevel;
   public readonly locks: Locks;
   public readonly sid: number;
@@ -82,7 +80,6 @@ export class LevelLocalRepoCore {
   protected readonly codec: JsonValueCodec = new CborJsonValueCodec(new Writer(1024 * 16));
 
   constructor(opts: LevelLocalRepoCoreOpts) {
-    this.remote = opts.remote;
     this.kv = opts.kv;
     this.locks = opts.locks;
     this.sid = opts.sid;
@@ -161,19 +158,31 @@ export class LevelLocalRepoCore {
   // }
 
   public async sync(req: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
-    if (!req.cursor && req.batch) {
-      // TODO: merge if model already exists.
-      // TODO: time patches with user's sid should be rewritten.
-      try {
-        return await this.create(req.col, req.id, req.batch);
-      } catch (error) {
-        if (error instanceof Error && error.message === 'EXISTS') {
-          // console.log('MERGE EXISTING...');
+    if (req.batch) {
+      const first = req.batch[0];
+      const time = first.getId()?.time;
+      const isNewDocument = time === 1;
+      if (isNewDocument) {
+        try {
+          return await this.create(req.col, req.id, req.batch);
+        } catch (error) {
+          if (error instanceof Error && error.message === 'EXISTS') {
+            throw new Error('not implemented');
+            // return await this.rebaseAndMerge(req.col, req.id, req.batch);
+          }
+          throw error;
         }
-        throw error;
+      } else {
+        throw new Error('not implemented');
+        // return await this.update(req.col, req.id, req.batch);
       }
+    } else if (!req.cursor && !req.batch) {
+      const model = await this.read(req.col, req.id);
+      return {model};
+    } else if (req.cursor && !req.batch) {
+      throw new Error('Not implemented: catch up');
     } else {
-      throw new Error('Method not implemented.');
+      throw new Error('INV_SYNC');
     }
   }
 
@@ -211,7 +220,9 @@ export class LevelLocalRepoCore {
     await this.lockModel(modelKey, async () => {
       const exists = (await this.kv.keys({gte: modelKey, lte: modelKey, limit: 1}).all()).length > 0;
       if (exists) throw new Error('EXISTS');
+      console.log('writing batch', ops);
       await this.kv.batch(ops);
+      console.log('done');
     });
     const remote = this.markDirtyAndSync(col, id);
     remote.catch(() => {});
@@ -233,7 +244,7 @@ export class LevelLocalRepoCore {
       return model;
     } catch (error) {
       if (!!error && typeof error === 'object' && (error as any).code === 'LEVEL_NOT_FOUND')
-          throw new Error('NOT_FOUND');
+          return Model.create(void 0, this.sid);
       throw error;
     }
   }

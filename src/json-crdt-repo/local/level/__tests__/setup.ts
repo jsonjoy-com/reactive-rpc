@@ -1,48 +1,49 @@
 import {LevelLocalRepo, LevelLocalRepoOpts} from '../LevelLocalRepo';
-import {memfs} from 'memfs';
-import {NodeCrud} from 'fs-zoo/lib/node-to-crud';
 import {Locks} from 'thingies/lib/Locks';
 import {Model} from 'json-joy/lib/json-crdt';
 import {Log} from 'json-joy/lib/json-crdt/log/Log';
 import {BehaviorSubject} from 'rxjs';
 import {setup as remoteSetup} from '../../../remote/__tests__/setup';
+import {MemoryLevel} from 'memory-level';
+import {BinStrLevel} from '../types';
 
 export const setup = async (
   opts: {
     remote?: ReturnType<typeof remoteSetup>;
-    local?: Partial<ServerCrudLocalHistoryOpts>;
+    local?: Partial<LevelLocalRepoOpts>;
   } = {},
 ) => {
   const remote = opts.remote ?? remoteSetup();
-  const {fs, vol} = memfs();
   const createLocal = (sid: number = 12345678) => {
-    const crud = new NodeCrud({fs: fs.promises, dir: '/'});
     const locks = new Locks();
-    const local = new CrudLocalRepo({
-      crud,
+    const kv = new MemoryLevel<string, Uint8Array>({
+      keyEncoding: 'utf8',
+      valueEncoding: 'view',
+    }) as unknown as BinStrLevel;
+    const local = new LevelLocalRepo({
+      kv,
       locks,
-      remote: remote.remote,
       sid,
       connected$: new BehaviorSubject(true),
-      ...opts.local,
+      sync: {
+        rpc: remote.remote,
+      },
     });
-    return {sid, crud, locks, local};
+    return {sid, locks, local};
   };
-  const {sid, crud, locks, local} = createLocal();
-  // local.sync.start();
+  const {sid, locks, local} = createLocal();
+  local.start();
   const log = Log.fromNewModel(Model.create(undefined, sid));
   log.end.api.root({foo: 'bar'});
   log.end.api.flush();
   const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
   const id = genId();
-  const stop = () => {
-    // local.sync.stop();
+  const col = ['collection', 'sub-collection']
+  const stop = async () => {
+    await local.stop();
   };
   return {
     remote,
-    fs,
-    vol,
-    crud,
     locks,
     createLocal,
     local,
@@ -50,6 +51,7 @@ export const setup = async (
     log,
     genId,
     id,
+    col,
     stop,
   };
 };

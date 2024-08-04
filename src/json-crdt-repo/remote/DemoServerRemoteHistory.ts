@@ -3,8 +3,7 @@ import type {Observable} from 'rxjs';
 import type {JsonJoyDemoRpcCaller} from '../../__demos__/json-crdt-server';
 import type {ServerBlock, ServerSnapshot, ServerPatch, ServerCursor, ServerHistory, ServerBatch, ServerEvent} from './types';
 
-type Methods = CallerToMethods<JsonJoyDemoRpcCaller>;
-type DemoServerClient = TypedRpcClient<Methods>;
+export type DemoServerClient = TypedRpcClient<CallerToMethods<JsonJoyDemoRpcCaller>>;
 
 export type Cursor = ServerCursor;
 export type DemoServerBlock = ServerBlock;
@@ -14,7 +13,7 @@ export type DemoServerPatch = ServerPatch;
 export type DemoServerEvent = ServerEvent;
 
 export class DemoServerRemoteHistory implements ServerHistory {
-  constructor(protected readonly client: TypedRpcClient<Methods>) {}
+  constructor(protected readonly client: DemoServerClient) {}
 
   public async read(id: string): Promise<{block: DemoServerBlock}> {
     return await this.client.call('block.get', {id});

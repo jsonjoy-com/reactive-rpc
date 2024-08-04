@@ -16,6 +16,14 @@ export class LevelLocalRepo implements LocalRepo {
     this._sync = new LevelLocalRepoSync(opts.sync, this._core);
   }
 
+  public start(): void {
+    this._sync.start();
+  }
+
+  public async stop(): Promise<void> {
+    await this._sync.stop();
+  }
+
   public async sync(request: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
     return await this._core.sync(request);
   }

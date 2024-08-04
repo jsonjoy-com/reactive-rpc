@@ -12,11 +12,10 @@ import {LevelLocalRepoCore} from '../core/LevelLocalRepoCore';
 
 import type {CallerToMethods, TypedRpcClient} from '../../../../common';
 import type {JsonJoyDemoRpcCaller} from '../../../../__demos__/json-crdt-server';
-
-export type DemoServerClient = TypedRpcClient<CallerToMethods<JsonJoyDemoRpcCaller>>;
+import {ServerHistory} from '../../../remote/types';
 
 export interface LevelLocalRepoSyncOpts {
-  rpc: DemoServerClient;
+  rpc: ServerHistory;
 
   /**
    * Number of milliseconds after which remote calls are considered timed out.
