@@ -13,9 +13,8 @@ export class Mutex {
   public readonly acquire = async <T>(key: string, code: () => Promise<T>): Promise<T> => {
     const queue = this.queue.get(key);
     const entry = new Entry(code, new Defer<T>());
-    if (queue instanceof Array) {
-      queue.push(entry as Entry<unknown>);
-    } else {
+    if (queue instanceof Array) queue.push(entry as Entry<unknown>);
+    else {
       this.queue.set(key, []);
       this.run(key, entry).catch(() => {});
     }
@@ -29,13 +28,11 @@ export class Mutex {
     } catch (error) {
       entry.future.reject(error);
     } finally {
-      const queue = this.queue.get(key);
-      if (!(queue instanceof Array)) return;
-      if (!queue.length) {
-        this.queue.delete(key);
-        return;
-      }
-      const next = queue.shift();
+      const queue = this.queue;
+      const entries = queue.get(key);
+      if (!(entries instanceof Array)) return;
+      if (!entries.length) return void queue.delete(key);
+      const next = entries.shift();
       if (!(next instanceof Entry)) return;
       this.run(key, next).catch(() => {});
     }
