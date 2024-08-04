@@ -10,7 +10,14 @@ import {LevelLocalRepoCore} from '../core/LevelLocalRepoCore';
 // import {RemoteBlockPatch} from '../../../remote/types';
 // import {BlockSyncMetadata} from '../types';
 
+import type {CallerToMethods, TypedRpcClient} from '../../../../common';
+import type {JsonJoyDemoRpcCaller} from '../../../../__demos__/json-crdt-server';
+
+export type DemoServerClient = TypedRpcClient<CallerToMethods<JsonJoyDemoRpcCaller>>;
+
 export interface LevelLocalRepoSyncOpts {
+  rpc: DemoServerClient;
+
   /**
    * Number of milliseconds after which remote calls are considered timed out.
    */
