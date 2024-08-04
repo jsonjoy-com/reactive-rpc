@@ -241,24 +241,24 @@ export class CrudLocalRepoCore {
   public async rebaseAndMerge(
     col: string[],
     id: string,
-    batch?: Patch[],
+    patches?: Patch[],
   ): Promise<Pick<LocalRepoSyncResponse, 'remote'>> {
     const dir = this.blockDir(col, id);
-    if (!batch || !batch.length) throw new Error('EMPTY_BATCH');
+    if (!patches || !patches.length) throw new Error('EMPTY_BATCH');
     await this.lockModelWrite(col, id, async () => {
-      const {patches} = await this.readMetadata1(dir);
+      const {patches: frontier} = await this.readMetadata1(dir);
       let nextTick = 0;
-      for (const patch of patches) {
+      for (const patch of frontier) {
         const patchTime = patch.getId()?.time ?? 0;
         const patchSpan = patch.span();
         const patchNextTick = patchTime + patchSpan + 1;
         if (patchNextTick > nextTick) nextTick = patchNextTick;
       }
       const sid = this.sid;
-      const length = batch.length;
+      const length = patches.length;
       const rebased: Patch[] = [];
       for (let i = 0; i < length; i++) {
-        const patch = batch[i];
+        const patch = patches[i];
         if (patch.getId()?.sid === sid) {
           const rebasedPatch = patch.rebase(nextTick);
           rebased.push(rebasedPatch);

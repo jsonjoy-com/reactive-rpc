@@ -167,8 +167,7 @@ export class LevelLocalRepoCore {
           return await this.create(req.col, req.id, req.batch);
         } catch (error) {
           if (error instanceof Error && error.message === 'EXISTS') {
-            throw new Error('not implemented');
-            // return await this.rebaseAndMerge(req.col, req.id, req.batch);
+            return await this.rebaseAndMerge(req.col, req.id, req.batch);
           }
           throw error;
         }
@@ -220,9 +219,50 @@ export class LevelLocalRepoCore {
     await this.lockModel(modelKey, async () => {
       const exists = (await this.kv.keys({gte: modelKey, lte: modelKey, limit: 1}).all()).length > 0;
       if (exists) throw new Error('EXISTS');
-      console.log('writing batch', ops);
       await this.kv.batch(ops);
-      console.log('done');
+    });
+    const remote = this.markDirtyAndSync(col, id);
+    remote.catch(() => {});
+    return {remote};
+  }
+
+  public async rebaseAndMerge(
+    col: string[],
+    id: string,
+    patches?: Patch[],
+  ): Promise<Pick<LocalRepoSyncResponse, 'remote'>> {
+    const keyBase = this.blockKeyBase(col, id);
+    const modelKey = keyBase + BlockKeyFragment.Model;
+    if (!patches || !patches.length) throw new Error('EMPTY_BATCH');
+    await this.lockModel(modelKey, async () => {
+      const frontier = await this.readFrontier(keyBase);
+      let nextTick = 0;
+      for (const patch of frontier) {
+        const patchTime = patch.getId()?.time ?? 0;
+        const patchSpan = patch.span();
+        const patchNextTick = patchTime + patchSpan + 1;
+        if (patchNextTick > nextTick) nextTick = patchNextTick;
+      }
+      const ops: BinStrLevelOperation[] = [];
+      const sid = this.sid;
+      const length = frontier.length;
+      const rebased: Patch[] = [];
+      for (let i = 0; i < length; i++) {
+        const patch = patches[i];
+        let rebased = patch;
+        if (patch.getId()?.sid === sid) rebased = patch.rebase(nextTick);
+        nextTick += patch.span();
+        const patchId = rebased.getId();
+          if (!patchId) throw new Error('PATCH_ID_MISSING');
+        const patchKey = this.frontierKey(keyBase, patchId.time);
+        const op: BinStrLevelOperation = {
+          type: 'put',
+          key: patchKey,
+          value: patch.toBinary(),
+        };
+        ops.push(op);
+      }
+      await this.kv.batch(ops);
     });
     const remote = this.markDirtyAndSync(col, id);
     remote.catch(() => {});
