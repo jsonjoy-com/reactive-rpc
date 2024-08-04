@@ -1,4 +1,4 @@
-import {Model} from 'json-joy/lib/json-crdt';
+import {Model, Patch} from 'json-joy/lib/json-crdt';
 import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
 import {Value} from 'json-joy/lib/json-type-value/Value';
 import {setup} from './setup';
@@ -188,6 +188,50 @@ describe('.scanBwd()', () => {
       ]
     });
     expect(scan1.batches[0].patches[0].blob).toEqual(blob1);
+  });
+
+  test('can optionally include snapshot', async () => {
+    const {remote} = await setup();
+    const id = genId();
+    const model1 = Model.create();
+    model1.api.root({score: 42});
+    const patch1 = model1.api.flush();
+    const blob1 = patch1.toBinary();
+    await remote.create(id, {patches: [{blob: blob1}]});
+    model1.api.obj([]).set({
+      foo: 'bar',
+    });
+    const patch2 = model1.api.flush();
+    const blob2 = patch2.toBinary();
+    await remote.update(id, {patches: [{blob: blob2}]});
+    const read2 = await remote.read(id);
+    const scan1 = await remote.scanBwd(id, read2.block.snapshot.seq, true);
+    expect(scan1).toMatchObject({
+      batches: [
+        {
+          ts: expect.any(Number),
+          patches: [
+            {
+              blob: expect.any(Uint8Array),
+            },
+          ],
+        }
+      ],
+      snapshot: {
+        seq: expect.any(Number),
+        ts: expect.any(Number),
+        blob: expect.any(Uint8Array),
+      },
+    });
+    expect(scan1.batches[0].patches[0].blob).toEqual(blob1);
+    const model2 = Model.fromBinary(scan1.snapshot!.blob);
+    expect(model2.view()).toBe(undefined);
+    for (const b of scan1.batches) {
+      for (const patch of b.patches) {
+        model2.applyPatch(Patch.fromBinary(patch.blob));
+      }
+    }
+    expect(model2.view()).toEqual({score: 42});
   });
 });
 
