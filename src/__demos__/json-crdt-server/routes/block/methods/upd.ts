@@ -25,7 +25,7 @@ export const upd =
     );
 
     const Response = t.Object(
-      t.propOpt('batch', BlockBatchPartialReturnRef).options({
+      t.prop('batch', BlockBatchPartialReturnRef).options({
         title: 'Committed Batch Parts',
         description: 'Parts of committed batch which were generated on the server.',
       }),
@@ -39,13 +39,12 @@ export const upd =
 
     return r.prop('block.upd', Func, async ({id, batch, create}) => {
       const res = await services.blocks.edit(id, batch, !!create);
-      const response: ResolveType<typeof Response> = {};
-      if (res.batch) {
-        response.batch = {
+      const response: ResolveType<typeof Response> = {
+        batch: {
           seq: res.batch.seq,
           ts: res.batch.ts,
-        };
-      }
+        },
+      };
       return response;
     });
   };

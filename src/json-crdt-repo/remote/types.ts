@@ -69,7 +69,7 @@ export interface RemoteHistory<
    */
   create(
     id: string,
-    batch: Pick<Batch, 'patches'>,
+    batch?: Pick<Batch, 'patches'>,
   ): Promise<{
     snapshot: Omit<Snapshot, 'blob'>;
     batch: Omit<Batch, 'patches'>;
@@ -82,7 +82,7 @@ export interface RemoteHistory<
    * @param cursor The cursor of the last known model state of the block.
    * @param patches A list of patches to apply to the block.
    */
-  update(id: string, batch: Pick<Batch, 'patches'>): Promise<{batch: Omit<Batch, 'patches'>[]}>;
+  update(id: string, batch: Pick<Batch, 'patches'>): Promise<{batch: Omit<Batch, 'patches'>}>;
 
   /**
    * Delete the block. If not implemented, means that the protocol does not
@@ -122,11 +122,11 @@ export interface RemoteBlock<Cursor> {
   snapshot: RemoteSnapshot<Cursor>;
 
   /**
-   * The latest patches that have been stored, but not yet applied to the the
+   * The latest batches that have been stored, but not yet applied to the the
    * latest snapshot. The client should apply these patches to the snapshot
    * to get the latest state of the block.
    */
-  tip: RemotePatch[];
+  tip: RemoteBatch[];
 }
 
 /**

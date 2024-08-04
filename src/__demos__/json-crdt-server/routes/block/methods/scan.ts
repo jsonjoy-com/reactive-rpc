@@ -1,4 +1,4 @@
-import {BlockIdRef, BlockCurRef, BlockBatchRef} from '../schema';
+import {BlockIdRef, BlockCurRef, BlockBatchRef, BlockSnapshotRef} from '../schema';
 import type {RouteDeps, Router, RouterBase} from '../../types';
 
 export const scan =
@@ -29,9 +29,9 @@ export const scan =
             'When positive, returns the patches ahead of the starting sequence number. ' +
             'When negative, returns the patches behind the starting sequence number.',
         }),
-      t.propOpt('startModel', t.bool).options({
-        title: 'Include Start Model',
-        description: 'If true, includes the start model in the result.',
+      t.propOpt('snapshot', t.bool).options({
+        title: 'Include Start Snapshot',
+        description: 'If true, includes the snapshot of state at the start of the sequence.',
       }),
     );
 
@@ -40,8 +40,8 @@ export const scan =
         title: 'Batches',
         description: 'List of batches in given sequence range.',
       }),
-      t.propOpt('model', t.bin).options({
-        title: 'Start Model',
+      t.propOpt('snapshot', BlockSnapshotRef).options({
+        title: 'Start Snapshot',
         description: 'The state of the block right before the first batch in the result.',
       }),
     );
@@ -52,11 +52,7 @@ export const scan =
       description: 'Returns a list of specified change patches for a block.',
     });
 
-    return r.prop('block.scan', Func, async ({id, seq, limit = 10, startModel}) => {
-      const {batches, model} = await services.blocks.scan(id, !!startModel, seq, limit);
-      return {
-        batches,
-        model,
-      };
+    return r.prop('block.scan', Func, async ({id, seq, limit = 10, snapshot}) => {
+      return await services.blocks.scan(id, !!snapshot, seq, limit);
     });
   };

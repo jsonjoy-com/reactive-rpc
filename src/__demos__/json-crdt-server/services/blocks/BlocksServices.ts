@@ -96,7 +96,7 @@ export class BlocksServices {
 
   public async scan(
     id: string,
-    includeStartModel: boolean,
+    includeStartSnapshot: boolean,
     offset: number | undefined,
     limit: number | undefined = 10,
   ) {
@@ -118,15 +118,23 @@ export class BlocksServices {
       max = Math.abs(limit);
     }
     const batches = await store.history(id, min, max);
-    if (includeStartModel) {
+    if (includeStartSnapshot) {
       const model = Model.create(void 0, SESSION.GLOBAL);
+      let ts = 0;
       if (offset !== 0) {
         const historicBatches = await store.history(id, 0, offset - 1);
         for (const batch of historicBatches) {
           model.applyBatch(batch.patches.map((p) => Patch.fromBinary(p.blob)));
+          ts = batch.ts;
         }
       }
-      return {batches, model: model.toBinary()};
+      const snapshot: StoreSnapshot = {
+        id,
+        seq: offset - 1,
+        ts,
+        blob: model.toBinary(),
+      };
+      return {batches, snapshot};
     }
     return {batches};
   }
@@ -136,7 +144,8 @@ export class BlocksServices {
       const exists = await this.store.exists(id);
       if (!exists) {
         const res = await this.create(id, batch);
-        return {snapshot: res.block.snapshot, batch: res.batch};
+        if (!res.batch) throw RpcError.internal('Batch not returned');
+        return {snapshot: res.block.snapshot, batch: res.batch!};
       }
     }
     this.maybeGc();

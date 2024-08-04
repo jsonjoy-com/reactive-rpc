@@ -16,50 +16,17 @@ export class DemoServerRemoteHistory implements ServerHistory {
   constructor(protected readonly client: TypedRpcClient<Methods>) {}
 
   public async read(id: string): Promise<{block: DemoServerBlock}> {
-    const res = await this.client.call('block.get', {id});
-    throw new Error('Method not implemented.');
-    // return res;
-  }
-
-  public async scanFwd(id: string, seq: Cursor): Promise<{batches: DemoServerBatch[]}> {
-    throw new Error('Method not implemented.');
-    // const limit = 100;
-    // const res = await this.client.call('block.scan', {
-    //   id,
-    //   cur: cursor + 1,
-    //   limit,
-    // });
-    // return res;
-  }
-
-  public async scanBwd(id: string, seq: Cursor): Promise<{batches: DemoServerBatch[]; snapshot?: DemoServerSnapshot}> {
-    throw new Error('Method not implemented.');
-    // if (cursor <= 0) {
-    //   return {
-    //     patches: [],
-    //   };
-    // }
-    // const res = await this.client.call('block.scan', {
-    //   id,
-    //   cur: 0,
-    //   limit: cursor,
-    // });
-    // return {
-    //   patches: res.patches,
-    // };
+    return await this.client.call('block.get', {id});
   }
 
   public async create(
     id: string,
-    batch: Pick<DemoServerBatch, 'patches'>,
+    batch?: Pick<DemoServerBatch, 'patches'>,
   ): Promise<{
     snapshot: Omit<DemoServerSnapshot, 'blob'>;
     batch: Omit<DemoServerBatch, 'patches'>;
   }> {
-    const res = await this.client.call('block.new', {
-      id,
-      batch,
-    });
+    const res = await this.client.call('block.new', batch ? {id, batch} : {id});
     return {
       snapshot: {
         seq: res.snapshot.seq,
@@ -71,22 +38,42 @@ export class DemoServerRemoteHistory implements ServerHistory {
     };
   }
 
-  public async update(id: string, batch: Pick<DemoServerBatch, 'patches'>): Promise<{batch: Omit<DemoServerBatch, 'patches'>[]}> {
-    throw new Error('Method not implemented.');
-    // const res = await this.client.call('block.upd', {
-    //   create: true,
-    //   id,
-    //   patches: patches.map((patch) => ({
-    //     blob: patch.blob,
-    //   })),
-    // });
-    // return {
-    //   patches: res.patches,
-    // };
+  public async update(id: string, batch: Pick<DemoServerBatch, 'patches'>): Promise<{batch: Omit<DemoServerBatch, 'patches'>}> {
+    const res = await this.client.call('block.upd', {
+      create: true,
+      id,
+      batch,
+    });
+    return {
+      batch: res.batch,
+    };
   }
 
   public async delete(id: string): Promise<void> {
     await this.client.call('block.del', {id});
+  }
+
+  public async scanFwd(id: string, seq: Cursor): Promise<{batches: DemoServerBatch[]}> {
+    const limit = 100;
+    const res = await this.client.call('block.scan', {
+      id,
+      seq: seq + 1,
+      limit,
+    });
+    return res;
+  }
+
+  public async scanBwd(id: string, seq: Cursor, snapshot?: boolean): Promise<{batches: DemoServerBatch[]; snapshot?: DemoServerSnapshot}> {
+    if (seq <= 0) throw new Error('INV_SEQ');
+    const startSeq = Math.max(0, seq - 100);
+    const limit = seq - startSeq;
+    const res = await this.client.call('block.scan', {
+      id,
+      seq: startSeq,
+      limit,
+      snapshot: !!snapshot,
+    });
+    return res;
   }
 
   public listen(id: string, cursor: Cursor): Observable<{batches: DemoServerBatch[]}> {
