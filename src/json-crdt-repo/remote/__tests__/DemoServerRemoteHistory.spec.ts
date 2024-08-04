@@ -2,6 +2,7 @@ import {Model, Patch} from 'json-joy/lib/json-crdt';
 import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
 import {Value} from 'json-joy/lib/json-type-value/Value';
 import {setup} from './setup';
+import {until} from 'thingies';
 
 let cnt = 0;
 const genId = () => Math.random().toString(36).slice(2) + '-' + Date.now().toString(36) + '-' + cnt++;
@@ -248,5 +249,38 @@ describe('.delete()', () => {
     } catch (err) {
       expect((err as Value<any>).data.message).toBe('NOT_FOUND');
     }
+  });
+});
+
+describe('.listen()', () => {
+  test('can subscribe to block "upd" events', async () => {
+    const {remote, caller} = await setup();
+    const id = genId();
+    const model = Model.create();
+    model.api.root({score: 42});
+    const patch = model.api.flush();
+    const blob = patch.toBinary();
+    await remote.create(id, {patches: [{blob}]});
+    const events: any[] = [];
+    remote.listen(id).subscribe(({event}) => {
+      events.push(event);
+    });
+    const model2 = Model.create();
+    model.api.obj([]).set({
+      foo: 'bar',
+    });
+    const patch2 = model.api.flush();
+    const blob2 = patch2.toBinary();
+    await remote.update(id, {patches: [{blob: blob2}]});
+    await until(() => events.length === 1);
+    expect(events[0]).toMatchObject(['upd', {batch: {
+      seq: 1,
+      ts: expect.any(Number),
+      patches: [
+        {
+          blob: expect.any(Uint8Array),
+        }
+      ],
+    }}]);
   });
 });

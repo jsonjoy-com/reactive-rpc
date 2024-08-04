@@ -1,7 +1,7 @@
 import {CallerToMethods, TypedRpcClient} from '../../common';
 import type {Observable} from 'rxjs';
 import type {JsonJoyDemoRpcCaller} from '../../__demos__/json-crdt-server';
-import type {RemoteHistory, RemoteBlock, RemoteSnapshot, RemotePatch, ServerBlock, ServerSnapshot, ServerPatch, ServerCursor, ServerHistory, ServerBatch} from './types';
+import type {ServerBlock, ServerSnapshot, ServerPatch, ServerCursor, ServerHistory, ServerBatch, ServerEvent} from './types';
 
 type Methods = CallerToMethods<JsonJoyDemoRpcCaller>;
 type DemoServerClient = TypedRpcClient<Methods>;
@@ -11,6 +11,7 @@ export type DemoServerBlock = ServerBlock;
 export type DemoServerSnapshot = ServerSnapshot;
 export type DemoServerBatch = ServerBatch;
 export type DemoServerPatch = ServerPatch;
+export type DemoServerEvent = ServerEvent;
 
 export class DemoServerRemoteHistory implements ServerHistory {
   constructor(protected readonly client: TypedRpcClient<Methods>) {}
@@ -76,7 +77,7 @@ export class DemoServerRemoteHistory implements ServerHistory {
     return res;
   }
 
-  public listen(id: string, cursor: Cursor): Observable<{batches: DemoServerBatch[]}> {
-    throw new Error('Method not implemented.');
+  public listen(id: string): Observable<{event: DemoServerEvent}> {
+    return this.client.call$('block.listen', {id});
   }
 }

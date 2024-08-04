@@ -98,7 +98,7 @@ export interface RemoteHistory<
    *
    * @param callback
    */
-  listen(id: string, cursor: Cursor): Observable<{batches: Batch[]}>;
+  listen(id: string): Observable<{event: RemoteEvent<Cursor>}>;
 }
 
 /**
@@ -179,9 +179,15 @@ export interface RemotePatch {
   blob: Uint8Array;
 }
 
+export type RemoteEvent<Cursor = unknown> = RemoteNewEvent | RemoteDelEvent | RemoteUpdEvent<Cursor>;
+export type RemoteNewEvent = ['new'];
+export type RemoteDelEvent = ['del']
+export type RemoteUpdEvent<Cursor = unknown> = ['upd', {batch: RemoteBatch<Cursor>}];
+
 export type ServerCursor = number;
 export type ServerHistory = RemoteHistory<ServerCursor, ServerBlock, ServerSnapshot, ServerBatch>;
 export type ServerBlock = RemoteBlock<ServerCursor>;
 export type ServerSnapshot = RemoteSnapshot<ServerCursor>;
 export type ServerBatch = RemoteBatch<ServerCursor>;
 export type ServerPatch = RemotePatch;
+export type ServerEvent = RemoteEvent<ServerCursor>;
