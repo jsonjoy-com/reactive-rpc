@@ -240,16 +240,15 @@ export class LevelLocalRepoCore {
 
   public async readFrontier(keyBase: string): Promise<Patch[]> {
     const patches: Patch[] = [];
-    const gte = this.frontierKeyBase(keyBase);
-    const lte = gte + '~';
-    for await (const blob of this.kv.values({gte, lte})) {
+    const gt = this.frontierKeyBase(keyBase);
+    const lt = gt + '~';
+    for await (const blob of this.kv.values({gt, lt})) {
       const patch = Patch.fromBinary(blob);
       patches.push(patch);
     }
     return patches;
   }
 
-  /** Mark block as "dirty", has local changes, needs sync with remote. */
   public async markDirty(col: string[], id: string): Promise<void> {
     const key = BlockKeyFragment.SyncRoot + '!' + col.join('!') + '!' + id + '!';
     const blob = this.codec.encoder.encode(Date.now());
@@ -261,7 +260,6 @@ export class LevelLocalRepoCore {
     // TODO: ask remote to sync.
   }
 
-  /** Mark block as "clean", was successfully synced with remote. */
   public async markTidy(col: string[], id: string): Promise<void> {
     const key = BlockKeyFragment.SyncRoot + '!' + col.join('!') + '!' + id + '!';
     await this.kv.del(key);

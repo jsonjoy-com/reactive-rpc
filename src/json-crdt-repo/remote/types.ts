@@ -31,15 +31,15 @@ import type {Observable} from 'rxjs';
  */
 export interface RemoteHistory<
   Cursor = unknown,
-  B extends RemoteBlock<Cursor> = RemoteBlock<Cursor>,
-  S extends RemoteSnapshot<Cursor> = RemoteSnapshot<Cursor>,
-  P extends RemotePatch = RemotePatch,
+  Block extends RemoteBlock<Cursor> = RemoteBlock<Cursor>,
+  Snapshot extends RemoteSnapshot<Cursor> = RemoteSnapshot<Cursor>,
+  Batch extends RemoteBatch<Cursor> = RemoteBatch<Cursor>,
 > {
   /**
    * Load the latest snapshot of the block, and any unmerged "tip" of patches
    * it might have.
    */
-  read(id: string): Promise<{block: B}>;
+  read(id: string): Promise<{block: Block}>;
 
   /**
    * Load block history going forward from the given cursor. This method is
@@ -47,9 +47,9 @@ export interface RemoteHistory<
    * by other clients.
    *
    * @param id ID of the block.
-   * @param cursor The cursor to start scanning from.
+   * @param seq The cursor to start scanning from.
    */
-  scanFwd(id: string, cursor: Cursor): Promise<{patches: P[]}>;
+  scanFwd(id: string, seq: Cursor): Promise<{batches: Batch[]}>;
 
   /**
    * Load past history of the block going backwards from the given cursor.
@@ -57,23 +57,22 @@ export interface RemoteHistory<
    * block in the past, to show the user the history of changes.
    *
    * @param id ID of the block.
-   * @param cursor The cursor until which to scan.
+   * @param seq The cursor until which to scan.
    */
-  scanBwd(id: string, cursor: Cursor): Promise<{patches: P[]; snapshot?: S}>;
+  scanBwd(id: string, seq: Cursor): Promise<{batches: Batch[]; snapshot?: Snapshot}>;
 
   /**
-   * Create a new block with the given patches.
+   * Create a new block with the given set of edits.
    *
    * @param id A unique ID for the block.
    * @param patches A list of patches, which constitute the initial state of the block.
    */
   create(
     id: string,
-    patches: Pick<P, 'blob'>[],
+    batch: Pick<Batch, 'patches'>,
   ): Promise<{
-    block: Omit<B, 'snapshot' | 'tip'>;
-    snapshot: Omit<S, 'blob'>;
-    patches: Omit<P, 'blob'>[];
+    snapshot: Omit<Snapshot, 'blob'>;
+    batch: Omit<Batch, 'patches'>;
   }>;
 
   /**
@@ -83,7 +82,7 @@ export interface RemoteHistory<
    * @param cursor The cursor of the last known model state of the block.
    * @param patches A list of patches to apply to the block.
    */
-  update(id: string, patches: Pick<P, 'blob'>[]): Promise<{patches: Omit<P, 'blob'>[]}>;
+  update(id: string, batch: Pick<Batch, 'patches'>): Promise<{batch: Omit<Batch, 'patches'>[]}>;
 
   /**
    * Delete the block. If not implemented, means that the protocol does not
@@ -99,7 +98,7 @@ export interface RemoteHistory<
    *
    * @param callback
    */
-  listen(id: string, cursor: Cursor): Observable<{patches: P[]}>;
+  listen(id: string, cursor: Cursor): Observable<{batches: Batch[]}>;
 }
 
 /**
@@ -179,3 +178,10 @@ export interface RemotePatch {
    */
   blob: Uint8Array;
 }
+
+export type ServerCursor = number;
+export type ServerHistory = RemoteHistory<ServerCursor, ServerBlock, ServerSnapshot, ServerBatch>;
+export type ServerBlock = RemoteBlock<ServerCursor>;
+export type ServerSnapshot = RemoteSnapshot<ServerCursor>;
+export type ServerBatch = RemoteBatch<ServerCursor>;
+export type ServerPatch = RemotePatch;

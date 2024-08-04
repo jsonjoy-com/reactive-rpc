@@ -1,24 +1,28 @@
-// import {Model} from 'json-joy/lib/json-crdt';
-// import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
-// import {Value} from 'json-joy/lib/json-type-value/Value';
-// import {setup} from './setup';
+import {Model} from 'json-joy/lib/json-crdt';
+import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
+import {Value} from 'json-joy/lib/json-type-value/Value';
+import {setup} from './setup';
 
-// let cnt = 0;
-// const genId = () => Math.random().toString(36).slice(2) + '-' + Date.now().toString(36) + '-' + cnt++;
+let cnt = 0;
+const genId = () => Math.random().toString(36).slice(2) + '-' + Date.now().toString(36) + '-' + cnt++;
 
-// describe('.create()', () => {
-//   test('can create a block with a simple patch', async () => {
-//     const {remote, caller} = await setup();
-//     const model = Model.create();
-//     model.api.root({foo: 'bar'});
-//     const patch = model.api.flush();
-//     const blob = patch.toBinary();
-//     const id = genId();
-//     await remote.create(id, [{blob}]);
-//     const {data} = await caller.call('block.get', {id}, {});
-//     const model2 = Model.fromBinary(data.snapshot.blob);
-//     expect(model2.view()).toEqual({foo: 'bar'});
-//   });
+describe('.create()', () => {
+  test('can create a block with a simple patch', async () => {
+    const {remote, caller} = await setup();
+    const model = Model.create();
+    model.api.root({foo: 'bar'});
+    const patch = model.api.flush();
+    const blob = patch.toBinary();
+    const id = genId();
+    await remote.create(id, {
+      patches: [
+        {blob},
+      ]
+    });
+    const {data} = await caller.call('block.get', {id}, {});
+    const model2 = Model.fromBinary(data.block.snapshot.blob);
+    expect(model2.view()).toEqual({foo: 'bar'});
+  });
 
 //   test('can create with empty model', async () => {
 //     const {remote, caller} = await setup();
@@ -76,7 +80,7 @@
 //       });
 //     }
 //   });
-// });
+});
 
 // describe('.update()', () => {
 //   test('can apply changes to an empty document', async () => {
@@ -199,5 +203,3 @@
 //     }
 //   });
 // });
-
-test.skip('...', () => {});

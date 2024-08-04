@@ -4,7 +4,7 @@ import {FanOut} from 'thingies/lib/fanout';
 import type {LocalRepo, LocalRepoSubData, LocalRepoSyncRequest, LocalRepoSyncResponse} from '../types';
 
 export interface LevelLocalRepoOpts extends LevelLocalRepoCoreOpts {
-  sync?: LevelLocalRepoSyncOpts;
+  sync: LevelLocalRepoSyncOpts;
 }
 
 export class LevelLocalRepo implements LocalRepo {
@@ -13,7 +13,7 @@ export class LevelLocalRepo implements LocalRepo {
 
   constructor(opts: LevelLocalRepoOpts) {
     this._core = new LevelLocalRepoCore(opts);
-    this._sync = new LevelLocalRepoSync(opts.sync ?? {}, this._core);
+    this._sync = new LevelLocalRepoSync(opts.sync, this._core);
   }
 
   public async sync(request: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {

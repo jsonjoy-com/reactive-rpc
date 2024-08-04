@@ -1,4 +1,4 @@
-import {CrudLocalRepo, ServerCrudLocalHistoryOpts} from '../CrudLocalRepo';
+import {LevelLocalRepo, LevelLocalRepoOpts} from '../LevelLocalRepo';
 import {memfs} from 'memfs';
 import {NodeCrud} from 'fs-zoo/lib/node-to-crud';
 import {Locks} from 'thingies/lib/Locks';
