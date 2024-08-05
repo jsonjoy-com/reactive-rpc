@@ -24,10 +24,8 @@ export const setup = async (
       kv,
       locks,
       sid,
+      rpc: remote.remote,
       connected$: new BehaviorSubject(true),
-      sync: {
-        rpc: remote.remote,
-      },
     });
     return {sid, local};
   };
@@ -52,6 +50,7 @@ export const setup = async (
     genId,
     id,
     col,
+    blockId: [...col, id],
     stop,
   };
 };

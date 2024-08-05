@@ -1,27 +1,22 @@
-import {LevelLocalRepoCore, LevelLocalRepoCoreOpts} from './core/LevelLocalRepoCore';
-import {LevelLocalRepoSync, LevelLocalRepoSyncOpts} from './sync/CrudLocalSync';
+import {LevelLocalRepoCore, LevelLocalRepoCoreOpts} from './LevelLocalRepoCore';
 import {FanOut} from 'thingies/lib/fanout';
-import type {LocalRepo, LocalRepoSubData, LocalRepoSyncRequest, LocalRepoSyncResponse} from '../types';
+import type {BlockId, LocalRepo, LocalRepoSubData, LocalRepoSyncRequest, LocalRepoSyncResponse} from '../types';
 
-export interface LevelLocalRepoOpts extends LevelLocalRepoCoreOpts {
-  sync: LevelLocalRepoSyncOpts;
-}
+export interface LevelLocalRepoOpts extends LevelLocalRepoCoreOpts {}
 
 export class LevelLocalRepo implements LocalRepo {
   protected readonly _core: LevelLocalRepoCore;
-  protected readonly _sync: LevelLocalRepoSync;
 
   constructor(opts: LevelLocalRepoOpts) {
     this._core = new LevelLocalRepoCore(opts);
-    this._sync = new LevelLocalRepoSync(opts.sync, this._core);
   }
 
   public start(): void {
-    this._sync.start();
+    this._core.start();
   }
 
   public async stop(): Promise<void> {
-    await this._sync.stop();
+    await this._core.stop();
   }
 
   public async sync(request: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
@@ -31,7 +26,7 @@ export class LevelLocalRepo implements LocalRepo {
   /**
    * Deletes a block (document) from the local repo.
    */
-  public async del(collection: string[], id: string): Promise<void> {
+  public async del(id: BlockId): Promise<void> {
     throw new Error('Method not implemented.');
   }
 
@@ -39,7 +34,7 @@ export class LevelLocalRepo implements LocalRepo {
    * Subscribes to changes in the local repo. The changes can be coming from
    * remote peers as well as other tabs or processes from the same device.
    */
-  public sub(collection: string[], id: string): FanOut<LocalRepoSubData> {
+  public sub(id: BlockId): FanOut<LocalRepoSubData> {
     throw new Error('Method not implemented.');
   }
 

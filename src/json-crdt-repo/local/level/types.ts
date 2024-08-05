@@ -1,4 +1,6 @@
 import type {AbstractBatchOperation, AbstractLevel} from 'abstract-level';
+import type {BlockId} from '../types';
+import {ServerBatch} from '../../remote/types';
 
 export type BinStrLevel = AbstractLevel<any, string, Uint8Array>;
 export type BinStrLevelOperation = AbstractBatchOperation<BinStrLevel, string, Uint8Array>;
@@ -20,3 +22,12 @@ export interface BlockMetadata {
    */
   hist?: boolean;
 }
+
+export interface CrudLocalRepoCipher {
+  encrypt(plaintext: Uint8Array): Promise<Uint8Array>;
+  decrypt(ciphertext: Uint8Array): Promise<Uint8Array>;
+}
+
+export type SyncResult = [block: BlockId, success: boolean, err?: Error | unknown];
+
+export type LocalBatch = ServerBatch;

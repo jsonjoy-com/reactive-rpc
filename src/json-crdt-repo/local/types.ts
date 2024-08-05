@@ -1,6 +1,8 @@
 import type {ITimestampStruct, Model, Patch} from 'json-joy/lib/json-crdt';
 import type {FanOut} from 'thingies/lib/fanout';
 
+export type BlockId = [...collection: string[], id: string] | string[];
+
 /**
  * The local repo persists data on the local device. It is the primary building
  * block for the local-first applications. The local repo also facilitates
@@ -17,13 +19,13 @@ export interface LocalRepo {
   /**
    * Deletes a block (document) from the local repo.
    */
-  del(collection: string[], id: string): Promise<void>;
+  del(id: BlockId): Promise<void>;
 
   /**
    * Subscribes to changes in the local repo. The changes can be coming from
    * remote peers as well as other tabs or processes from the same device.
    */
-  sub(collection: string[], id: string): FanOut<LocalRepoSubData>;
+  sub(id: BlockId): FanOut<LocalRepoSubData>;
 }
 
 /**
@@ -36,14 +38,9 @@ export interface LocalRepo {
  */
 export interface LocalRepoSyncRequest {
   /**
-   * Collection path of the block.
+   * Unique ID of the block.
    */
-  col: string[];
-
-  /**
-   * Unique ID of the block within the collection.
-   */
-  id: string;
+  id: BlockId;
 
   /**
    * When a new block is created, the client can specify whether the block

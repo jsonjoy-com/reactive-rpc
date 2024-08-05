@@ -39,6 +39,7 @@ export class DemoServerRemoteHistory implements ServerHistory {
   }
 
   public async update(id: string, batch: Pick<DemoServerBatch, 'patches'>): Promise<{batch: Omit<DemoServerBatch, 'patches'>}> {
+    console.log('UPDATE', id, batch);
     const res = await this.client.call('block.upd', {
       create: true,
       id,
