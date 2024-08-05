@@ -1,5 +1,7 @@
 import {Model, s, NodeBuilder, Patch} from 'json-joy/lib/json-crdt';
 import {setup} from './setup';
+import {Log} from 'json-joy/lib/json-crdt/log/Log';
+import {tick} from 'thingies';
 
 describe('.sync()', () => {
   describe('create', () => {
@@ -55,7 +57,51 @@ describe('.sync()', () => {
       await testCreateAndMerge(schema);
     });
 
-    // test.todo('test merge on create with multiple patches');
+    test('test merge on create with multiple patches', async () => {
+      const kit = await setup();
+      const schema = s.obj({});
+      const model = Model.create(schema, kit.sid);
+      model.api.autoFlush();
+      const log1 = Log.fromNewModel(model);
+      log1.end.api.autoFlush();
+      log1.end.api.obj([]).set({
+        foo: 'bar',
+      });
+      await tick(1);
+      log1.end.api.obj([]).set({
+        x: 1,
+      });
+      await tick(1);
+      const patches1 = [...log1.patches.entries()].map(e => e.v);
+      await kit.local.sync({
+        col: kit.col,
+        id: kit.id,
+        batch: patches1,
+      });
+      const read1 = await kit.local.sync({col: kit.col, id: kit.id});
+      expect(read1.model?.view()).toEqual({foo: 'bar', x: 1});
+      const model2 = Model.create(schema, kit.sid);
+      model2.api.autoFlush();
+      const log2 = Log.fromNewModel(model2);
+      log2.end.api.autoFlush();
+      log2.end.api.obj([]).set({
+        foo: 'baz',
+      });
+      await tick(1);
+      log2.end.api.obj([]).set({
+        y: 2,
+      });
+      await tick(1);
+      const patches2 = [...log2.patches.entries()].map(e => e.v);
+      await kit.local.sync({
+        col: kit.col,
+        id: kit.id,
+        batch: patches2,
+      });
+      const read2 = await kit.local.sync({col: kit.col, id: kit.id});
+      expect(read2.model?.view()).toEqual({foo: 'baz', x: 1, y: 2});
+    });
+
     // test.todo('test merge on create with remote Model already available');
   });
 });

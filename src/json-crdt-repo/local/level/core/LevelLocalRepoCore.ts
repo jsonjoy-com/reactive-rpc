@@ -235,25 +235,28 @@ export class LevelLocalRepoCore {
     const modelKey = keyBase + BlockKeyFragment.Model;
     if (!patches || !patches.length) throw new Error('EMPTY_BATCH');
     await this.lockModel(modelKey, async () => {
-      const frontier = await this.readFrontier(keyBase);
       let nextTick = 0;
-      for (const patch of frontier) {
-        const patchTime = patch.getId()?.time ?? 0;
-        const patchSpan = patch.span();
-        const patchNextTick = patchTime + patchSpan + 1;
-        if (patchNextTick > nextTick) nextTick = patchNextTick;
+      const tip = await this.readFrontierTip(keyBase);
+      if (tip) {
+        const patchTime = tip.getId()?.time ?? 0;
+        const patchSpan = tip.span();
+        nextTick = patchTime + patchSpan + 1;
       }
       const ops: BinStrLevelOperation[] = [];
       const sid = this.sid;
-      const length = frontier.length;
+      const length = patches.length;
       for (let i = 0; i < length; i++) {
         const patch = patches[i];
+        const patchId = patch.getId();
+        if (!patchId) throw new Error('PATCH_ID_MISSING');
+        const isSchemaPatch = patchId.sid === SESSION.GLOBAL && patchId.time === 1;
+        if (isSchemaPatch) continue;
         let rebased = patch;
-        if (patch.getId()?.sid === sid) rebased = patch.rebase(nextTick);
-        nextTick += patch.span();
-        const patchId = rebased.getId();
-          if (!patchId) throw new Error('PATCH_ID_MISSING');
-        const patchKey = this.frontierKey(keyBase, patchId.time);
+        if (patchId.sid === sid) {
+          rebased = patch.rebase(nextTick);
+          nextTick = rebased.getId()!.time + rebased.span();
+        }
+        const patchKey = this.frontierKey(keyBase, rebased.getId()!.time);
         const op: BinStrLevelOperation = {
           type: 'put',
           key: patchKey,
@@ -297,6 +300,13 @@ export class LevelLocalRepoCore {
       patches.push(patch);
     }
     return patches;
+  }
+
+  public async readFrontierTip(keyBase: string): Promise<Patch | undefined> {
+    const frontierBase = this.frontierKeyBase(keyBase);
+    const lte = frontierBase + `~`;
+    for await (const blob of this.kv.values({lte, limit: 1, reverse: true})) return Patch.fromBinary(blob);
+    return;
   }
 
   public async markDirty(col: string[], id: string): Promise<void> {
