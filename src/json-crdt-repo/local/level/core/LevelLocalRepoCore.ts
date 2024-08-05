@@ -217,7 +217,7 @@ export class LevelLocalRepoCore {
       }
     }
     await this.lockModel(modelKey, async () => {
-      const exists = (await this.kv.keys({gte: modelKey, lte: modelKey, limit: 1}).all()).length > 0;
+      const exists = (await this.kv.keys({gte: metaKey, lte: metaKey, limit: 1}).all()).length > 0;
       if (exists) throw new Error('EXISTS');
       await this.kv.batch(ops);
     });
@@ -246,7 +246,6 @@ export class LevelLocalRepoCore {
       const ops: BinStrLevelOperation[] = [];
       const sid = this.sid;
       const length = frontier.length;
-      const rebased: Patch[] = [];
       for (let i = 0; i < length; i++) {
         const patch = patches[i];
         let rebased = patch;
@@ -258,7 +257,7 @@ export class LevelLocalRepoCore {
         const op: BinStrLevelOperation = {
           type: 'put',
           key: patchKey,
-          value: patch.toBinary(),
+          value: rebased.toBinary(),
         };
         ops.push(op);
       }

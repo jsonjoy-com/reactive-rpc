@@ -14,12 +14,12 @@ export const setup = async (
   } = {},
 ) => {
   const remote = opts.remote ?? remoteSetup();
+  const locks = new Locks();
+  const kv = new MemoryLevel<string, Uint8Array>({
+    keyEncoding: 'utf8',
+    valueEncoding: 'view',
+  }) as unknown as BinStrLevel;
   const createLocal = (sid: number = 12345678) => {
-    const locks = new Locks();
-    const kv = new MemoryLevel<string, Uint8Array>({
-      keyEncoding: 'utf8',
-      valueEncoding: 'view',
-    }) as unknown as BinStrLevel;
     const local = new LevelLocalRepo({
       kv,
       locks,
@@ -29,9 +29,9 @@ export const setup = async (
         rpc: remote.remote,
       },
     });
-    return {sid, locks, local};
+    return {sid, local};
   };
-  const {sid, locks, local} = createLocal();
+  const {sid, local} = createLocal();
   local.start();
   const log = Log.fromNewModel(Model.create(undefined, sid));
   log.end.api.root({foo: 'bar'});
