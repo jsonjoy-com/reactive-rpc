@@ -153,14 +153,14 @@ export class LevelLocalRepoCore {
   }
 
   public async encrypt(blob: Uint8Array, zip: boolean): Promise<Uint8Array> {
-    if (zip) blob = await gzip(blob);
-    if (this.cipher) blob = await this.cipher.encrypt(blob);
+    // if (zip) blob = await gzip(blob);
+    // if (this.cipher) blob = await this.cipher.encrypt(blob);
     return blob;
   }
 
   public async decrypt(blob: Uint8Array, zip: boolean): Promise<Uint8Array> {
-    if (this.cipher) blob = await this.cipher.decrypt(blob);
-    if (zip) blob = await ungzip(blob);
+    // if (this.cipher) blob = await this.cipher.decrypt(blob);
+    // if (zip) blob = await ungzip(blob);
     return blob;
   }
 
@@ -314,7 +314,7 @@ export class LevelLocalRepoCore {
     const modelKey = keyBase + BlockKeyFragment.Model;
     try {
       const blob = await this.kv.get(modelKey);
-      const decoded = await ungzip(blob);
+      const decoded = await this.decrypt(blob, true);
       const model = Model.load(decoded, this.sid);
       return model;
     } catch (error) {
@@ -327,7 +327,11 @@ export class LevelLocalRepoCore {
   public async *readFrontierBlobs0(keyBase: string) {
     const gt = this.frontierKeyBase(keyBase);
     const lt = gt + '~';
-    yield * this.kv.iterator({gt, lt});
+    for await (const [key, buf] of this.kv.iterator({gt, lt})) {
+      /** @todo Remove this conversion once json-pack supports Buffers. */
+      const uint8 = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+      yield [key, uint8] as const;
+    }
   }
 
   public async readFrontier0(keyBase: string): Promise<Patch[]> {
@@ -376,59 +380,54 @@ export class LevelLocalRepoCore {
   protected async remoteSync(id: BlockId): Promise<boolean> {
     const keyBase = await this.blockKeyBase(id);
     return await this.lockForSync(id, async () => {
-      try {
-        // TODO: handle case when this times out, but actually succeeds, so on re-sync it handles the case when the block is already synced.
-        const remote = this.opts.rpc;
-        const remoteId = id.join('/');
-        return await timeout(this.remoteTimeout(), async () => {
-          if (!this.connected$.getValue()) throw new Error('DISCONNECTED');
-          const patches: ServerPatch[] = [];
-          const syncMarkerKey = BlockKeyFragment.SyncRoot + '!' + id.join('!');
-          const ops: BinStrLevelOperation[] = [{type: 'del', key: syncMarkerKey}];
-          for await (const [key, blob] of this.readFrontierBlobs0(keyBase)) {
-            ops.push({type: 'del', key});
-            patches.push({blob});
-          }
-          if (!patches) return false;
-          const response = await remote.update(remoteId, {patches});
-          const encoder = this.codec.encoder;
-          const seq = response.batch.seq;
-          const batch: LocalBatch = {
-            seq,
-            ts: response.batch.ts,
-            patches,
-          };
+      // TODO: handle case when this times out, but actually succeeds, so on re-sync it handles the case when the block is already synced.
+      const remote = this.opts.rpc;
+      const remoteId = id.join('/');
+      return await timeout(this.remoteTimeout(), async () => {
+        if (!this.connected$.getValue()) throw new Error('DISCONNECTED');
+        const patches: ServerPatch[] = [];
+        const syncMarkerKey = BlockKeyFragment.SyncRoot + '!' + id.join('!');
+        const ops: BinStrLevelOperation[] = [{type: 'del', key: syncMarkerKey}];
+        for await (const [key, blob] of this.readFrontierBlobs0(keyBase)) {
+          ops.push({type: 'del', key});
+          patches.push({blob});
+        }
+        if (!patches) return false;
+        const response = await remote.update(remoteId, {patches});
+        const encoder = this.codec.encoder;
+        const seq = response.batch.seq;
+        const batch: LocalBatch = {
+          seq,
+          ts: response.batch.ts,
+          patches,
+        };
+        ops.push({
+          type: 'put',
+          key: this.batchKey(keyBase, seq),
+          value: encoder.encode(batch),
+        });
+        await this.lockBlock(keyBase, async () => {
+          const [model, meta] = await Promise.all([
+            this.readModel(keyBase),
+            this.readMeta(keyBase),
+          ]);
+          for (const patch of patches) model.applyPatch(Patch.fromBinary(patch.blob));
+          meta.time = model.clock.time - 1;
+          meta.ts = Date.now();
           ops.push({
             type: 'put',
-            key: this.batchKey(keyBase, seq),
-            value: encoder.encode(batch),
+            key: keyBase + BlockKeyFragment.Metadata,
+            value: encoder.encode(meta),
           });
-          await this.lockBlock(keyBase, async () => {
-            const [model, meta] = await Promise.all([
-              this.readModel(keyBase),
-              this.readMeta(keyBase),
-            ]);
-            for (const patch of patches) model.applyPatch(Patch.fromBinary(patch.blob));
-            meta.time = model.clock.time - 1;
-            meta.ts = Date.now();
-            ops.push({
-              type: 'put',
-              key: keyBase + BlockKeyFragment.Metadata,
-              value: encoder.encode(meta),
-            });
-            ops.push({
-              type: 'put',
-              key: keyBase + BlockKeyFragment.Model,
-              value: model.toBinary(),
-            });
-            await this.kv.batch(ops);
+          ops.push({
+            type: 'put',
+            key: keyBase + BlockKeyFragment.Model,
+            value: model.toBinary(),
           });
-          return true;
+          await this.kv.batch(ops);
         });
-      } catch (error) {
-        if (error instanceof Error && error.message === 'TIMEOUT') return false;
-        throw error;
-      }
+        return true;
+      });
     });
   }
 

@@ -18,10 +18,6 @@ export const upd =
         title: 'Create, if not Exists',
         description: 'If true, creates a new document if it does not exist.',
       }),
-      t.propOpt('seq', BlockBatchSeqRef).options({
-        title: 'Sequence Number',
-        description: 'The last sequence number the client has seen.',
-      }),
     );
 
     const Response = t.Object(

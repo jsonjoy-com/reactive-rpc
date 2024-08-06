@@ -4,7 +4,7 @@ import type {ResolveType} from 'json-joy/lib/json-type';
 export const BlockId = t.str.options({
   title: 'Block ID',
   min: 6,
-  max: 40,
+  max: 256,
 });
 export const BlockIdRef = t.Ref<typeof BlockId>('BlockId');
 

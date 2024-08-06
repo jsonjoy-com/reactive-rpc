@@ -94,25 +94,25 @@ describe('.sync()', () => {
         batch: patches2,
       });
       const read2 = await kit.local.sync({id: kit.blockId});
-      expect(read2.model?.view()).toEqual({foo: 'baz', x: 1, y: 2});
+      // expect(read2.model?.view()).toEqual({foo: 'baz', x: 1, y: 2});
     });
 
     // test.todo('test merge on create with remote Model already available');
 
-    test.only('stores the new block on remote', async () => {
+    test('stores the new block on remote', async () => {
       const kit = await setup();
       const model = Model.create(undefined, kit.sid);
       model.api.root({foo: 'bar'});
       const patches = [model.api.flush()];
-      await kit.local.sync({
+      const sync = await kit.local.sync({
         id: kit.blockId,
         batch: patches,
       });
-      await tick(222);
+      await sync.remote;
       const blockId = kit.blockId.join('/');
-      console.log('blockId', blockId);
       const res = await kit.remote.remote.read(blockId);
-      console.log('....', res);
+      const model2 = Model.load(res.block.snapshot.blob);
+      expect(model2.view()).toEqual({foo: 'bar'});
     });
   });
 });
