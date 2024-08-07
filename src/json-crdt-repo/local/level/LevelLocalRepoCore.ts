@@ -364,7 +364,7 @@ export class LevelLocalRepoCore {
 
   protected async markDirtyAndSync(id: BlockId): Promise<boolean> {
     this.markDirty(id).catch(() => {});
-    return await this.remoteSync(id);
+    return await this.push(id);
   }
 
   public async markTidy(id: BlockId): Promise<void> {
@@ -377,7 +377,7 @@ export class LevelLocalRepoCore {
   }
 
   /** @todo Rename to "push"? */
-  protected async remoteSync(id: BlockId): Promise<boolean> {
+  protected async push(id: BlockId): Promise<boolean> {
     const keyBase = await this.blockKeyBase(id);
     return await this.lockForSync(id, async () => {
       // TODO: handle case when this times out, but actually succeeds, so on re-sync it handles the case when the block is already synced.
@@ -396,6 +396,9 @@ export class LevelLocalRepoCore {
         const response = await remote.update(remoteId, {patches});
         const encoder = this.codec.encoder;
         const seq = response.batch.seq;
+        // TODO: if seq has a jump, we need to pull the latest state from the server.
+        // TODO: store batches, if history tracking is enabled.
+        // TODO: remove old batches, if history tracking is not enabled.
         const batch: LocalBatch = {
           seq,
           ts: response.batch.ts,

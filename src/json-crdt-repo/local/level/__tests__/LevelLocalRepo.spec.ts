@@ -97,7 +97,7 @@ describe('.sync()', () => {
       // expect(read2.model?.view()).toEqual({foo: 'baz', x: 1, y: 2});
     });
 
-    // test.todo('test merge on create with remote Model already available');
+    test.todo('test merge on create with remote Model already available');
 
     test('stores the new block on remote', async () => {
       const kit = await setup();
@@ -114,5 +114,9 @@ describe('.sync()', () => {
       const model2 = Model.load(res.block.snapshot.blob);
       expect(model2.view()).toEqual({foo: 'bar'});
     });
+  });
+  
+  describe('update', () => {
+    test.todo('test merge on create with remote Model already available');
   });
 });

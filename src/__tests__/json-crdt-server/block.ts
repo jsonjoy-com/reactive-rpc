@@ -359,6 +359,54 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         expect(model1.view()).toStrictEqual({text: 'Hell!o', x: 123});
         await stop();
       });
+
+      test('can pull concurrent changes, with snapshot as too many batches', async () => {
+        const {call, stop} = await setup();
+        const id = getId();
+        const model = Model.create();
+        model.api.root({
+          text: 'Hell',
+        });
+        const patch1 = model.api.flush();
+        await call('block.new', {id, batch: {patches: [{blob: patch1.toBinary()}]}});
+        const user1 = await call('block.get', {id});
+        const user2 = await call('block.get', {id});
+        const model1 = Model.load(user1.block.snapshot.blob, 1e7);
+        const model2 = Model.load(user2.block.snapshot.blob, 1e7 + 1);
+        for (let i = 0; i < 111; i++) {
+          model1.api.obj([]).set({num: i});
+          const patch = model1.api.flush();
+          await call('block.upd', {id, batch: {patches: [{blob: patch.toBinary()}]}});
+        }
+        expect(model1.view()).toStrictEqual({text: 'Hell', num: 110});
+        model2.api.str(['text']).ins(4, '!');
+        const patch2 = model2.api.flush();
+        expect(model2.view()).toStrictEqual({text: 'Hell!'});
+        const res = await call('block.upd', {
+          id,
+          seq: user2.block.snapshot.seq,
+          batch: {patches: [{blob: patch2.toBinary()}]},
+        });
+        expect(res.pull?.batches.length).toBe(100);
+        const snapshot = res.pull?.snapshot as any;
+        expect(snapshot).toMatchObject({
+          id,
+          seq: 11,
+          ts: expect.any(Number),
+          blob: expect.any(Uint8Array),
+        });
+        const model3 = Model.load(snapshot.blob, 1e7 + 1);
+        const length = res.pull!.batches.length;
+        for (let i = 0; i < length; i++) {
+          const b = res.pull!.batches[i];
+          for (const patch of b.patches) model3.applyPatch(Patch.fromBinary(patch.blob));
+          expect(b.seq).toBe(snapshot.seq + i + 1);
+        }
+        expect(model3.view()).toStrictEqual({text: 'Hell', num: 110});
+        model3.applyPatch(patch2);
+        expect(model3.view()).toStrictEqual({text: 'Hell!', num: 110});
+        await stop();
+      }, 15000);
     });
 
     if (!params.staticOnly) {
