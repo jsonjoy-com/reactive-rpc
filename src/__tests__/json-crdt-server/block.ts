@@ -1,4 +1,4 @@
-import {Model} from 'json-joy/lib/json-crdt';
+import {Model, Patch} from 'json-joy/lib/json-crdt';
 import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
 import {RpcErrorCodes} from '../../common/rpc/caller';
 import {tick, until} from 'thingies';
@@ -303,6 +303,60 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         const block4 = await call('block.get', {id});
         const model4 = Model.fromBinary(block4.block.snapshot.blob).fork();
         expect(model4.view()).not.toStrictEqual({text: 'Hell yeah!'});
+        await stop();
+      });
+
+      test('can pull concurrent changes', async () => {
+        const {call, stop} = await setup();
+        const id = getId();
+        const model = Model.create();
+        model.api.root({
+          text: 'Hell',
+        });
+        const patch1 = model.api.flush();
+        await call('block.new', {id, batch: {patches: [{blob: patch1.toBinary()}]}});
+        const user1 = await call('block.get', {id});
+        const user2 = await call('block.get', {id});
+        const model1 = Model.load(user1.block.snapshot.blob, 1e7);
+        const model2 = Model.load(user2.block.snapshot.blob, 1e7 + 1);
+        model1.api.str(['text']).ins(4, 'o');
+        const patch2 = model1.api.flush();
+        await call('block.upd', {id, batch: {patches: [{blob: patch2.toBinary()}]}});
+        model1.api.obj([]).set({x: 123});
+        const patch3 = model1.api.flush();
+        await call('block.upd', {id, batch: {patches: [{blob: patch3.toBinary()}]}});
+        expect(model1.view()).toStrictEqual({text: 'Hello', x: 123});
+        model2.api.str(['text']).ins(4, '!');
+        const patch4 = model2.api.flush();
+        expect(model2.view()).toStrictEqual({text: 'Hell!'});
+        const res = await call('block.upd', {
+          id,
+          seq: user2.block.snapshot.seq,
+          batch: {patches: [{blob: patch4.toBinary()}]},
+        });
+        expect(res.pull?.batches.length).toBe(2);
+        expect(res.pull).toMatchObject({
+          batches: [
+            {
+              seq: 1,
+              ts: expect.any(Number),
+              patches: [{blob: patch2.toBinary()}],
+            },
+            {
+              seq: 2,
+              ts: expect.any(Number),
+              patches: [{blob: patch3.toBinary()}],
+            },
+          ],
+        });
+        for (const batch of res.pull!.batches!)
+          for (const patch of batch.patches) model2.applyPatch(Patch.fromBinary(patch.blob));
+        expect(model2.view()).toStrictEqual({text: 'Hell!o', x: 123});
+        const pull = await call('block.scan', {id, seq: 2, limit: 100});
+        expect(model1.view()).toStrictEqual({text: 'Hello', x: 123});
+        for (const batch of pull.batches!)
+          for (const patch of batch.patches) model1.applyPatch(Patch.fromBinary(patch.blob));
+        expect(model1.view()).toStrictEqual({text: 'Hell!o', x: 123});
         await stop();
       });
     });
