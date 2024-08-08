@@ -60,7 +60,9 @@ describe('.sync()', () => {
     });
 
     test('test merge on create with multiple patches', async () => {
-      const kit = await setup();
+      const kit = await setup({local: {
+        connected$: new BehaviorSubject(false),
+      }});
       const schema = s.obj({});
       const model = Model.create(schema, kit.sid);
       model.api.autoFlush();
@@ -99,7 +101,7 @@ describe('.sync()', () => {
         batch: patches2,
       });
       const read2 = await kit.local.sync({id: kit.blockId});
-      // expect(read2.model?.view()).toEqual({foo: 'baz', x: 1, y: 2});
+      expect(read2.model?.view()).toEqual({foo: 'baz', x: 1, y: 2});
     });
 
     test.todo('test merge on create with remote Model already available');
