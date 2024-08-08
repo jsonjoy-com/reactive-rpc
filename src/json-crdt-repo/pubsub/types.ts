@@ -1,14 +1,12 @@
-import type {Observable} from 'rxjs';
+import type {Observable, Subject} from 'rxjs';
 
-export type Message<Data> = MessageRemote<Data> | MessageLocal<Data>;
-export type MessageRemote<Data> = [data: Data, topic: string | number];
-export type MessageLocal<Data> = [data: Data, topic: string | number, isLocal: 1];
+export type Message<Topic, Data> = MessageRemote<Topic, Data> | MessageLocal<Topic, Data>;
+export type MessageRemote<Topic, Data> = [topic: Topic, data: Data];
+export type MessageLocal<Topic, Data> = [topic: Topic, data: Data, isLocal: 1];
 
-export type TopicPredicate<Data = unknown> = string | number | TopicPredicateFn<Data>;
-export type TopicPredicateFn<Data = unknown> = ((message: Message<Data>) => boolean);
-
-export interface PubSub<Data> {
-  pub(msg: MessageRemote<Data>): void;
-  sub$(topicPredicate: TopicPredicate<Data>): Observable<Message<Data>>;
+export interface PubSub<Events> {
+  bus$: Subject<Message<keyof Events, Events[keyof Events]>>
+  pub<K extends keyof Events>(msg: MessageRemote<K, Events[K]>): void;
+  sub$<K extends keyof Events>(topic: K): Observable<Message<K, Events[K]>>;
   end(): void;
 }
