@@ -360,6 +360,33 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         await stop();
       });
 
+      test('can pull with no prior known sequence', async () => {
+        const {call, stop} = await setup();
+        const id = getId();
+        const model = Model.create();
+        model.api.root({
+          text: 'Hell',
+        });
+        const patch1 = model.api.flush();
+        await call('block.new', {id, batch: {patches: [{blob: patch1.toBinary()}]}});
+        const model2 = model.fork();
+        model2.api.str(['text']).ins(4, 'o');
+        const patch2 = model2.api.flush();
+        const {pull} = await call('block.upd', {id, seq: -1, batch: {patches: [{blob: patch2.toBinary()}]}});
+        expect(pull).toMatchObject({
+          batches: [
+            {
+              seq: 0,
+              ts: expect.any(Number),
+              patches: [
+                {blob: patch1.toBinary()}
+              ],
+            },
+          ],
+        });
+        await stop();
+      });
+
       test('can pull concurrent changes, with snapshot as too many batches', async () => {
         const {call, stop} = await setup();
         const id = getId();

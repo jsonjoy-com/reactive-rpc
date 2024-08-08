@@ -1,5 +1,5 @@
 import {ResolveType} from 'json-joy/lib/json-type';
-import {BlockBatchPartialRef, BlockBatchPartialReturnRef, BlockBatchRef, BlockBatchSeqRef, BlockIdRef, BlockSnapshotRef} from '../schema';
+import {BlockBatchPartialRef, BlockBatchPartialReturnRef, BlockBatchRef, BlockCurRef, BlockIdRef, BlockSnapshotRef} from '../schema';
 import type {RouteDeps, Router, RouterBase} from '../../types';
 
 export const upd =
@@ -18,7 +18,7 @@ export const upd =
         title: 'Create, if not Exists',
         description: 'If true, creates a new document if it does not exist.',
       }),
-      t.propOpt('seq', BlockBatchSeqRef).options({
+      t.propOpt('seq', BlockCurRef).options({
         title: 'Sequence Number',
         description: 'The last client known sequence number. The server will return history starting from this sequence number.',
       }),
