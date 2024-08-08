@@ -1,15 +1,15 @@
 import {filter} from 'rxjs/operators';
 import {Subject} from 'rxjs';
 import type {Observable} from 'rxjs';
-import type {Message, PubSub, TopicPredicate, TopicPredicateFn} from './types';
+import type {Message, MessageRemote, PubSub, TopicPredicate, TopicPredicateFn} from './types';
 
 export type * from './types';
 
 export class PubSubM<Data> implements PubSub<Data> {
   protected readonly bus$ = new Subject<Message<Data>>();
 
-  public pub(topic: string | number, data: Data): void {
-    const msg: Message<Data> = [data, topic, true];
+  public pub([data, topic]: MessageRemote<Data>): void {
+    const msg: Message<Data> = [data, topic, 1];
     this.bus$.next(msg);
   }
 
@@ -29,14 +29,13 @@ export class PubSubBC<Data> extends PubSubM<Data> {
 
   constructor(public readonly bus: string) {
     super();
-    this.ch = new BroadcastChannel(bus);
-    this.ch.onmessage = (e) => this.bus$.next(e.data as Message<Data>);
+    const ch = this.ch = new BroadcastChannel(bus);
+    ch.onmessage = (e) => this.bus$.next(e.data as Message<Data>);
   }
 
-  public pub(topic: string | number, data: Data): void {
-    const msg: Message<Data> = [data, topic, true];
+  public pub(msg: MessageRemote<Data>): void {
     this.ch.postMessage(msg);
-    super.pub(topic, data);
+    super.pub(msg);
   }
 
   public end(): void {
