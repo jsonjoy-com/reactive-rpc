@@ -8,7 +8,7 @@ import {once} from 'thingies/lib/once';
 import {timeout} from 'thingies/lib/timeout';
 import type {ServerHistory, ServerPatch} from '../../remote/types';
 import type {BlockId, LocalRepoSyncRequest, LocalRepoSyncResponse} from '../types';
-import type {BinStrLevel, BinStrLevelOperation, BlockMetadata, LocalBatch, SyncResult} from './types';
+import type {BinStrLevel, BinStrLevelOperation, BlockMetaValue, BlockModelMetadata, BlockModelValue, LocalBatch, SyncResult} from './types';
 import type {CrudLocalRepoCipher} from './types';
 import type {Locks} from 'thingies/lib/Locks';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
@@ -218,13 +218,12 @@ export class LevelLocalRepoCore {
   public async create(id: BlockId, patches?: Patch[]): Promise<Pick<LocalRepoSyncResponse, 'remote'>> {
     if (!patches || !patches.length) throw new Error('EMPTY_BATCH');
     const keyBase = await this.blockKeyBase(id);
-    const modelKey = keyBase + BlockKeyFragment.Model;
     const metaKey = keyBase + BlockKeyFragment.Metadata;
-    const meta: BlockMetadata = {
+    const meta: BlockMetaValue = {
       time: -1,
       ts: 0,
     };
-    const blob = this.codec.encoder.encode(meta);
+    const blob = await this.encrypt(this.codec.encoder.encode(meta), false);
     const writeMetaOp: BinStrLevelOperation = {
       type: 'put',
       key: metaKey,
@@ -296,30 +295,32 @@ export class LevelLocalRepoCore {
     return {remote};
   }
 
-  protected async readMeta(keyBase: string): Promise<BlockMetadata> {
+  protected async readMeta(keyBase: string): Promise<BlockMetaValue> {
     const metaKey = keyBase + BlockKeyFragment.Metadata;
     const blob = await this.kv.get(metaKey);
-    const meta = this.codec.decoder.decode(blob) as BlockMetadata;
+    const meta = this.codec.decoder.decode(blob) as BlockMetaValue;
     return meta;
   }
 
   public async read(id: BlockId): Promise<Model> {
     const keyBase = await this.blockKeyBase(id);
-    const [model, frontier] = await Promise.all([this.readModel(keyBase), this.readFrontier0(keyBase)]);
+    const [[model], frontier] = await Promise.all([this.readModel(keyBase), this.readFrontier0(keyBase)]);
     model.applyBatch(frontier);
     return model;
   }
 
-  public async readModel(keyBase: string): Promise<Model> {
+  public async readModel(keyBase: string): Promise<[model: Model, meta: BlockModelMetadata]> {
     const modelKey = keyBase + BlockKeyFragment.Model;
     try {
-      const blob = await this.kv.get(modelKey);
-      const decoded = await this.decrypt(blob, true);
-      const model = Model.load(decoded, this.sid);
-      return model;
+      const value = await this.kv.get(modelKey);
+      const decoded = await this.decrypt(value, true);
+      const tuple = this.codec.decoder.decode(decoded) as BlockModelValue;
+      const [meta, blob] = tuple;
+      const model = Model.load(blob, this.sid);
+      return [model, meta];
     } catch (error) {
       if (!!error && typeof error === 'object' && (error as any).code === 'LEVEL_NOT_FOUND')
-          return Model.create(void 0, this.sid);
+          return [Model.create(void 0, this.sid), [-1]]
       throw error;
     }
   }
@@ -376,44 +377,44 @@ export class LevelLocalRepoCore {
     return this.opts.remoteTimeout ?? 5000;
   }
 
-  /** @todo Rename to "push"? */
   protected async push(id: BlockId): Promise<boolean> {
+    if (!this.connected$.getValue()) throw new Error('DISCONNECTED');
     const keyBase = await this.blockKeyBase(id);
+    const remote = this.opts.rpc;
+    const remoteId = id.join('/');
+    const patches: ServerPatch[] = [];
+    const syncMarkerKey = BlockKeyFragment.SyncRoot + '!' + id.join('!');
+    const ops: BinStrLevelOperation[] = [{type: 'del', key: syncMarkerKey}];
+    for await (const [key, blob] of this.readFrontierBlobs0(keyBase)) {
+      ops.push({type: 'del', key});
+      patches.push({blob});
+    }
+    if (!patches) return false;
     return await this.lockForSync(id, async () => {
       // TODO: handle case when this times out, but actually succeeds, so on re-sync it handles the case when the block is already synced.
-      const remote = this.opts.rpc;
-      const remoteId = id.join('/');
       return await timeout(this.remoteTimeout(), async () => {
-        if (!this.connected$.getValue()) throw new Error('DISCONNECTED');
-        const patches: ServerPatch[] = [];
-        const syncMarkerKey = BlockKeyFragment.SyncRoot + '!' + id.join('!');
-        const ops: BinStrLevelOperation[] = [{type: 'del', key: syncMarkerKey}];
-        for await (const [key, blob] of this.readFrontierBlobs0(keyBase)) {
-          ops.push({type: 'del', key});
-          patches.push({blob});
-        }
-        if (!patches) return false;
-        const response = await remote.update(remoteId, {patches});
-        const encoder = this.codec.encoder;
-        const seq = response.batch.seq;
-        // TODO: if seq has a jump, we need to pull the latest state from the server.
-        // TODO: store batches, if history tracking is enabled.
-        // TODO: remove old batches, if history tracking is not enabled.
-        const batch: LocalBatch = {
-          seq,
-          ts: response.batch.ts,
-          patches,
-        };
-        ops.push({
-          type: 'put',
-          key: this.batchKey(keyBase, seq),
-          value: encoder.encode(batch),
-        });
         await this.lockBlock(keyBase, async () => {
-          const [model, meta] = await Promise.all([
+          const [[model, modelMeta], meta] = await Promise.all([
             this.readModel(keyBase),
             this.readMeta(keyBase),
           ]);
+          const lastKnownSeq = modelMeta[0];
+          const response = await remote.update(remoteId, {patches}, lastKnownSeq);
+          const encoder = this.codec.encoder;
+          const seq = response.batch.seq;
+          // TODO: if seq has a jump, we need to pull the latest state from the server.
+          // TODO: store batches, if history tracking is enabled. If not enabled, store anyways, for cross-tab sync.
+          // TODO: remove old batches, if history tracking is not enabled.
+          const batch: LocalBatch = {
+            seq,
+            ts: response.batch.ts,
+            patches,
+          };
+          ops.push({
+            type: 'put',
+            key: this.batchKey(keyBase, seq),
+            value: encoder.encode(batch),
+          });
           for (const patch of patches) model.applyPatch(Patch.fromBinary(patch.blob));
           meta.time = model.clock.time - 1;
           meta.ts = Date.now();
@@ -422,10 +423,14 @@ export class LevelLocalRepoCore {
             key: keyBase + BlockKeyFragment.Metadata,
             value: encoder.encode(meta),
           });
+          modelMeta[0] = seq;
+          const modelTuple: BlockModelValue = [modelMeta, model.toBinary()];
+          const modelValue = encoder.encode(modelTuple);
+          const modelBlob = await this.encrypt(modelValue, true);
           ops.push({
             type: 'put',
             key: keyBase + BlockKeyFragment.Model,
-            value: model.toBinary(),
+            value: modelBlob,
           });
           await this.kv.batch(ops);
         });

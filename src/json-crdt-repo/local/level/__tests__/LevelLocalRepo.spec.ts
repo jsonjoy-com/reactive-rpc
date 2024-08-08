@@ -2,6 +2,7 @@ import {Model, s, NodeBuilder, Patch} from 'json-joy/lib/json-crdt';
 import {setup} from './setup';
 import {Log} from 'json-joy/lib/json-crdt/log/Log';
 import {tick} from 'thingies';
+import {BehaviorSubject} from 'rxjs';
 
 describe('.sync()', () => {
   describe('create', () => {
@@ -19,7 +20,11 @@ describe('.sync()', () => {
     });
 
     const testCreateAndMerge = async (schema: undefined | NodeBuilder) => {
-      const kit = await setup();
+      const kit = await setup({
+        local: {
+          connected$: new BehaviorSubject(false),
+        },
+      });
       const local2 = kit.createLocal();
       const model1 = Model.create(schema, kit.sid);
       const patches1: Patch[] = [];

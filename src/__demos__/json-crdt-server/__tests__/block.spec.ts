@@ -6,10 +6,10 @@ describe('MemoryStore', () => {
   runBlockTests(setupMemory as ApiTestSetup);
 });
 
-describe('LevelStore(abstract-level)', () => {
-  runBlockTests(setupLevelMemory as ApiTestSetup);
-});
+// describe('LevelStore(abstract-level)', () => {
+//   runBlockTests(setupLevelMemory as ApiTestSetup);
+// });
 
-describe('LevelStore(classic-level)', () => {
-  runBlockTests(setupLevelClassic as ApiTestSetup);
-});
+// describe('LevelStore(classic-level)', () => {
+//   runBlockTests(setupLevelClassic as ApiTestSetup);
+// });

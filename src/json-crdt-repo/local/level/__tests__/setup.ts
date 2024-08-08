@@ -26,6 +26,7 @@ export const setup = async (
       sid,
       rpc: remote.remote,
       connected$: new BehaviorSubject(true),
+      ...opts.local,
     });
     return {sid, local};
   };
