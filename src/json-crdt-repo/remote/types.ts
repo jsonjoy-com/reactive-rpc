@@ -81,8 +81,15 @@ export interface RemoteHistory<
    * @param id ID of the block.
    * @param cursor The cursor of the last known model state of the block.
    * @param patches A list of patches to apply to the block.
+   * @param seq The cursor of the last known model state of the block.
    */
-  update(id: string, batch: Pick<Batch, 'patches'>): Promise<{batch: Omit<Batch, 'patches'>}>;
+  update(id: string, batch: Pick<Batch, 'patches'>, seq: number): Promise<{
+    batch: Omit<Batch, 'patches'>;
+    pull: {
+      batches: Batch[];
+      snapshot?: Snapshot;
+    };
+  }>;
 
   /**
    * Delete the block. If not implemented, means that the protocol does not

@@ -38,15 +38,23 @@ export class DemoServerRemoteHistory implements ServerHistory {
     };
   }
 
-  public async update(id: string, batch: Pick<DemoServerBatch, 'patches'>): Promise<{batch: Omit<DemoServerBatch, 'patches'>}> {
+  public async update(id: string, batch: Pick<DemoServerBatch, 'patches'>, seq: number): Promise<{
+    batch: Omit<DemoServerBatch, 'patches'>;
+    pull: {
+      batches: DemoServerBatch[];
+      snapshot?: DemoServerSnapshot;
+    };
+  }> {
     const res = await this.client.call('block.upd', {
       create: true,
       id,
       batch,
+      seq,
     });
     return {
       batch: res.batch,
-    };
+      pull: res.pull!,
+    }
   }
 
   public async delete(id: string): Promise<void> {
