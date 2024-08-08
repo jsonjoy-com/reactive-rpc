@@ -34,7 +34,7 @@ export const upd =
           title: 'Batches',
           description: 'The list of batches that happened after the given sequence number.',
         }),
-        t.propOpt('snapshot', t.Array(BlockSnapshotRef)).options({
+        t.propOpt('snapshot', BlockSnapshotRef).options({
           title: 'Snapshot',
           description: 'The snapshot of the block, to which the batches can be applied to get the current state of the block.',
         }),

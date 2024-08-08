@@ -68,7 +68,6 @@ const encodeBinaryWithPayload = (
   const x0 = writer.x0;
   const x = writer.x;
   if (value) {
-    value.type = undefined; // TODO: remove this line, this line disables codegen
     value.encode(codec);
   }
   const shift = writer.x0 - x0;
