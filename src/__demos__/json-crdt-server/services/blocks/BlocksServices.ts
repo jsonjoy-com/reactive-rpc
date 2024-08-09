@@ -117,12 +117,12 @@ export class BlocksServices {
       min = 0;
       max = Math.abs(limit);
     }
-    const batches = await store.history(id, min, max);
+    const batches = await store.scan(id, min, max);
     if (includeStartSnapshot) {
       const model = Model.create(void 0, SESSION.GLOBAL);
       let ts = 0;
       if (offset !== 0) {
-        const historicBatches = await store.history(id, 0, offset - 1);
+        const historicBatches = await store.scan(id, 0, offset - 1);
         for (const batch of historicBatches) {
           model.applyBatch(batch.patches.map((p) => Patch.fromBinary(p.blob)));
           ts = batch.ts;
@@ -180,6 +180,7 @@ export class BlocksServices {
   }
 
   private maybeGc(): void {
+    // TODO: Run GC only when disk is low in space.
     if (Math.random() < 0.01)
       this.gc().catch((error) => {
         // tslint:disable-next-line:no-console

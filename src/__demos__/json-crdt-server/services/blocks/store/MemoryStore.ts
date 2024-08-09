@@ -85,7 +85,7 @@ export class MemoryStore implements types.Store {
     return {snapshot, batch: batch1};
   }
 
-  public async history(id: string, min: number, max: number): Promise<types.StoreBatch[]> {
+  public async scan(id: string, min: number, max: number): Promise<types.StoreBatch[]> {
     await tick;
     const block = this.blocks.get(id);
     if (!block) return [];

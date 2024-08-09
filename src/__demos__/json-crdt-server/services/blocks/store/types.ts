@@ -127,7 +127,7 @@ export interface Store {
    * @param max Maximum sequence number.
    * @returns List of batches.
    */
-  history(id: string, min: number, max: number): Promise<StoreBatch[]>;
+  scan(id: string, min: number, max: number): Promise<StoreBatch[]>;
 
   /**
    * Remove a block.

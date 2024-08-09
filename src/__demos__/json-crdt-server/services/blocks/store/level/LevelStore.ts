@@ -2,29 +2,35 @@ import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 import {CborJsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/cbor';
 import {Mutex} from '../../../../../../util/Mutex';
 import {RpcError} from '../../../../../../common/rpc/caller';
-import type {AbstractLevel} from 'abstract-level';
+import type {AbstractBatchOperation, AbstractLevel} from 'abstract-level';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
 import type * as types from '../types';
 
 type BinStrLevel = AbstractLevel<any, string, Uint8Array>;
+type BinStrLevelOperation = AbstractBatchOperation<BinStrLevel, string, Uint8Array>;
 
 export class LevelStore implements types.Store {
   constructor(
     protected readonly kv: BinStrLevel,
     protected readonly codec: JsonValueCodec = new CborJsonValueCodec(new Writer(1024 * 16)),
     protected readonly mutex: Mutex = new Mutex(),
+    protected readonly history: number = 10000,
   ) {}
 
   protected keyBase(id: string) {
-    return 'bl!' + id + '!';
+    return 'b!' + id + '!';
   }
 
-  protected snapshotKey(id: string) {
-    return this.keyBase(id) + 'block';
+  protected endKey(id: string) {
+    return this.keyBase(id) + 'e';
+  }
+
+  protected startKey(id: string) {
+    return this.keyBase(id) + 's';
   }
 
   protected batchBase(id: string) {
-    return this.keyBase(id) + 'batch!';
+    return this.keyBase(id) + 'b!';
   }
 
   protected batchKey(id: string, seq: number) {
@@ -33,11 +39,11 @@ export class LevelStore implements types.Store {
   }
 
   protected touchKey(id: string) {
-    return 'uts!' + id + '!';
+    return 'u!' + id + '!';
   }
 
   public async get(id: string): Promise<types.StoreGetResult | undefined> {
-    const key = this.snapshotKey(id);
+    const key = this.endKey(id);
     try {
       const blob = await this.kv.get(key);
       if (!blob) return;
@@ -50,7 +56,7 @@ export class LevelStore implements types.Store {
   }
 
   public async exists(id: string): Promise<boolean> {
-    const key = this.snapshotKey(id);
+    const key = this.endKey(id);
     const existing = await this.kv.keys({gte: key, lte: key, limit: 1}).all();
     return existing && existing.length > 0;
   }
@@ -75,14 +81,18 @@ export class LevelStore implements types.Store {
       if (!Array.isArray(patches) || patches.length < 1) throw new Error('NO_PATCHES');
     }
     const {id} = snapshot;
-    const key = this.snapshotKey(id);
+    const key = this.endKey(id);
     const now = snapshot.ts;
+    const encoder = this.codec.encoder;
     return await this.mutex.acquire(id, async () => {
       const existing = await this.kv.keys({gte: key, lte: key, limit: 1}).all();
       if (existing && existing.length > 0) throw new Error('BLOCK_EXISTS');
       const block: types.StoreBlock = {id, snapshot, tip: [], ts: now, uts: now};
-      const blob = this.codec.encoder.encode(block);
-      await this.kv.put(key, blob);
+      const blob = encoder.encode(block);
+      const ops: BinStrLevelOperation[] = [
+        {type: 'put', key, value: blob}
+      ];
+      const response: types.StoreCreateResult = {block};
       if (batch) {
         const {cts, patches} = batch;
         const batch2: types.StoreBatch = {
@@ -91,13 +101,14 @@ export class LevelStore implements types.Store {
           cts,
           patches,
         };
-        const batchBlob = this.codec.encoder.encode(batch2);
+        const batchBlob = encoder.encode(batch2);
         const batchKey = this.batchKey(id, 0);
-        await this.kv.put(batchKey, batchBlob);
-        return {block, batch: batch2} as types.StoreCreateResult;
+        ops.push({type: 'put', key: batchKey, value: batchBlob});
+        response.batch = batch2;
       }
+      await this.kv.batch(ops);
       this.touch(id, now).catch(() => {});
-      return {block};
+      return response;
     });
   }
 
@@ -107,7 +118,7 @@ export class LevelStore implements types.Store {
   ): Promise<types.StorePushResult> {
     const {id, seq} = snapshot0;
     const {patches} = batch0;
-    const key = this.snapshotKey(id);
+    const key = this.endKey(id);
     if (!Array.isArray(patches) || !patches.length) throw new Error('NO_PATCHES');
     return await this.mutex.acquire(id, async () => {
       const block = await this.get(id);
@@ -137,7 +148,7 @@ export class LevelStore implements types.Store {
     });
   }
 
-  public async history(id: string, min: number, max: number): Promise<types.StoreBatch[]> {
+  public async scan(id: string, min: number, max: number): Promise<types.StoreBatch[]> {
     const from = this.batchKey(id, min);
     const to = this.batchKey(id, max);
     const list: types.StoreBatch[] = [];
