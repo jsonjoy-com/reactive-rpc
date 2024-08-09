@@ -1,6 +1,7 @@
 import type {AbstractBatchOperation, AbstractLevel} from 'abstract-level';
 import type {BlockId} from '../types';
-import {ServerBatch} from '../../remote/types';
+import type {ServerBatch, ServerSnapshot} from '../../remote/types';
+import {PubSub} from '../../pubsub';
 
 export type BinStrLevel = AbstractLevel<any, string, Uint8Array>;
 export type BinStrLevelOperation = AbstractBatchOperation<BinStrLevel, string, Uint8Array>;
@@ -30,10 +31,12 @@ export interface BlockMetaValue {
   ts: number;
 
   /**
-   * Number of batches to keep in the local history. If not specified, some
-   * default history length will be used.
+   * Whether to track the history of the block. By default the block will
+   * store only the latest state model. If history tracking is enabled to block
+   * will store historic batches and the starting snapshot model, from
+   * which to apply the batches.
    */
-  hist?: number;
+  hist?: boolean;
 }
 
 export interface CrudLocalRepoCipher {
@@ -44,3 +47,17 @@ export interface CrudLocalRepoCipher {
 export type SyncResult = [block: BlockId, success: boolean, err?: Error | unknown];
 
 export type LocalBatch = ServerBatch;
+export type LocalSnapshot = ServerSnapshot;
+
+export type LevelLocalRepoPubSub = PubSub<{
+  change: LevelLocalRepoChangeEvent;
+}>;
+
+export interface LevelLocalRepoChangeEvent {
+  id: BlockId;
+  batch: LocalBatch;
+  pull?: {
+    snapshot?: LocalSnapshot;
+    batches: LocalBatch[];
+  };
+}

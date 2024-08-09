@@ -1,5 +1,5 @@
 import type {ITimestampStruct, Model, Patch} from 'json-joy/lib/json-crdt';
-import type {FanOut} from 'thingies/lib/fanout';
+import type {Observable} from 'rxjs';
 
 export type BlockId = [...collection: string[], id: string] | string[];
 
@@ -20,12 +20,6 @@ export interface LocalRepo {
    * Deletes a block (document) from the local repo.
    */
   del(id: BlockId): Promise<void>;
-
-  /**
-   * Subscribes to changes in the local repo. The changes can be coming from
-   * remote peers as well as other tabs or processes from the same device.
-   */
-  sub(id: BlockId): FanOut<LocalRepoSubData>;
 }
 
 /**
@@ -59,7 +53,7 @@ export interface LocalRepoSyncRequest {
   /**
    * List of changes that the client wants to persist.
    */
-  batch?: Patch[];
+  patches?: Patch[];
 }
 
 export interface LocalRepoSyncResponse {
@@ -82,17 +76,12 @@ export interface LocalRepoSyncResponse {
   remote?: Promise<void>;
 
   /**
-   * Fan-out subscription to the latest changes in the block. The subscription
+   * Subscription to the latest changes in the block. The subscription
    * emits `patches` when new changes are received from other clients. If the
    * `model` is set, the client should reset its state to the new `Model`
    * (happens when too many patches are received).
    */
-  pull: FanOut<{patches: Patch[]} | {model: Model}>;
+  pull?: Observable<LocalRepoBlockEvent>;
 }
 
-export interface LocalRepoSubData {
-  /**
-   * List of changes received from other clients.
-   */
-  batch?: Patch[];
-}
+export type LocalRepoBlockEvent = {patches: Patch[]} | {model: Model} | {delete: true};

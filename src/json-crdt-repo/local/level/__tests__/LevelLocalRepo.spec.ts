@@ -13,7 +13,7 @@ describe('.sync()', () => {
       const patches = [model.api.flush()];
       await kit.local.sync({
         id: kit.blockId,
-        batch: patches,
+        patches: patches,
       });
       const {model: model2} = await kit.local.sync({id: kit.blockId});
       expect(model2?.view()).toEqual({foo: 'bar'});
@@ -33,7 +33,7 @@ describe('.sync()', () => {
       patches1.push(model1.api.flush());
       await kit.local.sync({
         id: kit.blockId,
-        batch: patches1,
+        patches: patches1,
       });
       const read1 = await kit.local.sync({id: kit.blockId});
       expect(read1.model?.view()).toEqual({foo: 'bar'});
@@ -44,7 +44,7 @@ describe('.sync()', () => {
       patches2.push(model2.api.flush());
       await local2.local.sync({
         id: kit.blockId,
-        batch: patches2,
+        patches: patches2,
       });
       const read2 = await kit.local.sync({id: kit.blockId});
       expect(read2.model?.view()).toEqual({foo: 'baz'});
@@ -79,7 +79,7 @@ describe('.sync()', () => {
       const patches1 = [...log1.patches.entries()].map(e => e.v);
       await kit.local.sync({
         id: kit.blockId,
-        batch: patches1,
+        patches: patches1,
       });
       const read1 = await kit.local.sync({id: kit.blockId});
       expect(read1.model?.view()).toEqual({foo: 'bar', x: 1});
@@ -98,7 +98,7 @@ describe('.sync()', () => {
       const patches2 = [...log2.patches.entries()].map(e => e.v);
       await kit.local.sync({
         id: kit.blockId,
-        batch: patches2,
+        patches: patches2,
       });
       const read2 = await kit.local.sync({id: kit.blockId});
       expect(read2.model?.view()).toEqual({foo: 'baz', x: 1, y: 2});
@@ -113,7 +113,7 @@ describe('.sync()', () => {
       const patches = [model.api.flush()];
       const sync = await kit.local.sync({
         id: kit.blockId,
-        batch: patches,
+        patches: patches,
       });
       await sync.remote;
       const blockId = kit.blockId.join('/');

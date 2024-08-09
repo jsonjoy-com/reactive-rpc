@@ -1,14 +1,17 @@
-import {BehaviorSubject, type Subscription} from 'rxjs';
+import {BehaviorSubject, Observable, type Subscription} from 'rxjs';
+import {filter, map} from 'rxjs/operators';
 import {gzip, ungzip} from '@jsonjoy.com/util/lib/compression/gzip';
 import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 import {CborJsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/cbor';
 import {Model, Patch} from 'json-joy/lib/json-crdt';
+import {deepEqual} from 'json-joy/lib/json-equal/deepEqual';
 import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
 import {once} from 'thingies/lib/once';
 import {timeout} from 'thingies/lib/timeout';
+import {pubsub} from '../../pubsub';
 import type {ServerHistory, ServerPatch} from '../../remote/types';
-import type {BlockId, LocalRepoSyncRequest, LocalRepoSyncResponse} from '../types';
-import type {BinStrLevel, BinStrLevelOperation, BlockMetaValue, BlockModelMetadata, BlockModelValue, LocalBatch, SyncResult} from './types';
+import type {BlockId, LocalRepoBlockEvent, LocalRepoSyncRequest, LocalRepoSyncResponse} from '../types';
+import type {BinStrLevel, BinStrLevelOperation, BlockMetaValue, BlockModelMetadata, BlockModelValue, LevelLocalRepoPubSub, LocalBatch, SyncResult} from './types';
 import type {CrudLocalRepoCipher} from './types';
 import type {Locks} from 'thingies/lib/Locks';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
@@ -66,7 +69,16 @@ const enum Defaults {
    * b!<collection>!<id>!h!<seq>
    * ```
    */
-  History = 'h',
+  Batches = 'h',
+
+  /**
+   * List of snapshots.
+   * 
+   * ```
+   * b!<collection>!<id>!s!<seq>
+   * ```
+   */
+  Snapshots = 's',
 
   /**
    * The default length of the history, if `hist` metadata property not
@@ -109,6 +121,11 @@ export interface LevelLocalRepoCoreOpts {
   readonly rpc: ServerHistory;
 
   /**
+   * Event bus.
+   */
+  readonly pubsub?: LevelLocalRepoPubSub;
+
+  /**
    * Number of milliseconds after which remote calls are considered timed out.
    */
   readonly remoteTimeout?: number;
@@ -129,6 +146,7 @@ export class LevelLocalRepoCore {
   public readonly locks: Locks;
   public readonly sid: number;
   public readonly connected$: BehaviorSubject<boolean>;
+  protected readonly pubsub: LevelLocalRepoPubSub;
   protected readonly cipher?: CrudLocalRepoCipher;
   protected readonly codec: JsonValueCodec = new CborJsonValueCodec(new Writer(1024 * 16));
 
@@ -137,9 +155,9 @@ export class LevelLocalRepoCore {
     this.locks = opts.locks;
     this.sid = opts.sid;
     this.connected$ = opts.connected$ ?? new BehaviorSubject(true);
+    this.pubsub = opts.pubsub ?? pubsub('level-local-repo');
     this.cipher = opts.cipher;
   }
-
 
   private _conSub: Subscription | undefined = undefined;
 
@@ -158,16 +176,28 @@ export class LevelLocalRepoCore {
     this._conSub?.unsubscribe();
   }
 
-  public async encrypt(blob: Uint8Array, zip: boolean): Promise<Uint8Array> {
+  protected async encrypt(blob: Uint8Array, zip: boolean): Promise<Uint8Array> {
     // if (zip) blob = await gzip(blob);
     // if (this.cipher) blob = await this.cipher.encrypt(blob);
     return blob;
   }
 
-  public async decrypt(blob: Uint8Array, zip: boolean): Promise<Uint8Array> {
+  protected async decrypt(blob: Uint8Array, zip: boolean): Promise<Uint8Array> {
     // if (this.cipher) blob = await this.cipher.decrypt(blob);
     // if (zip) blob = await ungzip(blob);
     return blob;
+  }
+
+  protected async encode(value: unknown, zip: boolean): Promise<Uint8Array> {
+    const encoded = this.codec.encoder.encode(value);
+    const encrypted = await this.encrypt(encoded, zip);
+    return encrypted;
+  }
+
+  protected async decode(blob: Uint8Array, zip: boolean): Promise<unknown> {
+    const decrypted = await this.decrypt(blob, zip);
+    const decoded = this.codec.decoder.decode(decrypted);
+    return decoded;
   }
 
   /** @todo Encrypt collection and key. */
@@ -184,26 +214,35 @@ export class LevelLocalRepoCore {
     return this.frontierKeyBase(blockKeyBase) + timeFormatted;
   }
 
-  public histKeyBase(blockKeyBase: string): string {
-    return blockKeyBase + Defaults.History + '!';
+  public batchKeyBase(blockKeyBase: string): string {
+    return blockKeyBase + Defaults.Batches + '!';
   }
 
   public batchKey(blockKeyBase: string, seq: number): string {
     const seqFormatted = seq.toString(36).padStart(8, '0');
-    return this.histKeyBase(blockKeyBase) + seqFormatted;
+    return this.batchKeyBase(blockKeyBase) + seqFormatted;
+  }
+
+  public snapshotKeyBase(blockKeyBase: string): string {
+    return blockKeyBase + Defaults.Snapshots + '!';
+  }
+
+  public snapshotKey(blockKeyBase: string, seq: number): string {
+    const seqFormatted = seq.toString(36).padStart(8, '0');
+    return this.snapshotKeyBase(blockKeyBase) + seqFormatted;
   }
 
   public async sync(req: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
-    if (req.batch) {
-      const first = req.batch[0];
+    if (req.patches) {
+      const first = req.patches[0];
       const time = first.getId()?.time;
       const isNewDocument = time === 1;
       if (isNewDocument) {
         try {
-          return await this.create(req.id, req.batch);
+          return await this.create(req.id, req.patches);
         } catch (error) {
           if (error instanceof Error && error.message === 'EXISTS') {
-            return await this.rebaseAndMerge(req.id, req.batch);
+            return await this.rebaseAndMerge(req.id, req.patches);
           }
           throw error;
         }
@@ -211,10 +250,9 @@ export class LevelLocalRepoCore {
         throw new Error('not implemented');
         // return await this.update(req.col, req.id, req.batch);
       }
-    } else if (!req.cursor && !req.batch) {
-      const model = await this.read(req.id);
-      return {model};
-    } else if (req.cursor && !req.batch) {
+    } else if (!req.cursor && !req.patches) {
+      return await this.read(req.id);
+    } else if (req.cursor && !req.patches) {
       throw new Error('Not implemented: catch up');
     } else {
       throw new Error('INV_SYNC');
@@ -301,18 +339,39 @@ export class LevelLocalRepoCore {
     return {remote};
   }
 
+  public async read(id: BlockId): Promise<LocalRepoSyncResponse> {
+    const keyBase = await this.blockKeyBase(id);
+    const [[model], frontier] = await Promise.all([this.readModel(keyBase), this.readFrontier0(keyBase)]);
+    model.applyBatch(frontier);
+    return {
+      model,
+      pull: this.listen$(id),
+    };
+  }
+
+  public listen$(id: BlockId): Observable<LocalRepoBlockEvent> {
+    return this.pubsub.bus$.pipe(
+      filter(([topic, data]) => topic === 'change' && deepEqual(id, data.id)),
+      map(([, data]) => {
+        const {batch, pull} = data;
+        const patches: Patch[] = [];
+        if (pull) for (const b of pull.batches) for (const p of b.patches) patches.push(Patch.fromBinary(p.blob));
+        for (const p of batch.patches) patches.push(Patch.fromBinary(p.blob));
+        if (pull && pull.snapshot) {
+          const model = Model.load(pull.snapshot.blob, this.sid);
+          model.applyBatch(patches);
+          return {model};
+        }
+        return {patches};
+      }),
+    )
+  }
+
   protected async readMeta(keyBase: string): Promise<BlockMetaValue> {
     const metaKey = keyBase + Defaults.Metadata;
     const blob = await this.kv.get(metaKey);
     const meta = this.codec.decoder.decode(blob) as BlockMetaValue;
     return meta;
-  }
-
-  public async read(id: BlockId): Promise<Model> {
-    const keyBase = await this.blockKeyBase(id);
-    const [[model], frontier] = await Promise.all([this.readModel(keyBase), this.readFrontier0(keyBase)]);
-    model.applyBatch(frontier);
-    return model;
   }
 
   public async readModel(keyBase: string): Promise<[model: Model, meta: BlockModelMetadata]> {
@@ -357,8 +416,8 @@ export class LevelLocalRepoCore {
     return;
   }
 
-  protected async lockBlock(keyBase: string, fn: () => Promise<void>): Promise<void> {
-    await this.locks.lock(keyBase, 500, 500)(fn);
+  protected async lockBlock<T>(keyBase: string, fn: () => Promise<T>): Promise<T> {
+    return await this.locks.lock(keyBase, 500, 500)<T>(fn);
   }
 
   // ---------------------------------------------------------- Synchronization
@@ -372,11 +431,6 @@ export class LevelLocalRepoCore {
   protected async markDirtyAndSync(id: BlockId): Promise<boolean> {
     this.markDirty(id).catch(() => {});
     return await this.push(id);
-  }
-
-  public async markTidy(id: BlockId): Promise<void> {
-    const key = Defaults.SyncRoot + '!' + id.join('!');
-    await this.kv.del(key);
   }
 
   protected remoteTimeout(): number {
@@ -397,99 +451,85 @@ export class LevelLocalRepoCore {
       patches.push({blob});
     }
     if (!patches) return false;
-    return await this.lockForSync(id, async () => {
-      // TODO: handle case when this times out, but actually succeeds, so on re-sync it handles the case when the block is already synced.
+    // TODO: handle case when this times out, but actually succeeds, so on re-sync it handles the case when the block is already synced.
+    return await this.lockBlock(keyBase, async () => {
       return await timeout(this.remoteTimeout(), async () => {
-        let deleteBefore = 0;
-        await this.lockBlock(keyBase, async () => {
-          const read = await Promise.all([
-            this.readModel(keyBase),
-            this.readMeta(keyBase),
-          ]);
-          const meta = read[1];
-          const modelMeta = read[0][1];
-          let model = read[0][0];
-          const lastKnownSeq = modelMeta[0];
-          const response = await remote.update(remoteId, {patches}, lastKnownSeq);
-          // TODO: track the available contiguous history batch sequence. Store the snapshot starting from the start of the contiguous history.
-          // TODO: when deleting the history, update the snapshot.
-          // TODO: Store snapshots only when history tracking is enabled?
-          // Process pull
-          const pull = response.pull;
-          if (pull) {
-            const snapshot = pull.snapshot;
-            const batches = pull.batches;
-            if (snapshot) model = Model.load(snapshot.blob, this.sid);
-            if (batches) {
-              for (const b of batches) {
-                const patches = b.patches;
-                for (const patch of patches) model.applyPatch(Patch.fromBinary(patch.blob));
+        const read = await Promise.all([
+          this.readModel(keyBase),
+          this.readMeta(keyBase),
+        ]);
+        const meta = read[1];
+        if (Date.now() - meta.ts < 1000) return false;
+        const hist = !!meta.hist;
+        const modelMeta = read[0][1];
+        let model = read[0][0];
+        const lastKnownSeq = modelMeta[0];
+        const response = await remote.update(remoteId, {patches}, lastKnownSeq);
+        // Process pull
+        const pull = response.pull;
+        if (pull) {
+          const snapshot = pull.snapshot;
+          const batches = pull.batches;
+          if (snapshot) {
+            model = Model.load(snapshot.blob, this.sid);
+            if (hist) {
+              ops.push({
+                type: 'put',
+                key: this.snapshotKey(keyBase, snapshot.seq),
+                value: await this.encode(snapshot, true),
+              });
+            }
+          }
+          if (batches) {
+            for (const b of batches) {
+              const patches = b.patches;
+              for (const patch of patches) model.applyPatch(Patch.fromBinary(patch.blob));
+              if (hist) {
                 ops.push({
                   type: 'put',
                   key: this.batchKey(keyBase, b.seq),
-                  value: encoder.encode(b),
+                  value: await this.encode(b, false),
                 });
               }
             }
           }
-          // Process the latest batch
-          for (const patch of patches) model.applyPatch(Patch.fromBinary(patch.blob));
-          const batch: LocalBatch = {
-            ...response.batch,
-            patches,
-          };
-          const seq = batch.seq;
+        }
+        // Process the latest batch
+        for (const patch of patches) model.applyPatch(Patch.fromBinary(patch.blob));
+        const batch: LocalBatch = {...response.batch, patches};
+        const seq = batch.seq;
+        if (hist) {
           ops.push({
             type: 'put',
             key: this.batchKey(keyBase, seq),
-            value: encoder.encode(batch),
+            value: await this.encode(batch, false),
           });
-          // Process the model
-          modelMeta[0] = seq;
-          const modelTuple: BlockModelValue = [modelMeta, model.toBinary()];
-          const modelValue = encoder.encode(modelTuple);
-          const modelBlob = await this.encrypt(modelValue, true);
-          ops.push({
-            type: 'put',
-            key: keyBase + Defaults.Model,
-            value: modelBlob,
-          });
-          // Process block metadata
-          meta.time = model.clock.time - 1;
-          meta.ts = Date.now();
-          ops.push({
-            type: 'put',
-            key: keyBase + Defaults.Metadata,
-            value: encoder.encode(meta),
-          });
-          // Persist and wrap up
-          await this.kv.batch(ops);
-          const historyLength = meta.hist ?? Defaults.HistoryLength;
-          deleteBefore = seq - historyLength;
-        });
-        if (deleteBefore > 0) {
-          const deleteBeforeKey = this.batchKey(keyBase, deleteBefore);
-          await this.kv.clear({lt: deleteBeforeKey});
         }
+        // Process the model
+        modelMeta[0] = seq;
+        const modelTuple: BlockModelValue = [modelMeta, model.toBinary()];
+        const modelValue = encoder.encode(modelTuple);
+        const modelBlob = await this.encrypt(modelValue, true);
+        ops.push({
+          type: 'put',
+          key: keyBase + Defaults.Model,
+          value: modelBlob,
+        });
+        // Process block metadata
+        meta.time = model.clock.time - 1;
+        meta.ts = Date.now();
+        ops.push({
+          type: 'put',
+          key: keyBase + Defaults.Metadata,
+          value: encoder.encode(meta),
+        });
+        // Persist and wrap up
+        await this.kv.batch(ops);
+        this.pubsub.pub(['change', {id, batch, pull}])
         return true;
       });
     });
   }
-
-  /**
-   * Locks a specific block for synchronization.
-   */
-  private async lockForSync<T>(id: BlockId, fn: () => Promise<T>): Promise<T> {
-    const key = 'sync/' + id.join('/');
-    const locker = this.locks.lock(key, this.remoteTimeout() + 200, 200);
-    return await locker<T>(fn);
-  }
-
-  // protected async putMeta(collection: string[], id: string, meta: BlockSyncMetadata): Promise<void> {
-  //   const deps = this.core;
-  //   const blob = deps.cborEncoder.encode(meta);
-  //   await deps.crud.put(['sync', 'state', ...collection, id], SYNC_FILE_NAME, blob);
-  // }
 
   public async isDirty(collection: string[], id: string): Promise<boolean> {
     throw new Error('not implemented');
