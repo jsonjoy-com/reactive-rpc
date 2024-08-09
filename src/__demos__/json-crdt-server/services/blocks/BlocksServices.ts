@@ -174,9 +174,10 @@ export class BlocksServices {
       blob: model.toBinary(),
     };
     const res = await store.push(newSnapshot, batch);
-    if (store.compact && ((blobSize > 250) || !(seq % 100))) {
+    const historyLengthToKeep = 10000;
+    if ((seq > historyLengthToKeep) && store.compact && ((blobSize > 250) || !(seq % 100))) {
       go(async () => {
-        await store.compact!(id, seq - 10000, async (blob, iterator) => {
+        await store.compact!(id, seq - historyLengthToKeep, async (blob, iterator) => {
           const mod = Model.fromBinary(blob);
           for await (const batch of iterator)
             for (const patch of batch.patches)
