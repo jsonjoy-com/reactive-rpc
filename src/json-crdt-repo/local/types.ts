@@ -80,6 +80,14 @@ export interface LocalRepoSyncResponse {
    * synchronized with the server or remote peers.
    */
   remote?: Promise<void>;
+
+  /**
+   * Fan-out subscription to the latest changes in the block. The subscription
+   * emits `patches` when new changes are received from other clients. If the
+   * `model` is set, the client should reset its state to the new `Model`
+   * (happens when too many patches are received).
+   */
+  pull: FanOut<{patches: Patch[]} | {model: Model}>;
 }
 
 export interface LocalRepoSubData {
