@@ -176,21 +176,25 @@ export class BlocksServices {
     const res = await store.push(newSnapshot, batch);
     const historyLengthToKeep = 10000;
     if ((seq > historyLengthToKeep) && store.compact && ((blobSize > 250) || !(seq % 100))) {
-      go(async () => {
-        await store.compact!(id, seq - historyLengthToKeep, async (blob, iterator) => {
-          const mod = Model.fromBinary(blob);
-          for await (const batch of iterator)
-            for (const patch of batch.patches)
-              mod.applyPatch(Patch.fromBinary(patch.blob));
-          return model.toBinary();
-        });
-      });
+      go(async () => await this.compact(id, seq - historyLengthToKeep));
     }
     this.__emitUpd(id, res.batch);
     return {
       snapshot: res.snapshot,
       batch: res.batch,
     };
+  }
+
+  protected async compact(id: string, to: number) {
+    const store = this.store;
+    if (!store.compact) return;
+    await store.compact!(id, to, async (blob, iterator) => {
+      const model = Model.fromBinary(blob);
+      for await (const batch of iterator)
+        for (const patch of batch.patches)
+          model.applyPatch(Patch.fromBinary(patch.blob));
+      return model.toBinary();
+    });
   }
 
   public listen(id: string): Observable<TBlockEvent> {
