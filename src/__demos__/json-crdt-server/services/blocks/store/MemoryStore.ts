@@ -73,7 +73,6 @@ export class MemoryStore implements types.Store {
     const snapshot = blockData.snapshot;
     if (snapshot.seq + 1 !== seq) throw new Error('PATCH_SEQ_INV');
     const history = block.history;
-    if (history.length !== seq) throw new Error('CORRUPT_BLOCK');
     const now = Date.now();
     blockData.uts = now;
     snapshot.seq = seq;
@@ -115,7 +114,16 @@ export class MemoryStore implements types.Store {
     await tick;
     const block = this.blocks.get(id);
     if (!block) return [];
-    return block.history.slice(min, max + 1);
+    const history = block.history;
+    const length = history.length;
+    const list: types.StoreBatch[] = [];
+    for (let i = 0; i < length; i++) {
+      const batch = history[i];
+      const seq = batch.seq;
+      if (seq > max) break;
+      if (seq >= min && seq <= max) list.push(batch);
+    }
+    return list;
   }
 
   public async remove(id: string): Promise<boolean> {
