@@ -19,10 +19,25 @@ const validateBatch = (batch: StoreIncomingBatch) => {
   for (const patch of patches) if (patch.blob.length > 2000) throw RpcError.validation('patch blob too large');
 };
 
+export interface BlocksServicesOpts {
+  historyPerBlock: number;
+
+  /**
+   * @param seq Current block sequence number.
+   * @param pushSize The total blob size of the patches bushed by the latest push.
+   * @returns Whether to compact the history.
+   */
+  historyCompactionDecision: (seq: number, pushSize: number) => boolean;
+}
+
 export class BlocksServices {
   constructor(
     protected readonly services: Services,
     protected readonly store: Store = new MemoryStore(),
+    protected readonly opts: BlocksServicesOpts = {
+      historyPerBlock: 10000,
+      historyCompactionDecision: (seq, pushSize) => ((pushSize > 250) || !(seq % 100)),
+    },
   ) {}
 
   public async create(id: string, batch?: StoreIncomingBatch) {
@@ -174,9 +189,9 @@ export class BlocksServices {
       blob: model.toBinary(),
     };
     const res = await store.push(newSnapshot, batch);
-    const historyLengthToKeep = 10000;
-    if ((seq > historyLengthToKeep) && store.compact && ((blobSize > 250) || !(seq % 100))) {
-      go(async () => await this.compact(id, seq - historyLengthToKeep));
+    const opts = this.opts;
+    if ((seq > opts.historyPerBlock) && store.compact && opts.historyCompactionDecision(seq, blobSize)) {
+      go(async () => await this.compact(id, seq - opts.historyPerBlock));
     }
     this.__emitUpd(id, res.batch);
     return {
