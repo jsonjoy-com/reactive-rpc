@@ -90,7 +90,8 @@ export class LevelStore implements types.Store {
       const block: types.StoreBlock = {id, snapshot, tip: [], ts: now, uts: now};
       const blob = encoder.encode(block);
       const ops: BinStrLevelOperation[] = [
-        {type: 'put', key, value: blob}
+        {type: 'put', key, value: blob},
+        {type: 'put', key: this.touchKey(id), value: encoder.encode(now)},
       ];
       const response: types.StoreCreateResult = {block};
       if (batch) {
@@ -107,7 +108,6 @@ export class LevelStore implements types.Store {
         response.batch = batch2;
       }
       await this.kv.batch(ops);
-      this.touch(id, now).catch(() => {});
       return response;
     });
   }
@@ -133,7 +133,6 @@ export class LevelStore implements types.Store {
       snapshot.blob = snapshot0.blob;
       const encoder = this.codec.encoder;
       const blob = encoder.encode(blockData);
-      await this.kv.put(key, blob);
       const batch1: types.StoreBatch = {
         seq,
         ts: now,
@@ -142,8 +141,12 @@ export class LevelStore implements types.Store {
       };
       const batchBlob = encoder.encode(batch1);
       const batchKey = this.batchKey(id, seq);
-      await this.kv.put(batchKey, batchBlob);
-      this.touch(id, now).catch(() => {});
+      const ops: BinStrLevelOperation[] = [
+        {type: 'put', key, value: blob},
+        {type: 'put', key: batchKey, value: batchBlob},
+        {type: 'put', key: this.touchKey(id), value: encoder.encode(now)},
+      ];
+      await this.kv.batch(ops);
       return {snapshot, batch: batch1};
     });
   }
@@ -180,6 +183,9 @@ export class LevelStore implements types.Store {
     return {blocks: 0, batches: 0};
   }
 
+  /**
+   * @todo Need to add GC tests.
+   */
   public async removeAccessedBefore(ts: number, limit: number = 10): Promise<void> {
     const from = this.touchKey('');
     const to = from + '~';
@@ -193,11 +199,5 @@ export class LevelStore implements types.Store {
       this.remove(id).catch(() => {});
       if (cnt >= limit) return;
     }
-  }
-
-  protected async touch(id: string, time: number): Promise<void> {
-    const key = this.touchKey(id);
-    const blob = this.codec.encoder.encode(time);
-    await this.kv.put(key, blob);
   }
 }
