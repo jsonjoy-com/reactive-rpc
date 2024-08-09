@@ -43,7 +43,7 @@ export class LevelStore implements types.Store {
   }
 
   protected touchKey(id: string) {
-    return this.touchKeyBase() + id;
+    return this.touchKeyBase() + id + '!';
   }
 
   /** @todo Add in-memory cache on read. */
