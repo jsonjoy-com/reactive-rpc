@@ -163,15 +163,18 @@ export class BlocksServices {
     const snapshot = get.block.snapshot;
     const seq = snapshot.seq + 1;
     const model = Model.fromBinary(snapshot.blob);
-    const patches = batch.patches.map((p) => Patch.fromBinary(p.blob));
-    model.applyBatch(patches);
+    let blobSize = 0;
+    for (const {blob} of batch.patches) {
+      blobSize += blob.length;
+      model.applyPatch(Patch.fromBinary(blob));
+    }
     const newSnapshot: StoreIncomingSnapshot = {
       id,
       seq,
       blob: model.toBinary(),
     };
     const res = await store.push(newSnapshot, batch);
-    if (store.compact && !(seq % 100)) {
+    if (store.compact && ((blobSize > 250) || !(seq % 100))) {
       go(async () => {
         await store.compact!(id, seq - 10000, async (blob, iterator) => {
           const mod = Model.fromBinary(blob);
