@@ -12,9 +12,8 @@ type BinStrLevelOperation = AbstractBatchOperation<BinStrLevel, string, Uint8Arr
 export class LevelStore implements types.Store {
   constructor(
     protected readonly kv: BinStrLevel,
-    protected readonly codec: JsonValueCodec = new CborJsonValueCodec(new Writer(1024 * 16)),
+    protected readonly codec: JsonValueCodec = new CborJsonValueCodec(new Writer()),
     protected readonly mutex: Mutex = new Mutex(),
-    protected readonly history: number = 10000,
   ) {}
 
   protected keyBase(id: string) {
@@ -42,6 +41,7 @@ export class LevelStore implements types.Store {
     return 'u!' + id + '!';
   }
 
+  /** @todo Add in-memory cache on read. */
   public async get(id: string): Promise<types.StoreGetResult | undefined> {
     const key = this.endKey(id);
     try {
@@ -73,39 +73,40 @@ export class LevelStore implements types.Store {
   }
 
   public async create(
-    snapshot: types.StoreSnapshot,
-    batch?: types.StoreIncomingBatch,
+    start: types.StoreSnapshot,
+    end: types.StoreSnapshot,
+    incomingBatch?: types.StoreIncomingBatch,
   ): Promise<types.StoreCreateResult> {
-    if (batch) {
-      const {patches} = batch;
+    if (incomingBatch) {
+      const {patches} = incomingBatch;
       if (!Array.isArray(patches) || patches.length < 1) throw new Error('NO_PATCHES');
     }
-    const {id} = snapshot;
+    const {id} = end;
     const key = this.endKey(id);
-    const now = snapshot.ts;
+    const now = end.ts;
     const encoder = this.codec.encoder;
     return await this.mutex.acquire(id, async () => {
       const existing = await this.kv.keys({gte: key, lte: key, limit: 1}).all();
       if (existing && existing.length > 0) throw new Error('BLOCK_EXISTS');
-      const block: types.StoreBlock = {id, snapshot, tip: [], ts: now, uts: now};
-      const blob = encoder.encode(block);
+      const block: types.StoreBlock = {id, snapshot: end, tip: [], ts: now, uts: now};
       const ops: BinStrLevelOperation[] = [
-        {type: 'put', key, value: blob},
+        {type: 'put', key: this.startKey(id), value: encoder.encode(start)},
+        {type: 'put', key, value: encoder.encode(block)},
         {type: 'put', key: this.touchKey(id), value: encoder.encode(now)},
       ];
       const response: types.StoreCreateResult = {block};
-      if (batch) {
-        const {cts, patches} = batch;
-        const batch2: types.StoreBatch = {
+      if (incomingBatch) {
+        const {cts, patches} = incomingBatch;
+        const batch: types.StoreBatch = {
           seq: 0,
-          ts: snapshot.ts,
+          ts: end.ts,
           cts,
           patches,
         };
-        const batchBlob = encoder.encode(batch2);
+        const batchBlob = encoder.encode(batch);
         const batchKey = this.batchKey(id, 0);
         ops.push({type: 'put', key: batchKey, value: batchBlob});
-        response.batch = batch2;
+        response.batch = batch;
       }
       await this.kv.batch(ops);
       return response;
@@ -118,7 +119,6 @@ export class LevelStore implements types.Store {
   ): Promise<types.StorePushResult> {
     const {id, seq} = snapshot0;
     const {patches} = batch0;
-    const key = this.endKey(id);
     if (!Array.isArray(patches) || !patches.length) throw new Error('NO_PATCHES');
     return await this.mutex.acquire(id, async () => {
       const block = await this.get(id);
@@ -132,22 +132,43 @@ export class LevelStore implements types.Store {
       snapshot.ts = now;
       snapshot.blob = snapshot0.blob;
       const encoder = this.codec.encoder;
-      const blob = encoder.encode(blockData);
       const batch1: types.StoreBatch = {
         seq,
         ts: now,
         cts: batch0.cts,
         patches,
       };
-      const batchBlob = encoder.encode(batch1);
-      const batchKey = this.batchKey(id, seq);
       const ops: BinStrLevelOperation[] = [
-        {type: 'put', key, value: blob},
-        {type: 'put', key: batchKey, value: batchBlob},
+        {type: 'put', key: this.endKey(id), value: encoder.encode(blockData)},
+        {type: 'put', key: this.batchKey(id, seq), value: encoder.encode(batch1)},
         {type: 'put', key: this.touchKey(id), value: encoder.encode(now)},
       ];
       await this.kv.batch(ops);
       return {snapshot, batch: batch1};
+    });
+  }
+
+  public async compact(id: string, to: number, advance: types.Advance): Promise<void> {
+    const {kv, codec} = this;
+    const {encoder, decoder} = codec;
+    const key = this.startKey(id);
+    await this.mutex.acquire(id + '.trunc', async () => {
+      const start = decoder.decode(await kv.get(key)) as types.StoreSnapshot;
+      if (start.seq >= to) return;
+      const gt = this.batchKey(id, start.seq);
+      const lte = this.batchKey(id, to)
+      const ops: BinStrLevelOperation[] = [];
+      async function *iterator() {
+        for await (const [key, blob] of kv.iterator({gt, lte})) {
+          ops.push({type: 'del', key});
+          yield decoder.decode(blob) as types.StoreBatch;
+        }
+      }
+      start.blob = await advance(start.blob, iterator());
+      start.ts = Date.now();
+      start.seq = to;
+      ops.push({type: 'put', key, value: encoder.encode(start)});
+      await kv.batch(ops);
     });
   }
 
@@ -179,6 +200,7 @@ export class LevelStore implements types.Store {
     return success;
   }
 
+  /** @todo Make this method async and return something useful. */
   public stats(): {blocks: number; batches: number} {
     return {blocks: 0, batches: 0};
   }

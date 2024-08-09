@@ -85,7 +85,7 @@ export interface Store {
    * @param batch Initial patches to apply to a new block.
    * @returns Newly created block data.
    */
-  create(snapshot: StoreIncomingSnapshot, batch?: StoreIncomingBatch): Promise<StoreCreateResult>;
+  create(start: StoreSnapshot, end: StoreSnapshot, batch?: StoreIncomingBatch): Promise<StoreCreateResult>;
 
   /**
    * Push changes to an existing block.
@@ -95,6 +95,16 @@ export interface Store {
    * @returns Updated block data.
    */
   push(snapshot: StoreIncomingSnapshot, batch: StoreIncomingBatch): Promise<StorePushResult>;
+
+  /**
+   * Compacts block's history by merging batches until the given sequence number.
+   *
+   * @param id Block ID.
+   * @param to Sequence number until which the start of the block history
+   *     has to be compacted.
+   * @param advance Callback which performs batch merging.
+   */
+  compact?(id: string, to: number, advance: Advance): Promise<void>;
 
   /**
    * Retrieve an existing block.
@@ -165,3 +175,5 @@ export interface StorePushResult {
 export interface StoreGetResult {
   block: StoreBlock;
 }
+
+export type Advance = (start: StoreSnapshot['blob'], batches: AsyncIterable<StoreBatch>) => Promise<StoreSnapshot['blob']>;

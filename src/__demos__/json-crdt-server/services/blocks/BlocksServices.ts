@@ -2,6 +2,7 @@ import {MemoryStore} from './store/MemoryStore';
 import {RpcError, RpcErrorCodes} from '../../../../common/rpc/caller';
 import {Model, Patch} from 'json-joy/lib/json-crdt';
 import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
+import {go} from 'thingies/lib/go';
 import type {StoreSnapshot, StoreIncomingBatch, StoreBatch, StoreIncomingSnapshot, Store} from './store/types';
 import type {Services} from '../Services';
 import type {Observable} from 'rxjs';
@@ -36,18 +37,24 @@ export class BlocksServices {
         ts: now,
       };
       this.__emitNew(id);
-      return await this.store.create(snapshot);
+      return await this.store.create(snapshot, snapshot);
     }
     validateBatch(batch);
-    const patches = batch.patches.map((p) => Patch.fromBinary(p.blob));
-    const model = Model.fromPatches(patches);
-    const snapshot: StoreSnapshot = {
+    const model = Model.create(void 0, SESSION.GLOBAL);
+    const start: StoreSnapshot = {
+      id,
+      seq: -1,
+      ts: now,
+      blob: model.toBinary(),
+    };
+    for (const patch of batch.patches) model.applyPatch(Patch.fromBinary(patch.blob));
+    const end: StoreSnapshot = {
       id,
       seq: 0,
-      blob: model.toBinary(),
       ts: now,
+      blob: model.toBinary(),
     };
-    const res = await this.store.create(snapshot, batch);
+    const res = await this.store.create(start, end, batch);
     this.__emitNew(id);
     if (res.batch) this.__emitUpd(id, res.batch);
     return res;
@@ -164,6 +171,17 @@ export class BlocksServices {
       blob: model.toBinary(),
     };
     const res = await store.push(newSnapshot, batch);
+    if (store.compact && !(seq % 100)) {
+      go(async () => {
+        await store.compact!(id, seq - 10000, async (blob, iterator) => {
+          const mod = Model.fromBinary(blob);
+          for await (const batch of iterator)
+            for (const patch of batch.patches)
+              mod.applyPatch(Patch.fromBinary(patch.blob));
+          return model.toBinary();
+        });
+      });
+    }
     this.__emitUpd(id, res.batch);
     return {
       snapshot: res.snapshot,

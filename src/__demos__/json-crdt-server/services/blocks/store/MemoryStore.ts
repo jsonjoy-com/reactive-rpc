@@ -5,6 +5,7 @@ const tick = new Promise((resolve) => setImmediate(resolve));
 
 export class MemoryBlock {
   constructor(
+    public readonly start: types.StoreSnapshot,
     public readonly data: types.StoreBlock,
     public readonly history: types.StoreBatch[]
   ) {}
@@ -31,21 +32,23 @@ export class MemoryStore implements types.Store {
   }
 
   public async create(
-    snapshot: types.StoreSnapshot,
+    start: types.StoreSnapshot,
+    end: types.StoreSnapshot,
     batch?: types.StoreIncomingBatch,
   ): Promise<types.StoreCreateResult> {
-    const {id} = snapshot;
+    const {id} = end;
     await tick;
     if (this.blocks.has(id)) throw new Error('BLOCK_EXISTS');
-    const now = snapshot.ts;
-    const block = new MemoryBlock({id, snapshot, tip: [], ts: now, uts: now}, []);
+    const now = end.ts;
+    const data = {id, snapshot: end, tip: [], ts: now, uts: now};
+    const block = new MemoryBlock(start, data, []);
     this.blocks.set(id, block);
     if (batch) {
       const {cts, patches} = batch;
       if (!Array.isArray(patches)) throw new Error('NO_PATCHES');
       const batch2: types.StoreBatch = {
         seq: 0,
-        ts: snapshot.ts,
+        ts: end.ts,
         cts,
         patches,
       };
@@ -83,6 +86,28 @@ export class MemoryStore implements types.Store {
     };
     history.push(batch1);
     return {snapshot, batch: batch1};
+  }
+
+  public async compact(id: string, to: number, advance: types.Advance): Promise<void> {
+    const block = this.blocks.get(id);
+    if (!block) throw RpcError.notFound();
+    const start = block.start;
+    const batches = block.history;
+    const length = batches.length;
+    let i = 0;
+    async function * iterator() {
+      for (; i < length; i++) {
+        const batch = batches[i];
+        const seq = batch.seq;
+        if (seq <= start.seq) continue;
+        if (seq > to) break;
+        yield batch;
+      }
+    }
+    start.blob = await advance(start.blob, iterator());
+    start.ts = Date.now();
+    start.seq = to;
+    batches.splice(0, i);
   }
 
   public async scan(id: string, min: number, max: number): Promise<types.StoreBatch[]> {
