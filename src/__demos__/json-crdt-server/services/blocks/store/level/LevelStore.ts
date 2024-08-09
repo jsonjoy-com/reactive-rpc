@@ -1,5 +1,6 @@
 import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 import {CborJsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/cbor';
+import {AvlMap} from 'sonic-forest/lib/avl/AvlMap';
 import {Mutex} from '../../../../../../util/Mutex';
 import {RpcError} from '../../../../../../common/rpc/caller';
 import type {AbstractBatchOperation, AbstractLevel} from 'abstract-level';
@@ -37,8 +38,12 @@ export class LevelStore implements types.Store {
     return this.batchBase(id) + seqFormatted;
   }
 
+  protected touchKeyBase() {
+    return 'u!';
+  }
+
   protected touchKey(id: string) {
-    return 'u!' + id + '!';
+    return this.touchKeyBase() + id;
   }
 
   /** @todo Add in-memory cache on read. */
@@ -220,6 +225,34 @@ export class LevelStore implements types.Store {
       const id = key.slice(from.length);
       this.remove(id).catch(() => {});
       if (cnt >= limit) return;
+    }
+  }
+
+  public async removeOldest(x: number): Promise<void> {
+    const heap = new AvlMap<number, string>((a, b) => b - a);
+    const keyBase = this.touchKeyBase();
+    const gte = keyBase;
+    const lte = keyBase + '~';
+    const kv = this.kv;
+    const decoder = this.codec.decoder;
+    let first = heap.first();
+    for await (const [key, value] of kv.iterator({gte, lte})) {
+      const time = decoder.decode(value) as number;
+      if (heap.size() < x) {
+        heap.set(time, key);
+        continue;
+      }
+      if (!first) first = heap.first();
+      if (first && time < first.k) {
+        heap.del(first.k);
+        first = undefined;
+        heap.set(time, key);
+      }
+    }
+    if (!heap.size()) return;
+    for (const {v} of heap.entries()) {
+      const id = v.slice(keyBase.length);
+      await this.remove(id);
     }
   }
 }

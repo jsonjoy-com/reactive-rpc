@@ -155,6 +155,13 @@ export interface Store {
   removeAccessedBefore(ts: number, limit: number): Promise<void>;
 
   /**
+   * Remove a number of oldest blocks, measured by last update time.
+   *
+   * @param x Number of oldest blocks to remove.
+   */
+  removeOldest(x: number): Promise<void>;
+
+  /**
    * Retrieve statistics about the store.
    *
    * @returns Number of blocks and batches.

@@ -80,7 +80,7 @@
     "json-joy": "^16.23.0",
     "memfs": "^4.11.0",
     "memory-level": "^1.0.0",
-    "sonic-forest": "^1.0.0",
+    "sonic-forest": "^1.0.3",
     "thingies": "^2.1.0"
   },
   "devDependencies": {

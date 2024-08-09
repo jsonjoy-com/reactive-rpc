@@ -1,3 +1,4 @@
+import {AvlMap} from 'sonic-forest/lib/avl/AvlMap';
 import {RpcError} from '../../../../../common/rpc/caller';
 import type * as types from './types';
 
@@ -146,5 +147,26 @@ export class MemoryStore implements types.Store {
       cnt++;
       if (cnt >= limit) return;
     }
+  }
+
+  public async removeOldest(x: number): Promise<void> {
+    const heap = new AvlMap<number, string>((a, b) => b - a);
+    let first = heap.first();
+    for await (const [id, block] of this.blocks.entries()) {
+      const time = block.data.uts;
+      if (heap.size() < x) {
+        heap.set(time, id);
+        continue;
+      }
+      if (!first) first = heap.first();
+      if (first && time < first.k) {
+        heap.del(first.k);
+        first = undefined;
+        heap.set(time, id);
+      }
+    }
+    if (!heap.size()) return;
+    if (!heap.size()) return;
+    for (const {v} of heap.entries()) await this.remove(v);
   }
 }
