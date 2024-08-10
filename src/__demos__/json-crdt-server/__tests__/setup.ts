@@ -8,7 +8,7 @@ import {MemoryStore} from '../services/blocks/store/MemoryStore';
 import type {Store} from '../services/blocks/store/types';
 
 export const setup = async (store: Store = new MemoryStore(), close?: () => Promise<void>) => {
-  const services = new Services(store);
+  const services = new Services({store});
   const {caller} = createCaller(services);
   const {client} = buildE2eClient(caller, {
     writerDefaultBufferKb: [1, 32],

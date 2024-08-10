@@ -38,9 +38,9 @@ export class DemoServerRemoteHistory implements ServerHistory {
     };
   }
 
-  public async update(id: string, batch: Pick<DemoServerBatch, 'patches'>, seq: number): Promise<{
+  public async update(id: string, batch: Pick<DemoServerBatch, 'patches'>, seq?: number): Promise<{
     batch: Omit<DemoServerBatch, 'patches'>;
-    pull: {
+    pull?: {
       batches: DemoServerBatch[];
       snapshot?: DemoServerSnapshot;
     };
@@ -53,7 +53,7 @@ export class DemoServerRemoteHistory implements ServerHistory {
     });
     return {
       batch: res.batch,
-      pull: res.pull!,
+      pull: res.pull,
     }
   }
 

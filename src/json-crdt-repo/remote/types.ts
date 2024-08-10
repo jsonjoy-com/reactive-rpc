@@ -85,7 +85,7 @@ export interface RemoteHistory<
    */
   update(id: string, batch: Pick<Batch, 'patches'>, seq: number): Promise<{
     batch: Omit<Batch, 'patches'>;
-    pull: {
+    pull?: {
       batches: Batch[];
       snapshot?: Snapshot;
     };
