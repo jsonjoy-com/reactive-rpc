@@ -60,6 +60,29 @@ export class LevelStore implements types.Store {
     }
   }
 
+  public async getSnapshot(id: string, seq: number): Promise<{snapshot: types.StoreSnapshot, batches: types.StoreBatch[]}> {
+    const {kv, codec} = this;
+    const {decoder} = codec;
+    const key = this.startKey(id);
+    try {
+      const blob = await kv.get(key);
+      const snapshot = decoder.decode(blob) as types.StoreSnapshot;
+      const batches: types.StoreBatch[] = [];
+      if (snapshot.seq < seq) {
+        const gte = this.batchKey(id, snapshot.seq + 1);
+        const lte = this.batchKey(id, seq);
+        for await (const blob of kv.values({gte, lte: lte})) {
+          const batch = decoder.decode(blob) as types.StoreBatch;
+          batches.push(batch);
+        }
+      }
+      return {snapshot, batches};
+    } catch (error) {
+      if (error && typeof error === 'object' && (error as any).code === 'LEVEL_NOT_FOUND') throw RpcError.notFound();
+      throw error;
+    }
+  }
+
   public async exists(id: string): Promise<boolean> {
     const key = this.endKey(id);
     const existing = await this.kv.keys({gte: key, lte: key, limit: 1}).all();
