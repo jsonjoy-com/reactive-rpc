@@ -196,7 +196,7 @@ export class BlocksServices {
     const res = await store.push(newSnapshot, batch);
     const opts = this.opts;
     if ((seq > opts.historyPerBlock) && store.compact && opts.historyCompactionDecision(seq, blobSize)) {
-      go(async () => await this.compact(id, seq - opts.historyPerBlock));
+      go(() => this.compact(id, seq - opts.historyPerBlock));
     }
     this.__emitUpd(id, res.batch);
     go(() => this.gc());

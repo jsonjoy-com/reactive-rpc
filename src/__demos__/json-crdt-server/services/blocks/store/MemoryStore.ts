@@ -192,7 +192,10 @@ export class MemoryStore implements types.Store {
       }
     }
     if (!heap.size()) return;
-    if (!heap.size()) return;
-    for (const {v} of heap.entries()) await this.remove(v);
+    for (const {v} of heap.entries()) {
+      try {
+        await this.remove(v);
+      } catch {}
+    }
   }
 }

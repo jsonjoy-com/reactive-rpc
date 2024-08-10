@@ -216,15 +216,18 @@ export class LevelStore implements types.Store {
     const exists = await this.exists(id);
     if (!exists) return false;
     const base = this.keyBase(id);
+    const touchKey = this.touchKey(id);
+    const kv = this.kv;
     const success = await this.mutex.acquire(id, async () => {
-      await this.kv.clear({
-        gte: base,
-        lte: base + '~',
-      });
+      await Promise.allSettled([
+        kv.clear({
+          gte: base,
+          lte: base + '~',
+        }),
+        kv.del(touchKey)
+      ]);
       return true;
     });
-    const touchKey = this.touchKey(id);
-    this.kv.del(touchKey).catch(() => {});
     return success;
   }
 
@@ -254,7 +257,7 @@ export class LevelStore implements types.Store {
   public async removeOldest(x: number): Promise<void> {
     const heap = new AvlMap<number, string>((a, b) => b - a);
     const keyBase = this.touchKeyBase();
-    const gte = keyBase;
+    const gte = keyBase + '';
     const lte = keyBase + '~';
     const kv = this.kv;
     const decoder = this.codec.decoder;
@@ -274,8 +277,10 @@ export class LevelStore implements types.Store {
     }
     if (!heap.size()) return;
     for (const {v} of heap.entries()) {
-      const id = v.slice(keyBase.length);
-      await this.remove(id);
+      try {
+        const id = v.slice(keyBase.length, -1);
+        await this.remove(id);
+      } catch {}
     }
   }
 }
