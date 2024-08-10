@@ -3,6 +3,7 @@ import {RpcError, RpcErrorCodes} from '../../../../common/rpc/caller';
 import {Model, Patch} from 'json-joy/lib/json-crdt';
 import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
 import {go} from 'thingies/lib/go';
+import {storageSpaceReclaimDecision} from './util';
 import * as fs from 'fs';
 import type {StoreSnapshot, StoreIncomingBatch, StoreBatch, StoreIncomingSnapshot, Store} from './store/types';
 import type {Services} from '../Services';
@@ -52,19 +53,7 @@ export class BlocksServices {
       historyCompactionDecision: (seq, pushSize) => ((pushSize > 250) || !(seq % 100)),
     },
   ) {
-    this.spaceReclaimDecision = opts.spaceReclaimDecision ?? (async () => {
-      if (Math.random() > 0.1) return 0;
-      const stats = await fs.promises.statfs('/');
-      const availableBytes = stats.bavail * stats.bsize;
-      const KILOBYTE = 1024;
-      const MEGABYTE = KILOBYTE * KILOBYTE;
-      const threshold = 300 * MEGABYTE;
-      if (availableBytes > threshold) return 0;
-      const avgDocSize = 30 * KILOBYTE;
-      const blocksToDelete = Math.ceil((threshold - availableBytes) / avgDocSize);
-      const blocksToDeleteClamped = Math.min(100, blocksToDelete);
-      return blocksToDeleteClamped;
-    });
+    this.spaceReclaimDecision = opts.spaceReclaimDecision ?? storageSpaceReclaimDecision(fs.promises);
   }
 
   public async create(id: string, batch?: StoreIncomingBatch) {
