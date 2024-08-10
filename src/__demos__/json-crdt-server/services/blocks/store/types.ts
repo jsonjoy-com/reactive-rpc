@@ -115,6 +115,15 @@ export interface Store {
   get(id: string): Promise<StoreGetResult | undefined>;
 
   /**
+   * Retrieve a snapshot at a given sequence number.
+   *
+   * @param id Block ID.
+   * @returns Snapshot and a list of batches to apply to the snapshot to get
+   *     to the state at the given sequence number.
+   */
+  getSnapshot(id: string, seq: number): Promise<{snapshot: StoreSnapshot, batches: StoreBatch[]}>;
+
+  /**
    * Retrieve the existence of a block.
    *
    * @param id Block ID.

@@ -141,22 +141,11 @@ export class BlocksServices {
     }
     const batches = await store.scan(id, min, max);
     if (includeStartSnapshot) {
-      const model = Model.create(void 0, SESSION.GLOBAL);
-      let ts = 0;
-      if (offset !== 0) {
-        const historicBatches = await store.scan(id, 0, offset - 1);
-        for (const batch of historicBatches) {
-          model.applyBatch(batch.patches.map((p) => Patch.fromBinary(p.blob)));
-          ts = batch.ts;
-        }
-      }
-      const snapshot: StoreSnapshot = {
-        id,
-        seq: offset - 1,
-        ts,
-        blob: model.toBinary(),
+      const snap = await store.getSnapshot(id, min - 1);
+      return {
+        snapshot: snap.snapshot,
+        batches: snap.batches.concat(batches),
       };
-      return {batches, snapshot};
     }
     return {batches};
   }

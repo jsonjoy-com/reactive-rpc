@@ -626,6 +626,8 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         });
         await stop();
       });
+
+      test.todo('can retrieve change history when it was compacted');
     });
 
     describe('block.get', () => {

@@ -22,6 +22,24 @@ export class MemoryStore implements types.Store {
     return {block: block.data};
   }
 
+  public async getSnapshot(id: string, seq: number): Promise<{snapshot: types.StoreSnapshot, batches: types.StoreBatch[]}> {
+    await tick;
+    const block = this.blocks.get(id);
+    if (!block) throw RpcError.notFound();
+    const snapshot = block.start;
+    const history = block.history;
+    const length = history.length;
+    const batches: types.StoreBatch[] = [];
+    for (let i = 0; i < length; i++) {
+      const batch = history[i];
+      const seq2 = batch.seq;
+      if (seq2 <= snapshot.seq) continue;
+      if (seq2 > seq) break;
+      batches.push(batch);
+    }
+    return {snapshot, batches};
+  }
+
   public async exists(id: string): Promise<boolean> {
     await tick;
     return this.blocks.has(id);
