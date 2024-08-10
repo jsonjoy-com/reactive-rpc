@@ -3,12 +3,11 @@ import {RpcError, RpcErrorCodes} from '../../../../common/rpc/caller';
 import {Model, Patch} from 'json-joy/lib/json-crdt';
 import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
 import {go} from 'thingies/lib/go';
+import * as fs from 'fs';
 import type {StoreSnapshot, StoreIncomingBatch, StoreBatch, StoreIncomingSnapshot, Store} from './store/types';
 import type {Services} from '../Services';
 import type {Observable} from 'rxjs';
 import type {TBlockEvent, TBlockUpdateEvent, TBlockDeleteEvent, TBlockCreateEvent} from '../../routes/block/schema';
-
-const BLOCK_TTL = 1000 * 60 * 30; // 30 minutes
 
 const validateBatch = (batch: StoreIncomingBatch) => {
   if (!batch || typeof batch !== 'object' || Array.isArray(batch)) throw RpcError.validation('INVALID_BATCH');
@@ -20,6 +19,9 @@ const validateBatch = (batch: StoreIncomingBatch) => {
 };
 
 export interface BlocksServicesOpts {
+  /**
+   * How many historic batches to keep per block.
+   */
   historyPerBlock: number;
 
   /**
@@ -28,9 +30,20 @@ export interface BlocksServicesOpts {
    * @returns Whether to compact the history.
    */
   historyCompactionDecision: (seq: number, pushSize: number) => boolean;
+
+  /**
+   * As part of GC, check if we need to delete some of the oldest blocks.
+   * Returns the number of oldest blocks to delete. If 0, no blocks will be
+   * deleted.
+   *
+   * @returns The number of oldest blocks to delete.
+   */
+  spaceReclaimDecision?: () => Promise<number>;
 }
 
 export class BlocksServices {
+  protected readonly spaceReclaimDecision: Required<BlocksServicesOpts>['spaceReclaimDecision'];
+
   constructor(
     protected readonly services: Services,
     protected readonly store: Store = new MemoryStore(),
@@ -38,10 +51,23 @@ export class BlocksServices {
       historyPerBlock: 10000,
       historyCompactionDecision: (seq, pushSize) => ((pushSize > 250) || !(seq % 100)),
     },
-  ) {}
+  ) {
+    this.spaceReclaimDecision = opts.spaceReclaimDecision ?? (async () => {
+      if (Math.random() > 0.1) return 0;
+      const stats = await fs.promises.statfs('/');
+      const availableBytes = stats.bavail * stats.bsize;
+      const KILOBYTE = 1024;
+      const MEGABYTE = KILOBYTE * KILOBYTE;
+      const threshold = 300 * MEGABYTE;
+      if (availableBytes > threshold) return 0;
+      const avgDocSize = 30 * KILOBYTE;
+      const blocksToDelete = Math.ceil((threshold - availableBytes) / avgDocSize);
+      const blocksToDeleteClamped = Math.min(100, blocksToDelete);
+      return blocksToDeleteClamped;
+    });
+  }
 
   public async create(id: string, batch?: StoreIncomingBatch) {
-    this.maybeGc();
     const now = Date.now();
     if (!batch) {
       const model = Model.create(void 0, SESSION.GLOBAL);
@@ -52,6 +78,7 @@ export class BlocksServices {
         ts: now,
       };
       this.__emitNew(id);
+      go(() => this.gc());
       return await this.store.create(snapshot, snapshot);
     }
     validateBatch(batch);
@@ -72,6 +99,7 @@ export class BlocksServices {
     const res = await this.store.create(start, end, batch);
     this.__emitNew(id);
     if (res.batch) this.__emitUpd(id, res.batch);
+    go(() => this.gc());
     return res;
   }
 
@@ -159,7 +187,6 @@ export class BlocksServices {
         return {snapshot: res.block.snapshot, batch: res.batch!};
       }
     }
-    this.maybeGc();
     validateBatch(batch);
     const {store} = this;
     const get = await store.get(id);
@@ -183,6 +210,7 @@ export class BlocksServices {
       go(async () => await this.compact(id, seq - opts.historyPerBlock));
     }
     this.__emitUpd(id, res.batch);
+    go(() => this.gc());
     return {
       snapshot: res.snapshot,
       batch: res.batch,
@@ -209,18 +237,9 @@ export class BlocksServices {
     return this.store.stats();
   }
 
-  private maybeGc(): void {
-    // TODO: Run GC only when disk is low in space.
-    if (Math.random() < 0.01)
-      this.gc().catch((error) => {
-        // tslint:disable-next-line:no-console
-        console.error('Error running gc', error);
-      });
-  }
-
-  private async gc(): Promise<void> {
-    const ts = Date.now() - BLOCK_TTL;
-    const {store} = this;
-    await store.removeAccessedBefore(ts, 10);
+  protected async gc(): Promise<void> {
+    const blocksToDelete = await this.spaceReclaimDecision();
+    if (blocksToDelete <= 0) return;
+    await this.store.removeOldest(blocksToDelete);
   }
 }
