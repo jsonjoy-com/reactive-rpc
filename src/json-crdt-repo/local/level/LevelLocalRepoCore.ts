@@ -10,7 +10,7 @@ import {once} from 'thingies/lib/once';
 import {timeout} from 'thingies/lib/timeout';
 import {pubsub} from '../../pubsub';
 import type {ServerHistory, ServerPatch} from '../../remote/types';
-import type {BlockId, LocalRepoBlockEvent, LocalRepoSyncRequest, LocalRepoSyncResponse} from '../types';
+import type {BlockId, LocalRepoBlockEventBase, LocalRepoSyncRequest, LocalRepoSyncResponse} from '../types';
 import type {BinStrLevel, BinStrLevelOperation, BlockMetaValue, BlockModelMetadata, BlockModelValue, LevelLocalRepoPubSub, LocalBatch, SyncResult} from './types';
 import type {CrudLocalRepoCipher} from './types';
 import type {Locks} from 'thingies/lib/Locks';
@@ -251,7 +251,14 @@ export class LevelLocalRepoCore {
         // return await this.update(req.col, req.id, req.batch);
       }
     } else if (!req.cursor && !req.patches) {
-      return await this.read(req.id);
+      try {
+        return await this.read(req.id);
+      } catch (error) {
+        if (error instanceof Error && error.message === 'NOT_FOUND') {
+          return await this.create(req.id);
+        }
+        throw error;
+      }
     } else if (req.cursor && !req.patches) {
       throw new Error('Not implemented: catch up');
     } else {
@@ -260,7 +267,7 @@ export class LevelLocalRepoCore {
   }
 
   public async create(id: BlockId, patches?: Patch[]): Promise<Pick<LocalRepoSyncResponse, 'remote'>> {
-    if (!patches || !patches.length) throw new Error('EMPTY_BATCH');
+    // if (!patches || !patches.length) throw new Error('EMPTY_BATCH');
     const keyBase = await this.blockKeyBase(id);
     const metaKey = keyBase + Defaults.Metadata;
     const meta: BlockMetaValue = {
@@ -308,7 +315,7 @@ export class LevelLocalRepoCore {
       if (tip) {
         const patchTime = tip.getId()?.time ?? 0;
         const patchSpan = tip.span();
-        nextTick = patchTime + patchSpan + 1;
+        nextTick = patchTime + patchSpan + 1; // TODO: Shall we add 1 here?
       }
       const ops: BinStrLevelOperation[] = [];
       const sid = this.sid;
@@ -342,6 +349,8 @@ export class LevelLocalRepoCore {
   public async read(id: BlockId): Promise<LocalRepoSyncResponse> {
     const keyBase = await this.blockKeyBase(id);
     const [[model], frontier] = await Promise.all([this.readModel(keyBase), this.readFrontier0(keyBase)]);
+    const notFound = model.clock.time === 1 && frontier.length === 0;
+    if (notFound) throw new Error('NOT_FOUND');
     model.applyBatch(frontier);
     return {
       model,
@@ -349,7 +358,7 @@ export class LevelLocalRepoCore {
     };
   }
 
-  public listen$(id: BlockId): Observable<LocalRepoBlockEvent> {
+  public listen$(id: BlockId): Observable<LocalRepoBlockEventBase> {
     return this.pubsub.bus$.pipe(
       filter(([topic, data]) => topic === 'change' && deepEqual(id, data.id)),
       map(([, data]) => {
@@ -437,7 +446,7 @@ export class LevelLocalRepoCore {
     return this.opts.remoteTimeout ?? 5000;
   }
 
-  protected async push(id: BlockId): Promise<boolean> {
+  protected async push(id: BlockId, doPull: boolean = false): Promise<boolean> {
     if (!this.connected$.getValue()) throw new Error('DISCONNECTED');
     const keyBase = await this.blockKeyBase(id);
     const remote = this.opts.rpc;
@@ -450,7 +459,7 @@ export class LevelLocalRepoCore {
       ops.push({type: 'del', key});
       patches.push({blob});
     }
-    if (!patches) return false;
+    if (!patches && !doPull) return false;
     // TODO: handle case when this times out, but actually succeeds, so on re-sync it handles the case when the block is already synced.
     return await this.lockBlock(keyBase, async () => {
       return await timeout(this.remoteTimeout(), async () => {

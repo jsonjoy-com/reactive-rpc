@@ -126,4 +126,52 @@ describe('.sync()', () => {
   describe('update', () => {
     test.todo('test merge on create with remote Model already available');
   });
+  
+  describe('read', () => {
+    test('can read own block (same tab)', async () => {
+      const kit = await setup();
+      const schema = s.obj({foo: s.str('bar')});
+      const model = Model.create(schema, kit.sid);
+      const patches = [model.api.flush()];
+      await kit.local.sync({
+        id: kit.blockId,
+        patches: patches,
+      });
+      const {model: model2} = await kit.local.sync({id: kit.blockId});
+      expect(model2?.view()).toEqual({foo: 'bar'});
+    });
+
+    test('can read block created by another tab', async () => {
+      const kit = await setup();
+      const schema = s.obj({foo: s.str('bar')});
+      const model = Model.create(schema, kit.sid);
+      const patches = [model.api.flush()];
+      await kit.local.sync({
+        id: kit.blockId,
+        patches: patches,
+      });
+      const local2 = await kit.createLocal();
+      const {model: model2} = await local2.local.sync({id: kit.blockId});
+      expect(model2?.view()).toEqual({foo: 'bar'});
+    });
+
+    test.only('can read block from remote', async () => {
+      const kit = await setup();
+      const schema = s.obj({foo: s.str('bar')});
+      const model = Model.create(schema, kit.sid);
+      await kit.remote.client.call('block.new', {
+        id: kit.blockId.join('/'),
+        batch: {
+          patches: [{
+            blob: model.api.flush()!.toBinary(),
+          }],
+        }
+      });
+      const {model: model2, pull} = await kit.local.sync({id: kit.blockId});
+      console.log(pull);
+      // expect(model2?.view()).toEqual({foo: 'bar'});
+    });
+
+    test.todo('can read block from remote, but create one locally in the meantime');
+  });
 });

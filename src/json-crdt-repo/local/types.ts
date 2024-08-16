@@ -20,6 +20,8 @@ export interface LocalRepo {
    * Deletes a block (document) from the local repo.
    */
   del(id: BlockId): Promise<void>;
+
+  sub(id: BlockId): Observable<LocalRepoBlockEvent>;
 }
 
 /**
@@ -84,4 +86,25 @@ export interface LocalRepoSyncResponse {
   pull?: Observable<LocalRepoBlockEvent>;
 }
 
-export type LocalRepoBlockEvent = {patches: Patch[]} | {model: Model} | {delete: true};
+export type LocalRepoBlockEvent =
+  | LocalRepoBlockEventLocalPull
+  | LocalRepoBlockEventRemotePull
+  | LocalRepoBlockEventDelete;
+
+/** Another process (tab) has pushed changes. */
+export interface LocalRepoBlockEventLocalPull extends LocalRepoBlockEventBase<'lpull'> {
+  patches: Patch[];
+}
+
+/** New changes were pulled from the remote. */
+export interface LocalRepoBlockEventRemotePull extends LocalRepoBlockEventBase<'rpull'> {
+  patches?: Patch[];
+  model?: Model;
+}
+
+/** The block was deleted. */
+export interface LocalRepoBlockEventDelete extends LocalRepoBlockEventBase<'delete'> {}
+
+export interface LocalRepoBlockEventBase<Type> {
+  type: Type;
+}
