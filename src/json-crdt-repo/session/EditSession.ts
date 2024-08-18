@@ -4,16 +4,20 @@ import {Subject, takeUntil} from 'rxjs';
 import type {BlockId, LocalRepo, LocalRepoChangeEvent} from '../local/types';
 
 export class EditSession {
-  public static readonly open = async (repo: LocalRepo, id: BlockId): Promise<EditSession> => {
-    const res = await repo.sync({id});
-    const start = res.model;
-    if (!start) throw new Error('NO_MODEL');
-    const session = new EditSession(repo, id, start);
-    return session;
-  };
+  // public static readonly open = async (repo: LocalRepo, id: BlockId): Promise<EditSession> => {
+  //   const res = await repo.sync({id});
+  //   const start = res.model;
+  //   if (!start) throw new Error('NO_MODEL');
+  //   const session = new EditSession(repo, id, start);
+  //   return session;
+  // };
 
   public log: Log;
   private _stop$ = new Subject<void>();
+
+  public get model(): Model {
+    return this.log.end;
+  }
 
   constructor(
     public readonly repo: LocalRepo,
@@ -103,10 +107,12 @@ export class EditSession {
    * Save any pending changes to the local repo.
    */
   public async sync(): Promise<null | {remote?: Promise<void>}> {
+    const log = this.log;
+    const api = log.end.api;
+    api.builder.patch.ops.length && api.flush();
     if (this.saveInProgress) return null;
     this.saveInProgress = true;
     try {
-      const log = this.log;
       if (!log.patches.size()) return {};
       const patches: Patch[] = [];
       log.patches.forEach((patch) => {

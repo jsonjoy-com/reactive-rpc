@@ -1,4 +1,5 @@
 import {LevelLocalRepoCore, LevelLocalRepoCoreOpts} from './LevelLocalRepoCore';
+import type {Model} from 'json-joy/lib/json-crdt';
 import type {BlockId, LocalRepo, LocalRepoChangeEvent, LocalRepoSyncRequest, LocalRepoSyncResponse} from '../types';
 import type {Observable} from 'rxjs';
 
@@ -21,6 +22,10 @@ export class LevelLocalRepo implements LocalRepo {
 
   public async sync(request: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
     return await this._core.sync(request);
+  }
+
+  public async get(id: BlockId): Promise<{model: Model}> {
+    return await this._core.read(id);
   }
 
   public async del(id: BlockId): Promise<void> {

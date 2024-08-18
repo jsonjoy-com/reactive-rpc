@@ -351,7 +351,7 @@ export class LevelLocalRepoCore {
     return {remote};
   }
 
-  public async read(id: BlockId): Promise<LocalRepoSyncResponse> {
+  public async read(id: BlockId): Promise<{model: Model}> {
     const keyBase = await this.blockKeyBase(id);
     const [[model], frontier] = await Promise.all([this.readModel(keyBase), this.readFrontier0(keyBase)]);
     const notFound = model.clock.time === 1 && frontier.length === 0;

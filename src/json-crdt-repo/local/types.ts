@@ -17,6 +17,11 @@ export interface LocalRepo {
   sync(request: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse>;
 
   /**
+   * Reads a block (document) from the local repo.
+   */
+  get(id: BlockId): Promise<{model: Model}>;
+
+  /**
    * Deletes a block (document) from the local repo.
    */
   del(id: BlockId): Promise<void>;
