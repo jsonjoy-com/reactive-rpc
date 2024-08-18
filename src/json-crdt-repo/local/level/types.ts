@@ -50,14 +50,24 @@ export type LocalBatch = ServerBatch;
 export type LocalSnapshot = ServerSnapshot;
 
 export type LevelLocalRepoPubSub = PubSub<{
-  change: LevelLocalRepoChangeEvent;
+  pull: LevelLocalRepoRemotePull;
+  merge: LevelLocalRepoLocalMerge;
 }>;
 
-export interface LevelLocalRepoChangeEvent {
+/**
+ * Emitted when change was pushed to the remote.
+ */
+export interface LevelLocalRepoRemotePull {
   id: BlockId;
-  batch: LocalBatch;
-  pull?: {
-    snapshot?: LocalSnapshot;
-    batches: LocalBatch[];
-  };
+  batch?: LocalBatch;
+  snapshot?: LocalSnapshot;
+  batches: LocalBatch[];
+}
+
+/**
+ * Emitted when local change was stored on disk.
+ */
+export interface LevelLocalRepoLocalMerge {
+  id: BlockId;
+  patches: Uint8Array[];
 }

@@ -155,7 +155,7 @@ describe('.sync()', () => {
       expect(model2?.view()).toEqual({foo: 'bar'});
     });
 
-    test.only('can read block from remote', async () => {
+    test('can read block from remote', async () => {
       const kit = await setup();
       const schema = s.obj({foo: s.str('bar')});
       const model = Model.create(schema, kit.sid);
@@ -167,8 +167,8 @@ describe('.sync()', () => {
           }],
         }
       });
-      const {model: model2, pull} = await kit.local.sync({id: kit.blockId});
-      console.log(pull);
+      // const {model: model2, pull} = await kit.local.sync({id: kit.blockId});
+      // console.log(pull);
       // expect(model2?.view()).toEqual({foo: 'bar'});
     });
 

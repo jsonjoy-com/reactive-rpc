@@ -1,4 +1,4 @@
-import {BehaviorSubject, Observable, type Subscription} from 'rxjs';
+import {BehaviorSubject, Observable, Subject, type Subscription} from 'rxjs';
 import {filter, map} from 'rxjs/operators';
 import {gzip, ungzip} from '@jsonjoy.com/util/lib/compression/gzip';
 import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
@@ -10,8 +10,8 @@ import {once} from 'thingies/lib/once';
 import {timeout} from 'thingies/lib/timeout';
 import {pubsub} from '../../pubsub';
 import type {ServerHistory, ServerPatch} from '../../remote/types';
-import type {BlockId, LocalRepoBlockEventBase, LocalRepoSyncRequest, LocalRepoSyncResponse} from '../types';
-import type {BinStrLevel, BinStrLevelOperation, BlockMetaValue, BlockModelMetadata, BlockModelValue, LevelLocalRepoPubSub, LocalBatch, SyncResult} from './types';
+import type {BlockId, LocalRepoChangeEvent, LocalRepoSyncRequest, LocalRepoSyncResponse} from '../types';
+import type {BinStrLevel, BinStrLevelOperation, BlockMetaValue, BlockModelMetadata, BlockModelValue, LevelLocalRepoLocalMerge, LevelLocalRepoPubSub, LevelLocalRepoRemotePull, LocalBatch, SyncResult} from './types';
 import type {CrudLocalRepoCipher} from './types';
 import type {Locks} from 'thingies/lib/Locks';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
@@ -309,6 +309,7 @@ export class LevelLocalRepoCore {
   public async rebaseAndMerge(id: BlockId, patches?: Patch[]): Promise<Pick<LocalRepoSyncResponse, 'remote'>> {
     const keyBase = await this.blockKeyBase(id);
     if (!patches || !patches.length) throw new Error('EMPTY_BATCH');
+    const rebasedPatches: Uint8Array[] = [];
     await this.lockBlock(keyBase, async () => {
       let nextTick = 0;
       const tip = await this.readFrontierTip(keyBase);
@@ -332,10 +333,12 @@ export class LevelLocalRepoCore {
           nextTick = rebased.getId()!.time + rebased.span();
         }
         const patchKey = this.frontierKey(keyBase, rebased.getId()!.time);
+        const uint8 = rebased.toBinary();
+        rebasedPatches.push(uint8);
         const op: BinStrLevelOperation = {
           type: 'put',
           key: patchKey,
-          value: rebased.toBinary(),
+          value: uint8,
         };
         ops.push(op);
       }
@@ -343,6 +346,8 @@ export class LevelLocalRepoCore {
     });
     const remote = this.markDirtyAndSync(id).then(() => {});
     remote.catch(() => {});
+    if (rebasedPatches.length)
+      this.pubsub.pub(['merge', {id, patches: rebasedPatches}]);
     return {remote};
   }
 
@@ -352,28 +357,39 @@ export class LevelLocalRepoCore {
     const notFound = model.clock.time === 1 && frontier.length === 0;
     if (notFound) throw new Error('NOT_FOUND');
     model.applyBatch(frontier);
-    return {
-      model,
-      pull: this.listen$(id),
-    };
+    return {model};
   }
 
-  public listen$(id: BlockId): Observable<LocalRepoBlockEventBase> {
+  public change$(id: BlockId): Observable<LocalRepoChangeEvent> {
     return this.pubsub.bus$.pipe(
-      filter(([topic, data]) => topic === 'change' && deepEqual(id, data.id)),
-      map(([, data]) => {
-        const {batch, pull} = data;
-        const patches: Patch[] = [];
-        if (pull) for (const b of pull.batches) for (const p of b.patches) patches.push(Patch.fromBinary(p.blob));
-        for (const p of batch.patches) patches.push(Patch.fromBinary(p.blob));
-        if (pull && pull.snapshot) {
-          const model = Model.load(pull.snapshot.blob, this.sid);
-          model.applyBatch(patches);
-          return {model};
+      map(([topic, data]) => {
+        switch (topic) {
+          case 'merge': {
+            if (!deepEqual(id, data.id)) return;
+            const rebase: Patch[] = [];
+            for (const blob of (<LevelLocalRepoLocalMerge>data).patches) rebase.push(Patch.fromBinary(blob));
+            const event: LocalRepoChangeEvent = {rebase};
+            return event;
+          }
+          case 'pull': {
+            if (!deepEqual(id, data.id)) return;
+            const {batch, batches, snapshot} = data as LevelLocalRepoRemotePull;
+            const rebase: Patch[] = [];
+            const event: LocalRepoChangeEvent = {rebase};
+            if (batches) for (const b of batches) for (const p of b.patches) rebase.push(Patch.fromBinary(p.blob));
+            if (snapshot) {
+              const reset = Model.load(snapshot.blob, this.sid);
+              if (batch) for (const p of batch.patches) reset.applyPatch(Patch.fromBinary(p.blob));
+              reset.applyBatch(rebase);
+              event.reset = reset;
+            }
+            return event;
+          }
         }
-        return {patches};
+        return;
       }),
-    )
+      filter(event => !!event),
+    );
   }
 
   protected async readMeta(keyBase: string): Promise<BlockMetaValue> {
@@ -534,7 +550,15 @@ export class LevelLocalRepoCore {
         });
         // Persist and wrap up
         await this.kv.batch(ops);
-        this.pubsub.pub(['change', {id, batch, pull}])
+        if (pull) {
+          const data: LevelLocalRepoRemotePull = {
+            id,
+            batch,
+            batches: pull.batches,
+            snapshot: pull.snapshot
+          };
+          this.pubsub.pub(['pull', data]);
+        }
         return true;
       });
     });

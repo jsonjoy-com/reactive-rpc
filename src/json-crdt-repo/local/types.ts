@@ -21,7 +21,12 @@ export interface LocalRepo {
    */
   del(id: BlockId): Promise<void>;
 
-  sub(id: BlockId): Observable<LocalRepoBlockEvent>;
+  /**
+   * Emits an event every time a block is updated.
+   * 
+   * @param id Unique ID of the block.
+   */
+  change$(id: BlockId): Observable<LocalRepoChangeEvent>;
 }
 
 /**
@@ -76,35 +81,39 @@ export interface LocalRepoSyncResponse {
    * synchronized with the server or remote peers.
    */
   remote?: Promise<void>;
+}
+
+/**
+ * The change event. It is emitted every time a block is updated, either by
+ * the local client or by a remote client. It contains various types of changes
+ * that can be applied to the local editing session.
+ */
+export interface LocalRepoChangeEvent {
+  /**
+   * List of patches that the client should apply to the local editing session.
+   * They can be applied "on top" of the current editing session state, without
+   * the need to reset or rebase the editing session.
+   */
+  merge?: Patch[];
 
   /**
-   * Subscription to the latest changes in the block. The subscription
-   * emits `patches` when new changes are received from other clients. If the
-   * `model` is set, the client should reset its state to the new `Model`
-   * (happens when too many patches are received).
+   * List of patches that the client should rebase its editing session on top
+   * of. The rebase patches usually result from the changes happening in another
+   * local editing session, for example, another tab. This is because the tabs
+   * reuse the same session ID, hence, for the timestamps to be unique, the
+   * timestamps of the in-progress editing session are "rebased".
+   * 
+   * In practice, this should almost never happen, as by the time the user
+   * switches tabs, the changes are already synchronized.
    */
-  pull?: Observable<LocalRepoBlockEvent>;
-}
+  rebase?: Patch[];
 
-export type LocalRepoBlockEvent =
-  | LocalRepoBlockEventLocalPull
-  | LocalRepoBlockEventRemotePull
-  | LocalRepoBlockEventDelete;
-
-/** Another process (tab) has pushed changes. */
-export interface LocalRepoBlockEventLocalPull extends LocalRepoBlockEventBase<'lpull'> {
-  patches: Patch[];
-}
-
-/** New changes were pulled from the remote. */
-export interface LocalRepoBlockEventRemotePull extends LocalRepoBlockEventBase<'rpull'> {
-  patches?: Patch[];
-  model?: Model;
-}
-
-/** The block was deleted. */
-export interface LocalRepoBlockEventDelete extends LocalRepoBlockEventBase<'delete'> {}
-
-export interface LocalRepoBlockEventBase<Type> {
-  type: Type;
+  /**
+   * The new model snapshot that the client should reset its editing session to.
+   * This happens when the changes are too large to be sent as patches, or when
+   * the changes are too many and the client should reset its editing session
+   * to the new state. When resetting, the client might still need to apply
+   * `merge` and `rebase` patches on top of the new model.
+   */
+  reset?: Model;
 }

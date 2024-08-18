@@ -1,5 +1,5 @@
 import {LevelLocalRepoCore, LevelLocalRepoCoreOpts} from './LevelLocalRepoCore';
-import type {BlockId, LocalRepo, LocalRepoBlockEventBase, LocalRepoSyncRequest, LocalRepoSyncResponse} from '../types';
+import type {BlockId, LocalRepo, LocalRepoChangeEvent, LocalRepoSyncRequest, LocalRepoSyncResponse} from '../types';
 import type {Observable} from 'rxjs';
 
 export interface LevelLocalRepoOpts extends LevelLocalRepoCoreOpts {}
@@ -27,7 +27,7 @@ export class LevelLocalRepo implements LocalRepo {
     throw new Error('Method not implemented.');
   }
 
-  public sub(id: BlockId): Observable<LocalRepoBlockEventBase> {
-    return this._core.listen$(id);
+  public change$(id: BlockId): Observable<LocalRepoChangeEvent> {
+    return this._core.change$(id);
   }
 }
