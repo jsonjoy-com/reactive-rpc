@@ -360,6 +360,15 @@ export class LevelLocalRepoCore {
     return {model};
   }
 
+  public del$(id: BlockId): Observable<void> {
+    const blockId = id.join('/');
+    return this.opts.rpc.listen(blockId)
+      .pipe(
+        filter(({event}) => event[0] === 'del'),
+        map(() => void 0),
+      );
+  }
+
   public change$(id: BlockId): Observable<LocalRepoChangeEvent> {
     return this.pubsub.bus$.pipe(
       map(([topic, data]) => {
@@ -374,19 +383,18 @@ export class LevelLocalRepoCore {
           case 'pull': {
             if (!deepEqual(id, data.id)) return;
             const {batch, batches, snapshot} = data as LevelLocalRepoRemotePull;
-            const rebase: Patch[] = [];
-            const event: LocalRepoChangeEvent = {rebase};
-            if (batches) for (const b of batches) for (const p of b.patches) rebase.push(Patch.fromBinary(p.blob));
+            const merge: Patch[] = [];
+            const event: LocalRepoChangeEvent = {merge};
+            if (batches) for (const b of batches) for (const p of b.patches) merge.push(Patch.fromBinary(p.blob));
             if (snapshot) {
               const reset = Model.load(snapshot.blob, this.sid);
               if (batch) for (const p of batch.patches) reset.applyPatch(Patch.fromBinary(p.blob));
-              reset.applyBatch(rebase);
+              reset.applyBatch(merge);
               event.reset = reset;
             }
             return event;
           }
         }
-        return;
       }),
       filter(event => !!event),
     );
@@ -490,6 +498,7 @@ export class LevelLocalRepoCore {
         let model = read[0][0];
         const lastKnownSeq = modelMeta[0];
         const response = await remote.update(remoteId, {patches}, lastKnownSeq);
+        // TODO: handle case when block is deleted on the server.
         // Process pull
         const pull = response.pull;
         if (pull) {

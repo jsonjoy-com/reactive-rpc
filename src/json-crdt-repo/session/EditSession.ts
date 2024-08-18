@@ -1,7 +1,7 @@
 import {Log} from 'json-joy/lib/json-crdt/log/Log';
 import {Model, Patch} from 'json-joy/lib/json-crdt';
-import {Subscription} from 'rxjs';
-import type {BlockId, LocalRepo, LocalRepoBlockEvent} from '../local/types';
+import {Subject, takeUntil} from 'rxjs';
+import type {BlockId, LocalRepo, LocalRepoChangeEvent} from '../local/types';
 
 export class EditSession {
   public static readonly open = async (repo: LocalRepo, id: BlockId): Promise<EditSession> => {
@@ -13,7 +13,7 @@ export class EditSession {
   };
 
   public log: Log;
-  protected readonly _sub: Subscription;
+  private _stop$ = new Subject<void>();
 
   constructor(
     public readonly repo: LocalRepo,
@@ -21,16 +21,21 @@ export class EditSession {
     protected start: Model,
   ) {
     this.log = new Log(() => this.start.clone());
-    this._sub = this.repo.sub(this.id).subscribe(this.onEvent);
+    this.repo.change$(this.id)
+      .pipe(takeUntil(this._stop$))
+      .subscribe(this.onEvent);
+    this.repo.del$(this.id)
+      .pipe(takeUntil(this._stop$))
+      .subscribe(() => this.clear());
   }
 
   public dispose(): void {
-    this._sub.unsubscribe();
+    this._stop$.next();
   }
 
-  private events: LocalRepoBlockEvent[] = [];
+  private events: LocalRepoChangeEvent[] = [];
 
-  private onEvent = (event: LocalRepoBlockEvent): void => {
+  private onEvent = (event: LocalRepoChangeEvent): void => {
     this.events.push(event);
     this.drainEvents();
   };
@@ -39,33 +44,24 @@ export class EditSession {
     if (this.saveInProgress) return;
     const events = this.events;
     const length = events.length;
-    for (let i = 0; i < length; i++) this.processEvent(events[i]);
+    for (let i = 0; i < length; i++) this.processChange(events[i]);
     this.events = [];
   }
 
-  private processEvent(event: LocalRepoBlockEvent): void {
-    switch (event.type) {
-      case 'lpull': {
-        this.rebase(event.patches);
-        break;
-      }
-      case 'rpull': {
-        const model = event.model;
-        if (model) this.reset(model);
-        const patches = event.patches;
-        if (patches) this.apply(patches);
-        break;
-      }
-      case 'delete': {
-        this.clear();
-        break;
-      }
-    }
+  private processChange({reset, rebase, merge}: LocalRepoChangeEvent): void {
+    if (reset) this.reset(reset);
+    if (rebase && rebase.length) this.rebase(rebase);
+    if (merge && merge.length) this.merge(merge);
   }
 
-  protected apply(patches: Patch[]): void {
-    this.log.end.applyBatch(patches);
-    this.start.applyBatch(patches);
+  protected reset(model: Model): void {
+    this.start = model.clone();
+    const log = this.log;
+    const end = log.end;
+    // TODO: Remove this condition, make flush always safe to call.
+    if (end.api.builder.patch.ops.length) end.api.flush();
+    end.reset(model);
+    log.patches.forEach((patch) => end.applyPatch(patch.v));
   }
 
   protected rebase(patches: Patch[]): void {
@@ -88,14 +84,9 @@ export class EditSession {
     log.end.reset(newEnd);
   }
 
-  protected reset(model: Model): void {
-    this.start = model.clone();
-    const log = this.log;
-    const end = log.end;
-    // TODO: Remove this condition, make flush always safe to call.
-    if (end.api.builder.patch.ops.length) end.api.flush();
-    end.reset(model);
-    log.patches.forEach((patch) => end.applyPatch(patch.v));
+  protected merge(patches: Patch[]): void {
+    this.log.end.applyBatch(patches);
+    this.start.applyBatch(patches);
   }
 
   protected clear(): void {
@@ -121,10 +112,8 @@ export class EditSession {
       log.patches.forEach((patch) => {
         patches.push(patch.v);
       });
-      // TODO: After async call check that sync state is still valid.
+      // TODO: After async call check that sync state is still valid. New patches, might have been added.
       const res = await this.repo.sync({id: this.id, patches});
-      if (res.rebase) this.rebase(res.rebase);
-      else if (res.model) this.reset(res.model);
       return {remote: res.remote};
     } finally {
       this.saveInProgress = false;

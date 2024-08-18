@@ -22,6 +22,13 @@ export interface LocalRepo {
   del(id: BlockId): Promise<void>;
 
   /**
+   * Emits an event when the block is deleted.
+   *
+   * @param id Unique ID of the block.
+   */
+  del$(id: BlockId): Observable<void>;
+
+  /**
    * Emits an event every time a block is updated.
    * 
    * @param id Unique ID of the block.

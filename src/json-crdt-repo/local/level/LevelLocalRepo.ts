@@ -27,6 +27,10 @@ export class LevelLocalRepo implements LocalRepo {
     throw new Error('Method not implemented.');
   }
 
+  public del$(id: BlockId): Observable<void> {
+    return this._core.del$(id);
+  }
+
   public change$(id: BlockId): Observable<LocalRepoChangeEvent> {
     return this._core.change$(id);
   }
