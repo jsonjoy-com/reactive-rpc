@@ -3,9 +3,13 @@ import {EditSessionFactory} from '../EditSessionFactory';
 
 export const setup = async () => {
   const kit = await setupLocalLevel();
-  const sessions = new EditSessionFactory({
-    sid: kit.sid,
-    repo: kit.local,
-  });
-  return {...kit, sessions};
+  const createSessions = async (local = kit) => {
+    const sessions = new EditSessionFactory({
+      sid: local.sid,
+      repo: local.local,
+    });
+    return {local, sessions};
+  };
+  const {sessions} = await createSessions();
+  return {...kit, createSessions, sessions};
 };

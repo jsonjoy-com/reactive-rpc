@@ -38,12 +38,10 @@ export class PubSubBC<Events> extends PubSubM<Events> {
   }
 
   public end(): void {
-    super.end();
     this.ch.close();
+    super.end();
   }
 }
-
-const hasBC = typeof BroadcastChannel !== 'undefined';
 
 /** Cache of global in-memory pubsub instances. */
 const memoryCache: Record<string, PubSubM<unknown>> = {};
@@ -55,4 +53,6 @@ const memoryCache: Record<string, PubSubM<unknown>> = {};
  * @returns A PubSub instance that publishes messages to the specified bus.
  */
 export const pubsub = <Events>(bus: string): PubSub<Events> =>
-  hasBC ? new PubSubBC<Events>(bus) : (<any>memoryCache[bus]) || ((<any>memoryCache[bus]) = new PubSubM<Events>());
+  typeof BroadcastChannel !== 'undefined'
+    ? new PubSubBC<Events>(bus)
+    : (<any>memoryCache[bus]) || ((<any>memoryCache[bus]) = new PubSubM<Events>());
