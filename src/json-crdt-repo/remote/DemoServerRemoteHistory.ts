@@ -1,7 +1,5 @@
 import {CallerToMethods, TypedRpcClient} from '../../common';
-import {share, Subject, takeUntil} from 'rxjs';
-import {tapSubscriberCount} from '../../util/rx/tapSubscriberCount';
-import type {Observable} from 'rxjs';
+import {shareByKey} from '../../util/rx/tapSubscriberCount';
 import type {JsonJoyDemoRpcCaller} from '../../__demos__/json-crdt-server';
 import type {ServerBlock, ServerSnapshot, ServerPatch, ServerCursor, ServerHistory, ServerBatch, ServerEvent} from './types';
 
@@ -86,25 +84,5 @@ export class DemoServerRemoteHistory implements ServerHistory {
     return res;
   }
 
-
-  private readonly _listen: Record<string, Observable<{event: DemoServerEvent}>> = {};
-
-  public listen(id: string): Observable<{event: DemoServerEvent}> {
-    let observable = this._listen[id];
-    if (observable) return observable;
-    const stop$ = new Subject<void>();
-    observable = this.client.call$('block.listen', {id})
-      .pipe(
-        takeUntil(stop$),
-        share(),
-        tapSubscriberCount((count, oldCount) => {
-          if (count === 0 && oldCount === 1) {
-            stop$.next();
-            delete this._listen[id];
-          }
-        }),
-      );
-    this._listen[id] = observable;
-    return observable;
-  }
+  public readonly listen = shareByKey((id: string) => this.client.call$('block.listen', {id}));
 }

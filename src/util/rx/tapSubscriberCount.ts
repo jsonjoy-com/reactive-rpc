@@ -1,4 +1,4 @@
-import { Observable, OperatorFunction, Subscriber } from 'rxjs';
+import { Observable, OperatorFunction, share, Subject, Subscriber, takeUntil } from 'rxjs';
 
 export const tapSubscriberCount = <TValue>(listener: (newCount: number, oldCount: number) => void): OperatorFunction<TValue, TValue> => {
   return (source$) => {
@@ -15,5 +15,27 @@ export const tapSubscriberCount = <TValue>(listener: (newCount: number, oldCount
         listener(newCount, oldCount);
       };
     });
+  };
+};
+
+export const shareByKey = <TValue>(sub: (key: string) => Observable<TValue>): ((key: string) => Observable<TValue>) => {
+  const map: Record<string, Observable<TValue>> = {};
+  return (key: string) => {
+    let observable = map[key];
+    if (observable) return observable;
+    const stop$ = new Subject<void>();
+    observable = sub(key)
+      .pipe(
+        takeUntil(stop$),
+        share(),
+        tapSubscriberCount((count, oldCount) => {
+          if (count === 0 && oldCount === 1) {
+            stop$.next();
+            delete map[key];
+          }
+        }),
+      );
+    map[key] = observable;
+    return observable;
   };
 };
