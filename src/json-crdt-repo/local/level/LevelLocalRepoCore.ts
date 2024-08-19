@@ -16,6 +16,12 @@ import type {CrudLocalRepoCipher} from './types';
 import type {Locks} from 'thingies/lib/Locks';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
 
+/**
+ * @todo
+ * 
+ * 1. Implement pull loop, when WebSocket subscription cannot be established.
+ */
+
 const enum Defaults {
   /**
    * The root of the block repository.
@@ -266,6 +272,12 @@ export class LevelLocalRepoCore {
     }
   }
 
+  protected async _exists(keyBase: string): Promise<boolean> {
+    const metaKey = keyBase + Defaults.Metadata;
+    const exists = (await this.kv.keys({gte: metaKey, lte: metaKey, limit: 1}).all()).length > 0;
+    return exists;
+  }
+
   public async create(id: BlockId, patches?: Patch[]): Promise<Pick<LocalRepoSyncResponse, 'remote'>> {
     // if (!patches || !patches.length) throw new Error('EMPTY_BATCH');
     const keyBase = await this.blockKeyBase(id);
@@ -297,7 +309,7 @@ export class LevelLocalRepoCore {
       }
     }
     await this.lockBlock(keyBase, async () => {
-      const exists = (await this.kv.keys({gte: metaKey, lte: metaKey, limit: 1}).all()).length > 0;
+      const exists = await this._exists(keyBase);
       if (exists) throw new Error('EXISTS');
       await this.kv.batch(ops);
     });
@@ -349,6 +361,60 @@ export class LevelLocalRepoCore {
     if (rebasedPatches.length)
       this.pubsub.pub(['merge', {id, patches: rebasedPatches}]);
     return {remote};
+  }
+
+  public async get(id: BlockId): Promise<{model: Model}> {
+    try {
+      return await this.read(id);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'NOT_FOUND')
+          return await this.load(id);
+      throw error;
+    }
+  }
+
+  protected async load(id: BlockId): Promise<{model: Model}> {
+    const blockId = id.join('/');
+    const res = await this.opts.rpc.read(blockId);
+    const block = res.block;
+    const snapshot = block.snapshot;
+    const seq = snapshot.seq;
+    const sid = this.sid;
+    const model = Model.load(snapshot.blob, sid);
+    for (const batch of block.tip)
+      for (const patch of batch.patches)
+        model.applyPatch(Patch.fromBinary(patch.blob));
+    const keyBase = await this.blockKeyBase(id);
+    const metaKey = keyBase + Defaults.Metadata;
+    const meta: BlockMetaValue = {
+      time: -1,
+      ts: Date.now(),
+    };
+    const modelBlob = model.toBinary();
+    const modelTuple: BlockModelValue = [[seq], modelBlob];
+    const [metaBlob, modelTupleBlob] = await Promise.all([
+      this.encode(meta, false),
+      this.encode(modelTuple, true),
+    ]);
+    const ops: BinStrLevelOperation[] = [
+      {
+        type: 'put',
+        key: metaKey,
+        value: metaBlob,
+      },
+      {
+        type: 'put',
+        key: keyBase + Defaults.Model,
+        value: modelTupleBlob,
+      },
+    ];
+    await this.lockBlock(keyBase, async () => {
+      const exists = await this._exists(keyBase);
+      if (exists) throw new Error('EXISTS');
+      await this.kv.batch(ops);
+    });
+    this.pubsub.pub(['pull', {id, batches: [], snapshot: {seq, blob: modelBlob}}])
+    return {model};
   }
 
   public async read(id: BlockId): Promise<{model: Model}> {

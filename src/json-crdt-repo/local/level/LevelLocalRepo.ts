@@ -25,7 +25,7 @@ export class LevelLocalRepo implements LocalRepo {
   }
 
   public async get(id: BlockId): Promise<{model: Model}> {
-    return await this._core.read(id);
+    return await this._core.get(id);
   }
 
   public async del(id: BlockId): Promise<void> {
