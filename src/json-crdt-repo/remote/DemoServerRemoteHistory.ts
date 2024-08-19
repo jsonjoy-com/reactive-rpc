@@ -1,5 +1,5 @@
 import {CallerToMethods, TypedRpcClient} from '../../common';
-import {shareByKey} from '../../util/rx/tapSubscriberCount';
+import {shareByKey} from '../../util/rx/shareByKey';
 import type {JsonJoyDemoRpcCaller} from '../../__demos__/json-crdt-server';
 import type {ServerBlock, ServerSnapshot, ServerPatch, ServerCursor, ServerHistory, ServerBatch, ServerEvent} from './types';
 
