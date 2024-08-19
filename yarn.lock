@@ -2020,10 +2020,10 @@ jsesc@^2.5.1:
   resolved "https://registry.yarnpkg.com/jsesc/-/jsesc-2.5.2.tgz#80564d2e483dacf6e8ef209650a67df3f0c283a4"
   integrity sha512-OYu7XEzjkCQ3C5Ps3QIZsQfNpqoJyZZA99wd9aWd05NCtC5pWOkShK2mkL6HXQR6/Cy2lbNdPlZBpuQHXE63gA==
 
-json-joy@^16.23.0:
-  version "16.23.0"
-  resolved "https://registry.yarnpkg.com/json-joy/-/json-joy-16.23.0.tgz#c792cf90bc2efe278cc97bf3238c23d2fc8bb3fe"
-  integrity sha512-a4myPyP7xzI29xdDKZrwXg66kdRDkQFl2r1yXGB8q/1Y5sJ+aZ9tmpNYf9RKd71hRi1UfhFE/LIrlwE0VRaHnw==
+json-joy@^16.23.1:
+  version "16.23.1"
+  resolved "https://registry.yarnpkg.com/json-joy/-/json-joy-16.23.1.tgz#d2bb3bf27109fd61f3925b05db633afc978e331a"
+  integrity sha512-81xDwbj8WzVkzfIuHyYDprmdRYVoVAaVuweGsTULsj2rxpfbEglL8f619mwWxQuGNozPiDdjWzJavASbFT69NQ==
   dependencies:
     arg "^5.0.2"
     hyperdyperid "^1.2.0"
