@@ -167,6 +167,19 @@ export class BlocksServices {
     return {batches};
   }
 
+  public async pull(id: string, lastKnownSeq: number): Promise<{batches: StoreBatch[], snapshot?: StoreSnapshot}> {
+    const {store} = this;
+    if (typeof lastKnownSeq !== 'number' || lastKnownSeq !== Math.round(lastKnownSeq) || lastKnownSeq < -1) throw RpcError.validation('INVALID_SEQ');
+    const seq = await store.seq(id);
+    if (seq === undefined) throw RpcError.notFound();
+    if (lastKnownSeq > seq) throw RpcError.validation('SEQ_TOO_HIGH');
+    if (lastKnownSeq === seq) return {batches: []};
+    const delta = seq - lastKnownSeq;
+    if (lastKnownSeq === -1 || delta > 100) return await store.getSnapshot(id, seq);
+    const batches = await store.scan(id, lastKnownSeq + 1, seq);
+    return {batches};
+  }
+
   public async edit(id: string, batch: StoreIncomingBatch, createIfNotExists: boolean) {
     if (createIfNotExists) {
       const exists = await this.store.exists(id);

@@ -95,7 +95,7 @@ export class LevelStore implements types.Store {
       const keys = await this.kv.keys({lt: base + '~', limit: 1, reverse: true}).all();
       if (!keys || keys.length < 1) return;
       const key = keys[0];
-      const seq = +key.slice(base.length);
+      const seq = parseInt(key.slice(base.length), 36);
       return seq;
     });
   }

@@ -630,6 +630,63 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
       test.todo('can retrieve change history when it was compacted');
     });
 
+    describe('block.pull', () => {
+      test('can pull latest changes', async () => {
+        const {call, stop} = await setup();
+        const id = getId();
+        const model = Model.create();
+        const patches: Patch[] = [];
+        model.api.root({
+          text: 'Hell',
+        });
+        const patch = model.api.flush();
+        patches.push(patch);
+        await call('block.new', {
+          id,
+          batch: {
+            patches: [
+              {
+                blob: patch.toBinary(),
+              },
+            ],
+          },
+        });
+        const setX = async (x: number) => {
+          model.api.obj([]).set({x});
+          const patch = model.api.flush();
+          patches.push(patch);
+          await call('block.upd', {
+            id,
+            batch: {
+              patches: [
+                {
+                  blob: patch.toBinary(),
+                },
+              ],
+            },
+          });
+        };
+        for (let i = 1; i <= 150; i++) await setX(i);
+        const block = await call('block.get', {id});
+        const model2 = Model.load(block.block.snapshot.blob);
+        expect(model2.view()).toStrictEqual({text: 'Hell', x: 150});
+        const assertPull = async (seq: number) => {
+          const pull = await call('block.pull', {id, seq});
+          const model = pull.snapshot ? Model.load(pull.snapshot.blob) : Model.create();
+          for (let i = 0; i <= seq; i++) model.applyPatch(patches[i]);
+          for (const batch of pull.batches) {
+            for (const p of batch.patches) {
+              const patch = Patch.fromBinary(p.blob);
+              model.applyPatch(patch);
+            }
+          }
+          expect(model.view()).toStrictEqual({text: 'Hell', x: 150});
+        };
+        for (let i = -1; i <= 150; i++) await assertPull(i);
+        await stop();
+      }, 20000);
+    });
+
     describe('block.get', () => {
       test('can load a block', async () => {
         const {call, stop} = await setup();

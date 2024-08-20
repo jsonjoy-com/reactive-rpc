@@ -22,6 +22,7 @@ import {
   Block,
 } from './schema';
 import type {RouteDeps, Router, RouterBase} from '../types';
+import {pull} from './methods/pull';
 
 export const block =
   (d: RouteDeps) =>
@@ -56,5 +57,6 @@ export const block =
     ( del(d)
     ( listen(d)
     ( scan(d)
-    ( r )))))))));
+    ( pull(d)
+    ( r ))))))))));
   };
