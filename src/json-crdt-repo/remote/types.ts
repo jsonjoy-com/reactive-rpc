@@ -42,6 +42,18 @@ export interface RemoteHistory<
   read(id: string): Promise<{block: Block}>;
 
   /**
+   * Catch up with the latest changes of the block. Returns the batch list
+   * necessary to apply to the block to get the latest state. Or, might return
+   * the latest snapshot of the block, if the history is too. The batch list
+   * might be non-empty, even if the snapshot is returned, in case the snapshot
+   * is not up-to-date.
+   *
+   * @param id ID of the block.
+   * @param seq The cursor of the last known model state of the block.
+   */
+  pull(id: string, seq: Cursor): Promise<{batches: Batch[]; snapshot?: Snapshot}>;
+
+  /**
    * Load block history going forward from the given cursor. This method is
    * useful to fetch the latest patches that have been applied to the block
    * by other clients.

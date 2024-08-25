@@ -19,6 +19,13 @@ export class DemoServerRemoteHistory implements ServerHistory {
     return await this.client.call('block.get', {id});
   }
 
+  public async pull(id: string, seq: Cursor = -1): Promise<{
+    batches: DemoServerBatch[];
+    snapshot?: DemoServerSnapshot;
+  }> {
+    return await this.client.call('block.pull', {id, seq});
+  }
+
   public async create(
     id: string,
     batch?: Pick<DemoServerBatch, 'patches'>,

@@ -4,14 +4,6 @@ import {Subject, takeUntil} from 'rxjs';
 import type {BlockId, LocalRepo, LocalRepoChangeEvent} from '../local/types';
 
 export class EditSession {
-  // public static readonly open = async (repo: LocalRepo, id: BlockId): Promise<EditSession> => {
-  //   const res = await repo.sync({id});
-  //   const start = res.model;
-  //   if (!start) throw new Error('NO_MODEL');
-  //   const session = new EditSession(repo, id, start);
-  //   return session;
-  // };
-
   public log: Log;
   private _stop$ = new Subject<void>();
 

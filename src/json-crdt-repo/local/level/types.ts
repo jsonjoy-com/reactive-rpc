@@ -51,7 +51,9 @@ export type LocalSnapshot = ServerSnapshot;
 
 export type LevelLocalRepoPubSub = PubSub<{
   pull: LevelLocalRepoRemotePull;
-  merge: LevelLocalRepoLocalMerge;
+  reset: LevelLocalRepoRemoteReset;
+  merge: LevelLocalRepoRemoteMerge;
+  rebase: LevelLocalRepoLocalRebase;
 }>;
 
 /**
@@ -64,10 +66,20 @@ export interface LevelLocalRepoRemotePull {
   batches: LocalBatch[];
 }
 
+export interface LevelLocalRepoRemoteReset {
+  id: BlockId;
+  model: Uint8Array;
+}
+
+export interface LevelLocalRepoRemoteMerge {
+  id: BlockId;
+  patches: Uint8Array[];
+}
+
 /**
  * Emitted when local change was stored on disk.
  */
-export interface LevelLocalRepoLocalMerge {
+export interface LevelLocalRepoLocalRebase {
   id: BlockId;
   patches: Uint8Array[];
 }

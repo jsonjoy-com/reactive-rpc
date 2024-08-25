@@ -1,5 +1,6 @@
 import {Model} from 'json-joy/lib/json-crdt';
 import {setup} from './setup';
+import {tick} from 'thingies';
 
 test('can synchronously create an editing session', async () => {
   const kit = await setup();
@@ -49,6 +50,19 @@ test('can load an existing block (created remotely)', async () => {
   const patch = model.api.flush();
   await kit.remote.remote.create(kit.blockId.join('/'), {patches: [{blob: patch.toBinary()}]});
   const session = await kit.sessions.load(kit.blockId);
+  expect(session.model.view()).toEqual({foo: 'bar'});
+  session.dispose();
+  await kit.stop();
+});
+
+test('can create concurrently already existing block on remote', async () => {
+  const kit = await setup();
+  const model = Model.create(undefined, kit.sid);
+  model.api.root({foo: 'bar'});
+  const patch = model.api.flush();
+  await kit.remote.remote.create(kit.blockId.join('/'), {patches: [{blob: patch.toBinary()}]});
+  const session = await kit.sessions.make(kit.blockId);
+  await tick(1232);
   expect(session.model.view()).toEqual({foo: 'bar'});
   session.dispose();
   await kit.stop();
