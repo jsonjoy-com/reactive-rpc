@@ -1,15 +1,12 @@
 import type {AbstractBatchOperation, AbstractLevel} from 'abstract-level';
 import type {BlockId} from '../types';
 import type {ServerBatch, ServerSnapshot} from '../../remote/types';
-import {PubSub} from '../../pubsub';
+import type {PubSub} from '../../pubsub';
 
 export type BinStrLevel = AbstractLevel<any, string, Uint8Array>;
 export type BinStrLevelOperation = AbstractBatchOperation<BinStrLevel, string, Uint8Array>;
 
-export type BlockModelValue = [
-  meta: BlockModelMetadata,
-  model: Uint8Array,
-];
+export type BlockModelValue = [meta: BlockModelMetadata, model: Uint8Array];
 
 export type BlockModelMetadata = [
   /**
@@ -49,45 +46,33 @@ export type SyncResult = [block: BlockId, success: boolean, err?: Error | unknow
 export type LocalBatch = ServerBatch;
 export type LocalSnapshot = ServerSnapshot;
 
-export type LevelLocalRepoPubSub = PubSub<{
-  pull: LevelLocalRepoRemotePull;
-  reset: LevelLocalRepoRemoteReset;
-  merge: LevelLocalRepoRemoteMerge;
-  rebase: LevelLocalRepoLocalRebase;
-  del: LevelLocalRepoDelete;
-}>;
+export type LevelLocalRepoPubSub = PubSub<LevelLocalRepoPubSubMessage>;
 
-/**
- * Emitted when change was pushed to the remote.
- */
-export interface LevelLocalRepoRemotePull {
-  id: BlockId;
-  batch?: LocalBatch;
-  snapshot?: LocalSnapshot;
-  batches: LocalBatch[];
-}
+export type LevelLocalRepoPubSubMessage =
+  | LevelLocalRepoPubSubMessageRemoteReset
+  | LevelLocalRepoPubSubMessageRemoteMerge
+  | LevelLocalRepoPubSubMessageLocalRebase
+  | LevelLocalRepoPubSubMessageDelete;
 
-export interface LevelLocalRepoRemoteReset {
+export interface LevelLocalRepoPubSubMessageRemoteReset {
+  type: 'reset';
   id: BlockId;
   model: Uint8Array;
 }
 
-export interface LevelLocalRepoRemoteMerge {
+export interface LevelLocalRepoPubSubMessageRemoteMerge {
+  type: 'merge';
   id: BlockId;
   patches: Uint8Array[];
 }
 
-/**
- * Emitted when local change was stored on disk.
- */
-export interface LevelLocalRepoLocalRebase {
+export interface LevelLocalRepoPubSubMessageLocalRebase {
+  type: 'rebase';
   id: BlockId;
   patches: Uint8Array[];
 }
 
-/**
- * Emitted when block was deleted.
- */
-export interface LevelLocalRepoDelete {
+export interface LevelLocalRepoPubSubMessageDelete {
+  type: 'del';
   id: BlockId;
 }

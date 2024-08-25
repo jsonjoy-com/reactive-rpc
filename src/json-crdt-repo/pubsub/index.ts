@@ -1,21 +1,13 @@
-import {filter} from 'rxjs/operators';
 import {Subject} from 'rxjs';
-import type {Observable} from 'rxjs';
-import type {Message, MessageLocal, MessageRemote, PubSub} from './types';
+import type {PubSub} from './types';
 
 export type * from './types';
 
-export class PubSubM<Events> implements PubSub<Events> {
-  public readonly bus$ = new Subject<Message<keyof Events, Events[keyof Events]>>();
+export class PubSubM<Message> implements PubSub<Message> {
+  public readonly bus$ = new Subject<Message>();
 
-  public pub<K extends keyof Events>([topic, data]: MessageRemote<K, Events[K]>): void {
-    const msg: MessageLocal<K, Events[K]> = [topic, data, 1];
+  public pub(msg: Message): void {
     this.bus$.next(msg);
-  }
-
-  public sub$<K extends keyof Events>(topic: K): Observable<Message<K, Events[K]>> {
-    const predicate = (msg: Message<K, Events[K]>) => msg[0] === topic;
-    return this.bus$.pipe(filter(predicate) as any);
   }
 
   public end(): void {
@@ -23,16 +15,16 @@ export class PubSubM<Events> implements PubSub<Events> {
   }
 }
 
-export class PubSubBC<Events> extends PubSubM<Events> {
+export class PubSubBC<Message> extends PubSubM<Message> {
   public readonly ch: BroadcastChannel;
 
   constructor(public readonly bus: string) {
     super();
     const ch = this.ch = new BroadcastChannel(bus);
-    ch.onmessage = (e) => this.bus$.next(e.data as Message<keyof Events, Events[keyof Events]>);
+    ch.onmessage = (e) => this.bus$.next(e.data as Message);
   }
 
-  public pub<K extends keyof Events>(msg: MessageRemote<K, Events[K]>): void {
+  public pub(msg: Message): void {
     this.ch.postMessage(msg);
     super.pub(msg);
   }

@@ -11,7 +11,7 @@ import {timeout} from 'thingies/lib/timeout';
 import {pubsub} from '../../pubsub';
 import type {RemoteBatch, ServerHistory, ServerPatch} from '../../remote/types';
 import type {BlockId, LocalRepo, LocalRepoChangeEvent, LocalRepoDeleteEvent, LocalRepoMergeEvent, LocalRepoRebaseEvent, LocalRepoResetEvent, LocalRepoSyncRequest, LocalRepoSyncResponse} from '../types';
-import type {BinStrLevel, BinStrLevelOperation, BlockMetaValue, BlockModelMetadata, BlockModelValue, LevelLocalRepoLocalRebase, LevelLocalRepoPubSub, LevelLocalRepoRemoteMerge, LevelLocalRepoRemotePull, LevelLocalRepoRemoteReset, LocalBatch, SyncResult} from './types';
+import type {BinStrLevel, BinStrLevelOperation, BlockMetaValue, BlockModelMetadata, BlockModelValue, LevelLocalRepoPubSubMessageLocalRebase, LevelLocalRepoPubSubMessageRemoteMerge, LevelLocalRepoRemotePull, LevelLocalRepoPubSubMessageRemoteReset, LocalBatch, SyncResult, LevelLocalRepoPubSubMessage, LevelLocalRepoPubSub} from './types';
 import type {CrudLocalRepoCipher} from './types';
 import type {Locks} from 'thingies/lib/Locks';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
@@ -325,7 +325,7 @@ export class LevelLocalRepo implements LocalRepo {
     const remote = this.markDirtyAndSync(id).then(() => {});
     remote.catch(() => {});
     if (rebasedPatches.length)
-      this.pubsub.pub(['merge', {id, patches: rebasedPatches}]);
+      this.pubsub.pub({type: 'merge', id, patches: rebasedPatches});
     return {remote};
   }
 
@@ -371,7 +371,7 @@ export class LevelLocalRepo implements LocalRepo {
       await this._writeModelAndMeta(keyBase, modelMeta, modelBlob, meta);
       return modelBlob;
     });
-    pubsub.pub(['reset', {id, model: modelBlob}]);
+    pubsub.pub({type: 'reset', id, model: modelBlob});
   }
 
   protected async _catchup(id: BlockId, keyBase: string, seq: number): Promise<void> {
@@ -397,7 +397,7 @@ export class LevelLocalRepo implements LocalRepo {
           meta.ts = Date.now();
           const modelBlob = model.toBinary();
           await this._writeModelAndMeta(keyBase, [nextSeq], modelBlob, meta);
-          pubsub.pub(['reset', {id, model: modelBlob}]);
+          pubsub.pub({type: 'reset', id, model: modelBlob});
         }
         return;
       }
@@ -410,7 +410,7 @@ export class LevelLocalRepo implements LocalRepo {
         }
       modelMeta[0] = nextSeq;
       await this._writeModelAndMeta(keyBase, modelMeta, model.toBinary(), meta);
-      pubsub.pub(['merge', {id, patches}]);
+      pubsub.pub({type: 'merge', id, patches});
     });
   }
 
@@ -489,7 +489,8 @@ export class LevelLocalRepo implements LocalRepo {
       if (exists) throw new Error('EXISTS');
       await this.kv.batch(ops);
     });
-    this.pubsub.pub(['pull', {id, batches: [], snapshot: {seq, blob: modelBlob}}])
+    // TODO: Emit something here...
+    // this.pubsub.pub(['pull', {id, batches: [], snapshot: {seq, blob: modelBlob}}])
     return {model};
   }
 
@@ -683,7 +684,8 @@ export class LevelLocalRepo implements LocalRepo {
             batches: pull.batches,
             snapshot: pull.snapshot
           };
-          this.pubsub.pub(['pull', data]);
+          // TODO: Emit something here...
+          // this.pubsub.pub(['pull', data]);
         }
         return true;
       });
@@ -818,54 +820,52 @@ export class LevelLocalRepo implements LocalRepo {
 
   public change$(id: BlockId): Observable<LocalRepoChangeEvent> {
     return this.pubsub.bus$.pipe(
-      map(([topic, data]) => {
-        switch (topic) {
+      map((msg) => {
+        switch (msg.type) {
           case 'rebase': {
-            if (!deepEqual(id, data.id)) return;
+            if (!deepEqual(id, msg.id)) return;
             const rebase: Patch[] = [];
-            for (const blob of (<LevelLocalRepoLocalRebase>data).patches) rebase.push(Patch.fromBinary(blob));
+            for (const blob of msg.patches) rebase.push(Patch.fromBinary(blob));
             const event: LocalRepoRebaseEvent = {rebase};
             return event;
           }
-          case 'pull': {
-            if (!deepEqual(id, data.id)) return;
-            const {batch, batches, snapshot} = data as LevelLocalRepoRemotePull;
-            const merge: Patch[] = [];
-            if (batches) for (const b of batches) for (const p of b.patches) merge.push(Patch.fromBinary(p.blob));
-            if (snapshot) {
-              const reset = Model.load(snapshot.blob, this.sid);
-              if (batch) for (const p of batch.patches) reset.applyPatch(Patch.fromBinary(p.blob));
-              reset.applyBatch(merge);
-              const event: LocalRepoResetEvent = {reset};
-              return event;
-            } else {
-              const event: LocalRepoChangeEvent = {merge};
-              return event;
-            }
-          }
+          // case 'pull': {
+          //   if (!deepEqual(id, data.id)) return;
+          //   const {batch, batches, snapshot} = data as LevelLocalRepoRemotePull;
+          //   const merge: Patch[] = [];
+          //   if (batches) for (const b of batches) for (const p of b.patches) merge.push(Patch.fromBinary(p.blob));
+          //   if (snapshot) {
+          //     const reset = Model.load(snapshot.blob, this.sid);
+          //     if (batch) for (const p of batch.patches) reset.applyPatch(Patch.fromBinary(p.blob));
+          //     reset.applyBatch(merge);
+          //     const event: LocalRepoResetEvent = {reset};
+          //     return event;
+          //   } else {
+          //     const event: LocalRepoChangeEvent = {merge};
+          //     return event;
+          //   }
+          // }
           case 'reset': {
-            if (!deepEqual(id, data.id)) return;
-            const {model} = data as LevelLocalRepoRemoteReset;
-            const reset = Model.load(model, this.sid);
+            if (!deepEqual(id, msg.id)) return;
+            const reset = Model.load(msg.model, this.sid);
             const event: LocalRepoResetEvent = {reset};
             return event;
           }
           case 'merge': {
-            if (!deepEqual(id, data.id)) return;
-            const {patches} = data as LevelLocalRepoRemoteMerge;
+            if (!deepEqual(id, msg.id)) return;
             const event: LocalRepoMergeEvent = {
-              merge: patches.map((blob) => Patch.fromBinary(blob))
+              merge: msg.patches.map((blob) => Patch.fromBinary(blob))
             };
             return event;
           }
           case 'del': {
-            if (!deepEqual(id, data.id)) return;
+            if (!deepEqual(id, msg.id)) return;
             const event: LocalRepoDeleteEvent = {del: true};
             return event;
           }
         }
       }),
-      filter(event => !!event),
+      filter((event): event is LocalRepoChangeEvent => !!event),
     );
   }
 }
