@@ -107,14 +107,21 @@ export interface LocalRepoSyncResponse {
  * the local client or by a remote client. It contains various types of changes
  * that can be applied to the local editing session.
  */
-export interface LocalRepoChangeEvent {
+export type LocalRepoChangeEvent =
+  | LocalRepoMergeEvent
+  | LocalRepoRebaseEvent
+  | LocalRepoResetEvent;
+
+export interface LocalRepoMergeEvent {
   /**
    * List of patches that the client should apply to the local editing session.
    * They can be applied "on top" of the current editing session state, without
    * the need to reset or rebase the editing session.
    */
-  merge?: Patch[];
+  merge: Patch[];
+}
 
+export interface LocalRepoRebaseEvent {
   /**
    * List of patches that the client should rebase its editing session on top
    * of. The rebase patches usually result from the changes happening in another
@@ -125,8 +132,10 @@ export interface LocalRepoChangeEvent {
    * In practice, this should almost never happen, as by the time the user
    * switches tabs, the changes are already synchronized.
    */
-  rebase?: Patch[];
+  rebase: Patch[];
+}
 
+export interface LocalRepoResetEvent {
   /**
    * The new model snapshot that the client should reset its editing session to.
    * This happens when the changes are too large to be sent as patches, or when
@@ -134,5 +143,5 @@ export interface LocalRepoChangeEvent {
    * to the new state. When resetting, the client might still need to apply
    * `merge` and `rebase` patches on top of the new model.
    */
-  reset?: Model;
+  reset: Model;
 }

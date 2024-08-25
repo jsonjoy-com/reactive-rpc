@@ -10,8 +10,8 @@ import {once} from 'thingies/lib/once';
 import {timeout} from 'thingies/lib/timeout';
 import {pubsub} from '../../pubsub';
 import type {RemoteBatch, ServerHistory, ServerPatch} from '../../remote/types';
-import type {BlockId, LocalRepo, LocalRepoChangeEvent, LocalRepoSyncRequest, LocalRepoSyncResponse} from '../types';
-import type {BinStrLevel, BinStrLevelOperation, BlockMetaValue, BlockModelMetadata, BlockModelValue, LevelLocalRepoLocalRebase, LevelLocalRepoPubSub, LevelLocalRepoRemotePull, LocalBatch, SyncResult} from './types';
+import type {BlockId, LocalRepo, LocalRepoChangeEvent, LocalRepoMergeEvent, LocalRepoRebaseEvent, LocalRepoResetEvent, LocalRepoSyncRequest, LocalRepoSyncResponse} from '../types';
+import type {BinStrLevel, BinStrLevelOperation, BlockMetaValue, BlockModelMetadata, BlockModelValue, LevelLocalRepoLocalRebase, LevelLocalRepoPubSub, LevelLocalRepoRemoteMerge, LevelLocalRepoRemotePull, LevelLocalRepoRemoteReset, LocalBatch, SyncResult} from './types';
 import type {CrudLocalRepoCipher} from './types';
 import type {Locks} from 'thingies/lib/Locks';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
@@ -826,20 +826,6 @@ export class LevelLocalRepo implements LocalRepo {
   }
 
   public change$(id: BlockId): Observable<LocalRepoChangeEvent> {
-    const blockId = id.join('/');
-    // this.opts.rpc.listen(blockId).subscribe(({event}) => {
-    //   switch (event[0]) {
-    //     case 'upd': {
-    //       const {batch} = event[1];
-
-    //       // const rebase: Patch[] = [];
-    //       // for (const blob of patches) rebase.push(Patch.fromBinary(blob));
-    //       // const event: LocalRepoChangeEvent = {rebase};
-    //       // this.pubsub.pub(['merge', {id, patches}]);
-    //       // return event;
-    //     }
-    //   }
-    // });
     return this.pubsub.bus$.pipe(
       map(([topic, data]) => {
         switch (topic) {
@@ -847,28 +833,39 @@ export class LevelLocalRepo implements LocalRepo {
             if (!deepEqual(id, data.id)) return;
             const rebase: Patch[] = [];
             for (const blob of (<LevelLocalRepoLocalRebase>data).patches) rebase.push(Patch.fromBinary(blob));
-            const event: LocalRepoChangeEvent = {rebase};
+            const event: LocalRepoRebaseEvent = {rebase};
             return event;
           }
           case 'pull': {
             if (!deepEqual(id, data.id)) return;
             const {batch, batches, snapshot} = data as LevelLocalRepoRemotePull;
             const merge: Patch[] = [];
-            const event: LocalRepoChangeEvent = {merge};
             if (batches) for (const b of batches) for (const p of b.patches) merge.push(Patch.fromBinary(p.blob));
             if (snapshot) {
               const reset = Model.load(snapshot.blob, this.sid);
               if (batch) for (const p of batch.patches) reset.applyPatch(Patch.fromBinary(p.blob));
               reset.applyBatch(merge);
-              event.reset = reset;
+              const event: LocalRepoResetEvent = {reset};
+              return event;
+            } else {
+              const event: LocalRepoChangeEvent = {merge};
+              return event;
             }
-            return event;
           }
           case 'reset': {
-            throw new Error('not implemented');
+            if (!deepEqual(id, data.id)) return;
+            const {model} = data as LevelLocalRepoRemoteReset;
+            const reset = Model.load(model, this.sid);
+            const event: LocalRepoResetEvent = {reset};
+            return event;
           }
           case 'merge': {
-            throw new Error('not implemented');
+            if (!deepEqual(id, data.id)) return;
+            const {patches} = data as LevelLocalRepoRemoteMerge;
+            const event: LocalRepoMergeEvent = {
+              merge: patches.map((blob) => Patch.fromBinary(blob))
+            };
+            return event;
           }
         }
       }),
