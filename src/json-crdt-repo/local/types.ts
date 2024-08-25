@@ -38,7 +38,7 @@ export interface LocalRepo {
    * 
    * @param id Unique ID of the block.
    */
-  change$(id: BlockId): Observable<LocalRepoChangeEvent>;
+  change$(id: BlockId): Observable<LocalRepoEvent>;
 }
 
 /**
@@ -100,7 +100,7 @@ export interface LocalRepoSyncResponse {
  * the local client or by a remote client. It contains various types of changes
  * that can be applied to the local editing session.
  */
-export type LocalRepoChangeEvent =
+export type LocalRepoEvent =
   | LocalRepoMergeEvent
   | LocalRepoRebaseEvent
   | LocalRepoResetEvent

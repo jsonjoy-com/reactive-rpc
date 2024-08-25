@@ -1,7 +1,7 @@
 import {Log} from 'json-joy/lib/json-crdt/log/Log';
 import {Model, Patch} from 'json-joy/lib/json-crdt';
 import {Subject, takeUntil} from 'rxjs';
-import type {BlockId, LocalRepo, LocalRepoChangeEvent, LocalRepoMergeEvent, LocalRepoRebaseEvent, LocalRepoResetEvent} from '../local/types';
+import type {BlockId, LocalRepo, LocalRepoEvent, LocalRepoMergeEvent, LocalRepoRebaseEvent, LocalRepoResetEvent} from '../local/types';
 
 export class EditSession {
   public log: Log;
@@ -26,9 +26,9 @@ export class EditSession {
     this._stop$.next();
   }
 
-  private events: LocalRepoChangeEvent[] = [];
+  private events: LocalRepoEvent[] = [];
 
-  private onEvent = (event: LocalRepoChangeEvent): void => {
+  private onEvent = (event: LocalRepoEvent): void => {
     this.events.push(event);
     this.drainEvents();
   };
@@ -41,7 +41,7 @@ export class EditSession {
     this.events = [];
   }
 
-  private processChange(event: LocalRepoChangeEvent): void {
+  private processChange(event: LocalRepoEvent): void {
     if ((event as LocalRepoResetEvent).reset) this.reset((event as LocalRepoResetEvent).reset);
     else if ((event as LocalRepoRebaseEvent).rebase) this.rebase((event as LocalRepoRebaseEvent).rebase);
     else if ((event as LocalRepoMergeEvent).merge) this.merge((event as LocalRepoMergeEvent).merge);

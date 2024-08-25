@@ -1,4 +1,4 @@
-import {BehaviorSubject, Observable, Subject, type Subscription} from 'rxjs';
+import {BehaviorSubject, Observable, type Subscription} from 'rxjs';
 import {filter, finalize, map, switchMap} from 'rxjs/operators';
 import {gzip, ungzip} from '@jsonjoy.com/util/lib/compression/gzip';
 import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
@@ -10,8 +10,8 @@ import {once} from 'thingies/lib/once';
 import {timeout} from 'thingies/lib/timeout';
 import {pubsub} from '../../pubsub';
 import type {RemoteBatch, ServerHistory, ServerPatch} from '../../remote/types';
-import type {BlockId, LocalRepo, LocalRepoChangeEvent, LocalRepoDeleteEvent, LocalRepoMergeEvent, LocalRepoRebaseEvent, LocalRepoResetEvent, LocalRepoSyncRequest, LocalRepoSyncResponse} from '../types';
-import type {BinStrLevel, BinStrLevelOperation, BlockMetaValue, BlockModelMetadata, BlockModelValue, LevelLocalRepoPubSubMessageLocalRebase, LevelLocalRepoPubSubMessageRemoteMerge, LevelLocalRepoRemotePull, LevelLocalRepoPubSubMessageRemoteReset, LocalBatch, SyncResult, LevelLocalRepoPubSubMessage, LevelLocalRepoPubSub} from './types';
+import type {BlockId, LocalRepo, LocalRepoEvent, LocalRepoDeleteEvent, LocalRepoMergeEvent, LocalRepoRebaseEvent, LocalRepoResetEvent, LocalRepoSyncRequest, LocalRepoSyncResponse} from '../types';
+import type {BinStrLevel, BinStrLevelOperation, BlockMetaValue, BlockModelMetadata, BlockModelValue, LocalBatch, SyncResult, LevelLocalRepoPubSub} from './types';
 import type {CrudLocalRepoCipher} from './types';
 import type {Locks} from 'thingies/lib/Locks';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
@@ -418,9 +418,9 @@ export class LevelLocalRepo implements LocalRepo {
     
   }
 
-  private _remoteSubs: Record<string, Observable<LocalRepoChangeEvent>> = {};
+  private _remoteSubs: Record<string, Observable<LocalRepoEvent>> = {};
 
-  protected subscribeToRemoteChanges(id: BlockId): Observable<LocalRepoChangeEvent> {
+  protected subscribeToRemoteChanges(id: BlockId): Observable<LocalRepoEvent> {
     const blockId = id.join('/');
     let sub = this._remoteSubs[blockId];
     if (sub) return sub;
@@ -678,12 +678,12 @@ export class LevelLocalRepo implements LocalRepo {
         assertTimeout();
         await this.kv.batch(ops);
         if (pull) {
-          const data: LevelLocalRepoRemotePull = {
-            id,
-            batch,
-            batches: pull.batches,
-            snapshot: pull.snapshot
-          };
+          // const data: LevelLocalRepoRemotePull = {
+          //   id,
+          //   batch,
+          //   batches: pull.batches,
+          //   snapshot: pull.snapshot
+          // };
           // TODO: Emit something here...
           // this.pubsub.pub(['pull', data]);
         }
@@ -818,7 +818,7 @@ export class LevelLocalRepo implements LocalRepo {
     }
   }
 
-  public change$(id: BlockId): Observable<LocalRepoChangeEvent> {
+  public change$(id: BlockId): Observable<LocalRepoEvent> {
     return this.pubsub.bus$.pipe(
       map((msg) => {
         switch (msg.type) {
@@ -865,7 +865,7 @@ export class LevelLocalRepo implements LocalRepo {
           }
         }
       }),
-      filter((event): event is LocalRepoChangeEvent => !!event),
+      filter((event): event is LocalRepoEvent => !!event),
     );
   }
 }
