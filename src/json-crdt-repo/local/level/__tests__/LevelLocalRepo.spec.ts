@@ -196,7 +196,7 @@ describe('.sync()', () => {
         await kit.stop();
       });
 
-      test('emits "reset" event', async () => {
+      test.only('emits "reset" event', async () => {
         const kit = await setup();
         const schema = s.obj({foo: s.str('bar')});
         const model = Model.create(schema, kit.sid);
@@ -209,9 +209,9 @@ describe('.sync()', () => {
             }],
           }
         });
-        // kit.local.change$(kit.blockId).subscribe((event) => {
-        //   console.log(event);
-        // });
+        kit.local.change$(kit.blockId).subscribe((event) => {
+          console.log(event);
+        });
         await kit.local.pull(kit.blockId);
         
 

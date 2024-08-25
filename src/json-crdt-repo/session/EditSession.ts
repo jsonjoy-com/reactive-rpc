@@ -1,7 +1,7 @@
 import {Log} from 'json-joy/lib/json-crdt/log/Log';
 import {Model, Patch} from 'json-joy/lib/json-crdt';
 import {Subject, takeUntil} from 'rxjs';
-import type {BlockId, LocalRepo, LocalRepoChangeEvent} from '../local/types';
+import type {BlockId, LocalRepo, LocalRepoChangeEvent, LocalRepoMergeEvent, LocalRepoRebaseEvent, LocalRepoResetEvent} from '../local/types';
 
 export class EditSession {
   public log: Log;
@@ -20,9 +20,6 @@ export class EditSession {
     this.repo.change$(this.id)
       .pipe(takeUntil(this._stop$))
       .subscribe(this.onEvent);
-    this.repo.del$(this.id)
-      .pipe(takeUntil(this._stop$))
-      .subscribe(() => this.clear());
   }
 
   public dispose(): void {
@@ -44,10 +41,11 @@ export class EditSession {
     this.events = [];
   }
 
-  private processChange({reset, rebase, merge}: LocalRepoChangeEvent): void {
-    if (reset) this.reset(reset);
-    if (rebase && rebase.length) this.rebase(rebase);
-    if (merge && merge.length) this.merge(merge);
+  private processChange(event: LocalRepoChangeEvent): void {
+    if ((event as LocalRepoResetEvent).reset) this.reset((event as LocalRepoResetEvent).reset);
+    else if ((event as LocalRepoRebaseEvent).rebase) this.rebase((event as LocalRepoRebaseEvent).rebase);
+    else if ((event as LocalRepoMergeEvent).merge) this.merge((event as LocalRepoMergeEvent).merge);
+    // else if (event)
   }
 
   protected reset(model: Model): void {
@@ -61,6 +59,7 @@ export class EditSession {
   }
 
   protected rebase(patches: Patch[]): void {
+    if (patches.length === 0) return;
     const log = this.log;
     const end = log.end;
     // TODO: Remove this condition, make flush always safe to call.
@@ -81,6 +80,7 @@ export class EditSession {
   }
 
   protected merge(patches: Patch[]): void {
+    if (!patches.length) return;
     this.log.end.applyBatch(patches);
     this.start.applyBatch(patches);
   }

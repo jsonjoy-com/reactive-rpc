@@ -10,7 +10,7 @@ import {once} from 'thingies/lib/once';
 import {timeout} from 'thingies/lib/timeout';
 import {pubsub} from '../../pubsub';
 import type {RemoteBatch, ServerHistory, ServerPatch} from '../../remote/types';
-import type {BlockId, LocalRepo, LocalRepoChangeEvent, LocalRepoMergeEvent, LocalRepoRebaseEvent, LocalRepoResetEvent, LocalRepoSyncRequest, LocalRepoSyncResponse} from '../types';
+import type {BlockId, LocalRepo, LocalRepoChangeEvent, LocalRepoDeleteEvent, LocalRepoMergeEvent, LocalRepoRebaseEvent, LocalRepoResetEvent, LocalRepoSyncRequest, LocalRepoSyncResponse} from '../types';
 import type {BinStrLevel, BinStrLevelOperation, BlockMetaValue, BlockModelMetadata, BlockModelValue, LevelLocalRepoLocalRebase, LevelLocalRepoPubSub, LevelLocalRepoRemoteMerge, LevelLocalRepoRemotePull, LevelLocalRepoRemoteReset, LocalBatch, SyncResult} from './types';
 import type {CrudLocalRepoCipher} from './types';
 import type {Locks} from 'thingies/lib/Locks';
@@ -816,15 +816,6 @@ export class LevelLocalRepo implements LocalRepo {
     }
   }
 
-  public del$(id: BlockId): Observable<void> {
-    const blockId = id.join('/');
-    return this.opts.rpc.listen(blockId)
-      .pipe(
-        filter(({event}) => event[0] === 'del'),
-        map(() => void 0),
-      );
-  }
-
   public change$(id: BlockId): Observable<LocalRepoChangeEvent> {
     return this.pubsub.bus$.pipe(
       map(([topic, data]) => {
@@ -865,6 +856,11 @@ export class LevelLocalRepo implements LocalRepo {
             const event: LocalRepoMergeEvent = {
               merge: patches.map((blob) => Patch.fromBinary(blob))
             };
+            return event;
+          }
+          case 'del': {
+            if (!deepEqual(id, data.id)) return;
+            const event: LocalRepoDeleteEvent = {del: true};
             return event;
           }
         }

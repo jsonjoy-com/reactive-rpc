@@ -54,6 +54,7 @@ export type LevelLocalRepoPubSub = PubSub<{
   reset: LevelLocalRepoRemoteReset;
   merge: LevelLocalRepoRemoteMerge;
   rebase: LevelLocalRepoLocalRebase;
+  del: LevelLocalRepoDelete;
 }>;
 
 /**
@@ -82,4 +83,11 @@ export interface LevelLocalRepoRemoteMerge {
 export interface LevelLocalRepoLocalRebase {
   id: BlockId;
   patches: Uint8Array[];
+}
+
+/**
+ * Emitted when block was deleted.
+ */
+export interface LevelLocalRepoDelete {
+  id: BlockId;
 }

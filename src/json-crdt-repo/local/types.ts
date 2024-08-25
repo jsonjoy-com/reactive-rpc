@@ -34,13 +34,6 @@ export interface LocalRepo {
   pull(id: BlockId): Promise<void>;
 
   /**
-   * Emits an event when the block is deleted.
-   *
-   * @param id Unique ID of the block.
-   */
-  del$(id: BlockId): Observable<void>;
-
-  /**
    * Emits an event every time a block is updated.
    * 
    * @param id Unique ID of the block.
@@ -110,7 +103,8 @@ export interface LocalRepoSyncResponse {
 export type LocalRepoChangeEvent =
   | LocalRepoMergeEvent
   | LocalRepoRebaseEvent
-  | LocalRepoResetEvent;
+  | LocalRepoResetEvent
+  | LocalRepoDeleteEvent;
 
 export interface LocalRepoMergeEvent {
   /**
@@ -144,4 +138,8 @@ export interface LocalRepoResetEvent {
    * `merge` and `rebase` patches on top of the new model.
    */
   reset: Model;
+}
+
+export interface LocalRepoDeleteEvent {
+  del: true;
 }
