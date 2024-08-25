@@ -174,4 +174,25 @@ describe('.sync()', () => {
 
     test.todo('can read block from remote, but create one locally in the meantime');
   });
+  
+  describe('pull', () => {
+    test('can read a new block', async () => {
+      const kit = await setup();
+      const schema = s.obj({foo: s.str('bar')});
+      const model = Model.create(schema, kit.sid);
+      const patches = [model.api.flush()];
+      await kit.remote.client.call('block.new', {
+        id: kit.blockId.join('/'),
+        batch: {
+          patches: [{
+            blob: patches[0].toBinary(),
+          }],
+        }
+      });
+      await kit.local.pull(kit.blockId);
+      const get = await kit.local.get(kit.blockId);
+      expect(get.model.view()).toEqual({foo: 'bar'});
+      await kit.stop();
+    });
+  });
 });

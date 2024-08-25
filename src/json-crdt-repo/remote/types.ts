@@ -145,7 +145,7 @@ export interface RemoteBlock<Cursor> {
    * latest snapshot. The client should apply these patches to the snapshot
    * to get the latest state of the block.
    */
-  tip: RemoteBatch[];
+  tip: RemoteBatch<Cursor>[];
 }
 
 /**

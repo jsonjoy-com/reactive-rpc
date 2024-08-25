@@ -27,6 +27,13 @@ export interface LocalRepo {
   del(id: BlockId): Promise<void>;
 
   /**
+   * Retrieves the latest state of the block from the remote.
+   *
+   * @param id Unique ID of the block.
+   */
+  pull(id: BlockId): Promise<void>;
+
+  /**
    * Emits an event when the block is deleted.
    *
    * @param id Unique ID of the block.

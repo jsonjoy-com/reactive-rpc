@@ -28,6 +28,10 @@ export class LevelLocalRepo implements LocalRepo {
     return await this._core.get(id);
   }
 
+  public async pull(id: BlockId): Promise<void> {
+    return await this._core.pull(id);
+  }
+
   public async del(id: BlockId): Promise<void> {
     throw new Error('Method not implemented.');
   }
