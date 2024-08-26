@@ -64,6 +64,7 @@ export class EditSession {
    * Load latest state from the local repo.
    */
   public async pull(): Promise<void> {
+    // TODO: replace repo.get() by repo.pull() of sorts.
     const {model} = await this.repo.get(this.id);
     if (model.clock.time > this.start.clock.time) this.reset(model);
   }
