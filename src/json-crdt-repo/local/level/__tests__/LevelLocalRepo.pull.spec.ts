@@ -150,6 +150,7 @@ describe('.pull()', () => {
       expect(read2.model!.view()).toEqual({foo: 'baz', x: 1});
       const read3 = await local.sync({id: kit.blockId});
       expect(read3.model!.view()).toEqual({foo: 'baz', x: 1});
+      await local2.stop();
       await kit.stop();
     });
 
@@ -196,6 +197,7 @@ describe('.pull()', () => {
       expect(read2.model!.view()).toEqual({foo: 'baz', x: 1});
       const read3 = await local.sync({id: kit.blockId});
       expect(read3.model!.view()).toEqual({foo: 'baz', x: 1});
+      await local2.stop();
       await kit.stop();
     });
 
