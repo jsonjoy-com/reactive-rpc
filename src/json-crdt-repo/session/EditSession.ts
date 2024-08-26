@@ -1,11 +1,11 @@
 import {Log} from 'json-joy/lib/json-crdt/log/Log';
 import {Model, Patch} from 'json-joy/lib/json-crdt';
 import {Subject, takeUntil} from 'rxjs';
-import type {BlockId, LocalRepo, LocalRepoEvent, LocalRepoMergeEvent, LocalRepoRebaseEvent, LocalRepoResetEvent} from '../local/types';
+import type {BlockId, LocalRepo, LocalRepoDeleteEvent, LocalRepoEvent, LocalRepoMergeEvent, LocalRepoRebaseEvent, LocalRepoResetEvent} from '../local/types';
 
 export class EditSession {
   public log: Log;
-  private _stop$ = new Subject<void>();
+  protected _stop$ = new Subject<void>();
 
   public get model(): Model {
     return this.log.end;
@@ -26,27 +26,53 @@ export class EditSession {
     this._stop$.next();
   }
 
-  private events: LocalRepoEvent[] = [];
-
-  private onEvent = (event: LocalRepoEvent): void => {
-    this.events.push(event);
-    this.drainEvents();
-  };
-
-  private drainEvents(): void {
-    if (this.saveInProgress) return;
-    const events = this.events;
-    const length = events.length;
-    for (let i = 0; i < length; i++) this.processChange(events[i]);
-    this.events = [];
+  protected clear(): void {
+    const {start, log} = this;
+    const empty = Model.create(undefined, start.clock.sid);
+    start.reset(empty);
+    log.patches.clear();
+    log.end.reset(empty);
   }
 
-  private processChange(event: LocalRepoEvent): void {
-    if ((event as LocalRepoResetEvent).reset) this.reset((event as LocalRepoResetEvent).reset);
-    else if ((event as LocalRepoRebaseEvent).rebase) this.rebase((event as LocalRepoRebaseEvent).rebase);
-    else if ((event as LocalRepoMergeEvent).merge) this.merge((event as LocalRepoMergeEvent).merge);
-    // else if (event)
+  private saveInProgress = false;
+
+  /**
+   * Save any pending changes to the local repo.
+   */
+  public async sync(): Promise<null | {remote?: Promise<void>}> {
+    const log = this.log;
+    const api = log.end.api;
+    api.flush();
+    if (this.saveInProgress) return null;
+    this.saveInProgress = true;
+    try {
+      if (!log.patches.size()) return {};
+      const patches: Patch[] = [];
+      log.patches.forEach((patch) => {
+        patches.push(patch.v);
+      });
+      // TODO: After async call check that sync state is still valid. New patches, might have been added.
+      const res = await this.repo.sync({id: this.id, patches});
+      return {remote: res.remote};
+    } finally {
+      this.saveInProgress = false;
+      this.drainEvents();
+    }
   }
+
+  /**
+   * Load latest state from the local repo.
+   */
+  public async pull(): Promise<void> {
+    const {model} = await this.repo.get(this.id);
+    if (model.clock.time > this.start.clock.time) this.reset(model);
+  }
+
+  public pullSilent(): void {
+    this.pull().catch(() => {});
+  }
+
+  // ------------------------------------------------------- change integration
 
   protected reset(model: Model): void {
     this.start = model.clone();
@@ -85,37 +111,34 @@ export class EditSession {
     this.start.applyBatch(patches);
   }
 
-  protected clear(): void {
-    const {start, log} = this;
-    const empty = Model.create(undefined, start.clock.sid);
-    start.reset(empty);
-    log.patches.clear();
-    log.end.reset(empty);
-  }
+  // ------------------------------------------------ reactive event processing
 
-  private saveInProgress = false;
+  private events: LocalRepoEvent[] = [];
 
-  /**
-   * Save any pending changes to the local repo.
-   */
-  public async sync(): Promise<null | {remote?: Promise<void>}> {
-    const log = this.log;
-    const api = log.end.api;
-    api.builder.patch.ops.length && api.flush();
-    if (this.saveInProgress) return null;
-    this.saveInProgress = true;
-    try {
-      if (!log.patches.size()) return {};
-      const patches: Patch[] = [];
-      log.patches.forEach((patch) => {
-        patches.push(patch.v);
-      });
-      // TODO: After async call check that sync state is still valid. New patches, might have been added.
-      const res = await this.repo.sync({id: this.id, patches});
-      return {remote: res.remote};
-    } finally {
-      this.saveInProgress = false;
-      this.drainEvents();
+  private onEvent = (event: LocalRepoEvent): void => {
+    this.events.push(event);
+    this.drainEvents();
+  };
+
+  private drainEvents(): void {
+    if (this.saveInProgress) return;
+    const events = this.events;
+    const length = events.length;
+    for (let i = 0; i < length; i++) {
+      const event = events[i];
+      try {
+        if ((event as LocalRepoResetEvent).reset) this.reset((event as LocalRepoResetEvent).reset);
+        else if ((event as LocalRepoRebaseEvent).rebase) this.rebase((event as LocalRepoRebaseEvent).rebase);
+        else if ((event as LocalRepoMergeEvent).merge) this.merge((event as LocalRepoMergeEvent).merge);
+        else if ((event as LocalRepoDeleteEvent).del) {
+          this.clear();
+          break;
+        }
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to apply event', event, error);
+      }
     }
+    this.events = [];
   }
 }
