@@ -12,9 +12,14 @@ export class EditSessionFactory {
 
   public make({id, schema, pull = true}: EditSessionMakeOpts): EditSession {
     const opts = this.opts;
-    const model = Model.create(schema, opts.sid);
+    const model = Model.create(void 0, opts.sid);
     const session = new EditSession(opts.repo, id, model);
-    if (pull) session.pullSilent();
+    if (schema) {
+      const api = session.model.api;
+      api.root(schema);
+      api.flush();
+    }
+    if (pull) session.loadSilent();
     return session;
   }
 

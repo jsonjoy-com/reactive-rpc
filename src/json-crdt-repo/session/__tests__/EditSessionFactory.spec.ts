@@ -1,4 +1,4 @@
-import {Model} from 'json-joy/lib/json-crdt';
+import {Model, s} from 'json-joy/lib/json-crdt';
 import {setup} from './setup';
 import {tick, until} from 'thingies';
 
@@ -17,7 +17,7 @@ describe('.make()', () => {
     const session = kit.sessions.make({id: kit.blockId});
     expect(session.model.view()).toBe(undefined);
     await session.sync();
-    session.dispose();
+    await session.dispose();
     await kit.stop();
   });
 
@@ -28,7 +28,7 @@ describe('.make()', () => {
     await session.sync();
     session.model.api.root({foo: 'bar'});
     await session.sync();
-    session.dispose();
+    await session.dispose();
     await kit.stop();
   });
 
@@ -58,8 +58,22 @@ describe('.make()', () => {
     const session = await kit.sessions.make({id});
     await until(() => session.model.view()?.foo === 'bar');
     expect(session.model.view()).toEqual({foo: 'bar'});
-    session.dispose();
+    await session.dispose();
     await kit.stop();
+  });
+
+  describe('with schema', () => {
+    test('can save/sync a session with schema', async () => {
+      const kit = await setup();
+      const schema = s.obj({xyz: s.con(123)});
+      const session = kit.sessions.make({id: kit.blockId, schema});
+      expect(session.model.view()).toEqual({xyz: 123});
+      await session.sync();
+      const {model} = await kit.local.sync({id: kit.blockId});
+      expect(model!.view()).toEqual({xyz: 123});
+      await session.dispose();
+      await kit.stop();
+    });
   });
 });
 
@@ -72,7 +86,7 @@ describe('.load()', () => {
     await session.sync();
     const session2 = await kit.sessions.load({id: kit.blockId});
     expect(session2.model.view()).toEqual({foo: 'bar'});
-    session.dispose();
+    await session.dispose();
     await kit.stop();
   });
 
@@ -84,7 +98,7 @@ describe('.load()', () => {
     await kit.remote.remote.create(kit.blockId.join('/'), {patches: [{blob: patch.toBinary()}]});
     const session = await kit.sessions.load({id: kit.blockId});
     expect(session.model.view()).toEqual({foo: 'bar'});
-    session.dispose();
+    await session.dispose();
     await kit.stop();
   });
 });
