@@ -210,3 +210,6 @@ export type ServerSnapshot = RemoteSnapshot<ServerCursor>;
 export type ServerBatch = RemoteBatch<ServerCursor>;
 export type ServerPatch = RemotePatch;
 export type ServerEvent = RemoteEvent<ServerCursor>;
+export type ServerNewEvent = RemoteNewEvent;
+export type ServerDelEvent = RemoteDelEvent;
+export type ServerUpdEvent = RemoteUpdEvent<ServerCursor>;
