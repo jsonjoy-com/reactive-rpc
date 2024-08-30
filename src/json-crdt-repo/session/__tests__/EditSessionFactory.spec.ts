@@ -1,65 +1,87 @@
 import {Model, s} from 'json-joy/lib/json-crdt';
 import {setup} from './setup';
-import {tick, until} from 'thingies';
+import {until} from 'thingies';
+import {BlockId, LocalRepo} from '../../local/types';
+
+const readLocal = async (local: LocalRepo, id: BlockId) => {
+  const {model} = await local.get({id});
+  return {model};
+};
 
 describe('.make()', () => {
-  test('can synchronously create an editing session', async () => {
-    const kit = await setup();
-    kit.local.stop();
-    const session = kit.sessions.make({id: kit.blockId});
-    expect(session.model.view()).toBe(undefined);
-    await session.dispose();
-    await kit.stop();
-  });
+  describe('no schema', () => {
+    test('can synchronously create an editing session', async () => {
+      const kit = await setup();
+      kit.local.stop();
+      const session = kit.sessions.make({id: kit.blockId});
+      expect(session.model.view()).toBe(undefined);
+      await session.dispose();
+      await kit.stop();
+    });
 
-  test('can save a new session', async () => {
-    const kit = await setup();
-    const session = kit.sessions.make({id: kit.blockId});
-    expect(session.model.view()).toBe(undefined);
-    await session.sync();
-    await session.dispose();
-    await kit.stop();
-  });
+    test('can save a new session', async () => {
+      const kit = await setup();
+      const session = kit.sessions.make({id: kit.blockId});
+      expect(session.model.view()).toBe(undefined);
+      await session.sync();
+      const {model} = await readLocal(kit.local, kit.blockId);
+      expect(model.view()).toBe(undefined);
+      await session.dispose();
+      await kit.stop();
+    });
 
-  test('can save a session with edits', async () => {
-    const kit = await setup();
-    const session = kit.sessions.make({id: kit.blockId});
-    expect(session.model.view()).toBe(undefined);
-    await session.sync();
-    session.model.api.root({foo: 'bar'});
-    await session.sync();
-    await session.dispose();
-    await kit.stop();
-  });
+    test('can save a session with edits', async () => {
+      const kit = await setup();
+      const session = kit.sessions.make({id: kit.blockId});
+      expect(session.model.view()).toBe(undefined);
+      await session.sync();
+      session.model.api.root({foo: 'bar'});
+      await session.sync();
+      const {model} = await readLocal(kit.local, kit.blockId);
+      expect(model.view()).toEqual({foo: 'bar'});
+      await session.dispose();
+      await kit.stop();
+    });
 
-  test('can create with ID already existing in local', async () => {
-    const kit = await setup();
-    const model = Model.create(undefined, kit.sid);
-    model.api.root({foo: 'bar'});
-    const patch = model.api.flush();
-    const local2 = await kit.createLocal();
-    const id = kit.blockId;
-    await local2.local.sync({id, patches: [patch]});
-    const session = await kit.sessions.make({id});
-    await until(() => session.model.view()?.foo === 'bar');
-    expect(session.model.view()).toEqual({foo: 'bar'});
-    await local2.stop();
-    await session.dispose();
-    await kit.stop();
-  });
+    test('can create with ID already existing in local', async () => {
+      const kit = await setup();
 
-  test('can create with ID already existing in remote', async () => {
-    const kit = await setup();
-    const model = Model.create(undefined, kit.sid);
-    model.api.root({foo: 'bar'});
-    const patch = model.api.flush();
-    const id = kit.blockId;
-    await kit.remote.client.call('block.new', {id: id.join('/'), batch: {patches: [{blob: patch.toBinary()}]}});
-    const session = await kit.sessions.make({id});
-    await until(() => session.model.view()?.foo === 'bar');
-    expect(session.model.view()).toEqual({foo: 'bar'});
-    await session.dispose();
-    await kit.stop();
+      // Crate in another tab.
+      const model = Model.create(undefined, kit.sid);
+      model.api.root({foo: 'bar'});
+      const patch = model.api.flush();
+      const local2 = await kit.createLocal();
+      const id = kit.blockId;
+      await local2.local.sync({id, patches: [patch]});
+
+      // Synchronously make a session in current tab.
+      const session = await kit.sessions.make({id});
+      expect(session.model.view()).toBe(undefined);
+      await until(() => session.model.view()?.foo === 'bar');
+      expect(session.model.view()).toEqual({foo: 'bar'});
+      await local2.stop();
+      await session.dispose();
+      await kit.stop();
+    });
+
+    test('can create with ID already existing in remote', async () => {
+      const kit = await setup();
+
+      // Create on remote.
+      const model = Model.create(undefined, kit.sid);
+      model.api.root({foo: 'bar'});
+      const patch = model.api.flush();
+      const id = kit.blockId;
+      await kit.remote.client.call('block.new', {id: id.join('/'), batch: {patches: [{blob: patch.toBinary()}]}});
+
+      // Synchronously make a session.
+      const session = await kit.sessions.make({id});
+      expect(session.model.view()).toBe(undefined);
+      await until(() => session.model.view()?.foo === 'bar');
+      expect(session.model.view()).toEqual({foo: 'bar'});
+      await session.dispose();
+      await kit.stop();
+    });
   });
 
   describe('with schema', () => {
@@ -78,7 +100,19 @@ describe('.make()', () => {
 });
 
 describe('.load()', () => {
-  test('can load an existing block (created locally)', async () => {
+  test.skip('can create a new block', async () => {
+  });
+
+  test.skip('can load block which exists locally', async () => {
+  });
+
+  test.skip('can load block which exists remotely', async () => {
+  });
+
+  test.skip('can load block which exists remotely with timeout', async () => {
+  });
+
+  test('can load block which exists locally', async () => {
     const kit = await setup();
     const session = kit.sessions.make({id: kit.blockId});
     expect(session.model.view()).toBe(undefined);

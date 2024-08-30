@@ -46,7 +46,14 @@ export class EditSession {
     if (this.saveInProgress) return null;
     this.saveInProgress = true;
     try {
-      if (!log.patches.size()) return {};
+      if (!log.patches.size()) {
+        const isNew = log.end.clock.time === 1;
+        if (isNew) {
+          const {remote} = await this.repo.create({id: this.id, patches: []});
+          return {remote};
+        }
+        return {};
+      }
       const patches: Patch[] = [];
       log.patches.forEach((patch) => {
         patches.push(patch.v);
@@ -64,7 +71,7 @@ export class EditSession {
    * Load latest state from the local repo.
    */
   public async load(): Promise<void> {
-    const {model} = await this.repo.get(this.id);
+    const {model} = await this.repo.get({id: this.id});
     if (model.clock.time > this.start.clock.time) this.reset(model);
   }
 

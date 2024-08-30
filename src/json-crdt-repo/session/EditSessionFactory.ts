@@ -26,7 +26,7 @@ export class EditSessionFactory {
   public async load(opts: EditSessionLoadOpts): Promise<EditSession> {
     const id = opts.id;
     const repo = this.opts.repo;
-    const {model} = await repo.get(id);
+    const {model} = await repo.get({id});
     const session = new EditSession(repo, id, model);
     return session;
   }

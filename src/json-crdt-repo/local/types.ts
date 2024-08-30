@@ -11,6 +11,11 @@ export type BlockId = [...collection: string[], id: string] | string[];
  */
 export interface LocalRepo {
   /**
+   * Creates a new block (document) in the local repo.
+   */
+  create(request: LocalRepoCreateRequest): Promise<LocalRepoCreateResponse>;
+
+  /**
    * Synchronizes an in-memory editing session changes to the locally stored
    * data. The `sync` call is used to create, read, and update data.
    */
@@ -19,12 +24,7 @@ export interface LocalRepo {
   /**
    * Reads a block (document) from the local repo.
    */
-  get(id: BlockId): Promise<{model: Model}>;
-
-  /**
-   * Deletes a block (document) from the local repo.
-   */
-  del(id: BlockId): Promise<void>;
+  get(request: LocalRepoGetRequest): Promise<LocalRepoGetResponse>;
 
   /**
    * Retrieves the latest state of the block from the remote.
@@ -34,11 +34,29 @@ export interface LocalRepo {
   pull(id: BlockId): Promise<void>;
 
   /**
+   * Deletes a block (document) from the local repo.
+   */
+  del(id: BlockId): Promise<void>;
+
+  /**
    * Emits an event every time a block is updated.
    * 
    * @param id Unique ID of the block.
    */
   change$(id: BlockId): Observable<LocalRepoEvent>;
+}
+
+export interface LocalRepoCreateRequest {
+  id: BlockId;
+  patches?: Patch[];
+}
+
+export interface LocalRepoCreateResponse {
+  /**
+   * Promise that resolves when the local changes have been successfully
+   * synchronized with the server or remote peers.
+   */
+  remote: Promise<void>;
 }
 
 /**
@@ -93,6 +111,17 @@ export interface LocalRepoSyncResponse {
    * synchronized with the server or remote peers.
    */
   remote?: Promise<void>;
+}
+
+export interface LocalRepoGetRequest {
+  /**
+   * Unique ID of the block.
+   */
+  id: BlockId;
+}
+
+export interface LocalRepoGetResponse {
+  model: Model;
 }
 
 /**
