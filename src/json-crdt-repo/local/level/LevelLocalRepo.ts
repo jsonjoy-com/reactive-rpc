@@ -11,7 +11,7 @@ import {timeout} from 'thingies/lib/timeout';
 import {pubsub} from '../../pubsub';
 import type {ServerBatch, ServerHistory, ServerPatch} from '../../remote/types';
 import type {BlockId, LocalRepo, LocalRepoEvent, LocalRepoDeleteEvent, LocalRepoMergeEvent, LocalRepoRebaseEvent, LocalRepoResetEvent, LocalRepoSyncRequest, LocalRepoSyncResponse, LocalRepoGetResponse, LocalRepoGetRequest, LocalRepoCreateResponse, LocalRepoCreateRequest} from '../types';
-import type {BinStrLevel, BinStrLevelOperation, BlockMetaValue, BlockModelMetadata, BlockModelValue, LocalBatch, SyncResult, LevelLocalRepoPubSub} from './types';
+import type {BinStrLevel, BinStrLevelOperation, BlockMeta, LocalBatch, SyncResult, LevelLocalRepoPubSub, LevelLocalRepoCursor} from './types';
 import type {CrudLocalRepoCipher} from './types';
 import type {Locks} from 'thingies/lib/Locks';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
@@ -45,19 +45,19 @@ const enum Defaults {
    * The metadata of the block.
    * 
    * ```
-   * b!<collection>!<id>!x
+   * b!<collection>!<id>!k!x
    * ```
    */
-  Metadata = 'x',
+  Metadata = 'k!x',
 
   /**
    * The state of the latest known server-side model.
    * 
    * ```
-   * b!<collection>!<id>!m
+   * b!<collection>!<id>!k!m
    * ```
    */
-  Model = 'm',
+  Model = 'k!m',
 
   /**
    * List of frontier patches.
@@ -244,70 +244,30 @@ export class LevelLocalRepo implements LocalRepo {
     return exists;
   }
 
-  public async rebaseAndMerge(id: BlockId, patches?: Patch[]): Promise<Pick<LocalRepoSyncResponse, 'remote'>> {
-    const keyBase = await this.blockKeyBase(id);
-    if (!patches || !patches.length) throw new Error('EMPTY_BATCH');
-    const rebasedPatches: Uint8Array[] = [];
-    await this.lockBlock(keyBase, async () => {
-      let nextTick = 0;
-      const tip = await this.readFrontierTip(keyBase);
-      if (tip) {
-        const patchTime = tip.getId()?.time ?? 0;
-        const patchSpan = tip.span();
-        nextTick = patchTime + patchSpan + 1; // TODO: Shall we add 1 here?
-      }
-      const ops: BinStrLevelOperation[] = [];
-      const sid = this.sid;
-      const length = patches.length;
-      for (let i = 0; i < length; i++) {
-        const patch = patches[i];
-        const patchId = patch.getId();
-        if (!patchId) throw new Error('PATCH_ID_MISSING');
-        const isSchemaPatch = patchId.sid === SESSION.GLOBAL && patchId.time === 1;
-        if (isSchemaPatch) continue;
-        let rebased = patch;
-        if (patchId.sid === sid) {
-          rebased = patch.rebase(nextTick);
-          nextTick = rebased.getId()!.time + rebased.span();
-        }
-        const patchKey = this.frontierKey(keyBase, rebased.getId()!.time);
-        const uint8 = rebased.toBinary();
-        rebasedPatches.push(uint8);
-        const op: BinStrLevelOperation = {
-          type: 'put',
-          key: patchKey,
-          value: uint8,
-        };
-        ops.push(op);
-      }
-      await this.kv.batch(ops);
-    });
-    const remote = this.markDirtyAndSync(id).then(() => {});
-    remote.catch(() => {});
-    if (rebasedPatches.length)
-      this.pubsub.pub({type: 'merge', id, patches: rebasedPatches});
-    return {remote};
+  protected _modelWrOp(keyBase: string, model: Uint8Array): Promise<BinStrLevelOperation> {
+    return this.encode(model, true).then((value) => ({
+      type: 'put',
+      key: keyBase + Defaults.Model,
+      value,
+    } as BinStrLevelOperation));
   }
 
-  protected async _wrModel0(keyBase: string, modelMeta: BlockModelMetadata, model: Uint8Array, meta?: BlockMetaValue): Promise<BinStrLevelOperation[]> {
-    const tuple = [modelMeta, model];
-    const ops: BinStrLevelOperation[] = await Promise.all([
-      this.encode(tuple, true).then((value) => ({
-        type: 'put',
-        key: keyBase + Defaults.Model,
-        value,
-      } as BinStrLevelOperation)),
-      ... meta ? [this.encode(meta, false).then((value) => ({
-        type: 'put',
-        key: keyBase + Defaults.Metadata,
-        value,
-      } as BinStrLevelOperation))] : [],
-    ]);
-    return ops;
+  protected _metaWrOp(keyBase: string, meta?: BlockMeta): Promise<BinStrLevelOperation> {
+    return this.encode(meta, false).then((value) => ({
+      type: 'put',
+      key: keyBase + Defaults.Metadata,
+      value,
+    } as BinStrLevelOperation));
   }
 
-  protected async _wrModel(keyBase: string, modelMeta: BlockModelMetadata, model: Uint8Array, meta?: BlockMetaValue): Promise<void> {
-    const ops = await this._wrModel0(keyBase, modelMeta, model, meta);
+  protected async _modelWrOps(keyBase: string, model: Uint8Array, meta?: BlockMeta): Promise<BinStrLevelOperation[]> {
+    const ops: Promise<BinStrLevelOperation>[] = [this._modelWrOp(keyBase, model)];
+    if (meta) ops.push(this._metaWrOp(keyBase, meta));
+    return Promise.all(ops);
+  }
+
+  protected async _wrModel(keyBase: string, model: Uint8Array, meta?: BlockMeta): Promise<void> {
+    const ops = await this._modelWrOps(keyBase, model, meta);
     await this.kv.batch(ops);
   }
 
@@ -324,15 +284,14 @@ export class LevelLocalRepo implements LocalRepo {
         model.applyPatch(Patch.fromBinary(patch.blob));
     const keyBase = await this.blockKeyBase(id);
     const metaKey = keyBase + Defaults.Metadata;
-    const meta: BlockMetaValue = {
+    const meta: BlockMeta = {
       time: -1,
-      ts: Date.now(),
+      seq,
     };
     const modelBlob = model.toBinary();
-    const modelTuple: BlockModelValue = [[seq], modelBlob];
     const [metaBlob, modelTupleBlob] = await Promise.all([
       this.encode(meta, false),
-      this.encode(modelTuple, true),
+      this.encode(modelBlob, true),
     ]);
     const ops: BinStrLevelOperation[] = [
       {
@@ -356,32 +315,25 @@ export class LevelLocalRepo implements LocalRepo {
     return {model};
   }
 
-  public async read(id: BlockId): Promise<{model: Model}> {
-    const keyBase = await this.blockKeyBase(id);
-    const [[model], frontier] = await Promise.all([this.readModel(keyBase), this.readFrontier0(keyBase)]);
-    model.applyBatch(frontier);
-    return {model};
-  }
-
-  protected async readMeta(keyBase: string): Promise<BlockMetaValue> {
+  protected async readMeta(keyBase: string): Promise<BlockMeta> {
     const metaKey = keyBase + Defaults.Metadata;
     const blob = await this.kv.get(metaKey);
-    const meta = this.codec.decoder.decode(blob) as BlockMetaValue;
+    const meta = this.codec.decoder.decode(blob) as BlockMeta;
     return meta;
   }
 
-  public async readModel0(keyBase: string): Promise<[meta: BlockModelMetadata, blob: Uint8Array]> {
+  public async readModel0(keyBase: string): Promise<Uint8Array> {
     const modelKey = keyBase + Defaults.Model;
     const value = await this.kv.get(modelKey);
-    const decoded = await this.decode(value, true) as [meta: BlockModelMetadata, blob: Uint8Array];
+    const decoded = await this.decode(value, true) as Uint8Array;
     return decoded;
   }
 
-  public async readModel(keyBase: string): Promise<[model: Model, meta: BlockModelMetadata]> {
+  public async readModel(keyBase: string): Promise<Model> {
     try {
-      const [meta, blob] = await this.readModel0(keyBase);
+      const blob = await this.readModel0(keyBase);
       const model = Model.load(blob, this.sid);
-      return [model, meta];
+      return model;
     } catch (error) {
       if (!!error && typeof error === 'object' && (error as any).code === 'LEVEL_NOT_FOUND')
         throw new Error('NOT_FOUND')
@@ -436,6 +388,9 @@ export class LevelLocalRepo implements LocalRepo {
     return this.opts.remoteTimeout ?? 5000;
   }
 
+  /**
+   * Pushes to remote.
+   */
   protected async push(id: BlockId, doPull: boolean = false): Promise<boolean> {
     if (!this.connected$.getValue()) throw new Error('DISCONNECTED');
     const keyBase = await this.blockKeyBase(id);
@@ -463,12 +418,12 @@ export class LevelLocalRepo implements LocalRepo {
           this.readMeta(keyBase),
         ]);
         assertTimeout();
+        let model = read[0];
         const meta = read[1];
-        if (Date.now() - meta.ts < 1000) return false;
+        // TODO: Track some meta to avoid unnecessary syncs.
+        // if (Date.now() - meta.ts < 1000) return false;
         const hist = !!meta.hist;
-        const modelMeta = read[0][1];
-        let model = read[0][0];
-        const lastKnownSeq = modelMeta[0];
+        const lastKnownSeq = meta.seq;
         const response = await remote.update(remoteId, {patches}, lastKnownSeq);
         assertTimeout();
         // TODO: handle case when block is deleted on the server.
@@ -515,27 +470,12 @@ export class LevelLocalRepo implements LocalRepo {
           });
           assertTimeout();
         }
-        // Process the model
-        modelMeta[0] = seq;
-        const modelTuple: BlockModelValue = [modelMeta, model.toBinary()];
-        const modelValue = encoder.encode(modelTuple);
-        const modelBlob = await this.encrypt(modelValue, true);
-        assertTimeout();
-        ops.push({
-          type: 'put',
-          key: keyBase + Defaults.Model,
-          value: modelBlob,
-        });
-        // Process block metadata
+        // Process the model and metadata
         meta.time = model.clock.time - 1;
-        meta.ts = Date.now();
-        ops.push({
-          type: 'put',
-          key: keyBase + Defaults.Metadata,
-          value: encoder.encode(meta),
-        });
-        // Persist and wrap up
+        meta.seq = seq;
+        const modelOps = await this._modelWrOps(keyBase, model.toBinary(), meta);
         assertTimeout();
+        ops.push(...modelOps);
         await this.kv.batch(ops);
         if (pull) {
           // const data: LevelLocalRepoRemotePull = {
@@ -613,9 +553,9 @@ export class LevelLocalRepo implements LocalRepo {
 
   public async create({id, patches}: LocalRepoCreateRequest): Promise<LocalRepoCreateResponse> {
     const keyBase = await this.blockKeyBase(id);
-    const meta: BlockMetaValue = {
+    const meta: BlockMeta = {
       time: -1,
-      ts: 0,
+      seq: -1,
     };
     const ops: BinStrLevelOperation[] = [];
     const model = Model.create(void 0, this.sid);
@@ -633,7 +573,7 @@ export class LevelLocalRepo implements LocalRepo {
         ops.push(op);
       }
     }
-    ops.push(...await this._wrModel0(keyBase, [-1], model.toBinary(), meta));
+    ops.push(...await this._modelWrOps(keyBase, model.toBinary(), meta));
     await this.lockBlock(keyBase, async () => {
       const exists = await this._exists(keyBase);
       if (exists) throw new Error('EXISTS');
@@ -641,47 +581,114 @@ export class LevelLocalRepo implements LocalRepo {
     });
     const remote = this.markDirtyAndSync(id).then(() => {});
     remote.catch(() => {});
-    return {remote};
+    return {model, remote};
   }
 
   public async sync(req: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
-    if (req.patches) {
-      const first = req.patches[0];
-      const time = first.getId()?.time;
-      const isNewDocument = time === 1;
-      if (isNewDocument) {
+    const cursor = req.cursor as LevelLocalRepoCursor | undefined;
+    const {id, patches, throwIf} = req;
+    const isNewSession = !Array.isArray(cursor);
+    const isCreate = !!patches;
+    const isWrite = !!patches && patches.length !== 0;
+    if (isNewSession) {
+      if (isWrite) {
         try {
-          return await this.create({id: req.id, patches: req.patches});
+          return await this._syncCreate(req);
         } catch (error) {
-          if (error instanceof Error && error.message === 'EXISTS') {
-            return await this.rebaseAndMerge(req.id, req.patches);
-          }
+          if (error instanceof Error && error.message === 'EXISTS')
+              return await this._syncRebaseAndMerge(req);
           throw error;
         }
-      } else {
-        throw new Error('not implemented');
-        // return await this.update(req.col, req.id, req.batch);
-      }
-    } else if (!req.cursor && !req.patches) {
-      try {
-        return await this.read(req.id);
-      } catch (error) {
-        if (error instanceof Error && error.message === 'NOT_FOUND') {
-          return await this.create(req);
+      } else if (isCreate) {
+        try {
+          return await this._syncCreate(req);
+        } catch (error) {
+          if (error instanceof Error && error.message === 'EXISTS')
+            // TODO: make sure reset does not happen, if model are the same.
+            return await this._syncRead(id);
+          throw error;
         }
-        throw error;
-      }
-    } else if (req.cursor && !req.patches) {
-      throw new Error('Not implemented: catch up');
+      } else return await this._syncRead(id);
     } else {
-      throw new Error('INV_SYNC');
+      const time = +cursor[0];
+      const seq = +cursor[1];
+      return await this._syncRebaseAndMerge(req);
     }
+  }
+
+  private async _syncCreate(req: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
+    const {remote, model} = await this.create(req);
+    return {
+      cursor: model.clock.time,
+      remote,
+    };
+  }
+
+  private async _syncRebaseAndMerge(req: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
+    const {id, patches} = req;
+    const keyBase = await this.blockKeyBase(id);
+    if (!patches || !patches.length) throw new Error('EMPTY_BATCH');
+    const rebasedPatches: Uint8Array[] = [];
+    // TODO: Check if `patches` need rebasing, if not, just merge.
+    // TODO: Return correct response.
+    // TODO: Check that remote state is in sync, too.
+    await this.lockBlock(keyBase, async () => {
+      let nextTick = 0;
+      const tip = await this.readFrontierTip(keyBase);
+      if (tip) {
+        const patchTime = tip.getId()?.time ?? 0;
+        const patchSpan = tip.span();
+        nextTick = patchTime + patchSpan + 1; // TODO: Shall we add 1 here?
+      }
+      const ops: BinStrLevelOperation[] = [];
+      const sid = this.sid;
+      const length = patches.length;
+      for (let i = 0; i < length; i++) {
+        const patch = patches[i];
+        const patchId = patch.getId();
+        if (!patchId) throw new Error('PATCH_ID_MISSING');
+        const isSchemaPatch = patchId.sid === SESSION.GLOBAL && patchId.time === 1;
+        if (isSchemaPatch) continue;
+        let rebased = patch;
+        if (patchId.sid === sid) {
+          rebased = patch.rebase(nextTick);
+          nextTick = rebased.getId()!.time + rebased.span();
+        }
+        const patchKey = this.frontierKey(keyBase, rebased.getId()!.time);
+        const uint8 = rebased.toBinary();
+        rebasedPatches.push(uint8);
+        const op: BinStrLevelOperation = {
+          type: 'put',
+          key: patchKey,
+          value: uint8,
+        };
+        ops.push(op);
+      }
+      await this.kv.batch(ops);
+    });
+    const remote = this.markDirtyAndSync(id).then(() => {});
+    remote.catch(() => {});
+    if (rebasedPatches.length)
+      this.pubsub.pub({type: 'merge', id, patches: rebasedPatches});
+    return {remote};
+  }
+
+  private async _syncRead(id: BlockId): Promise<LocalRepoSyncResponse> {
+    const keyBase = await this.blockKeyBase(id);
+    const [model, frontier] = await Promise.all([this.readModel(keyBase), this.readFrontier0(keyBase)]);
+    model.applyBatch(frontier);
+    return {
+      model,
+      cursor: model.clock.time,
+      remote: Promise.resolve(),
+    };
   }
 
   public async get({id}: LocalRepoGetRequest): Promise<LocalRepoGetResponse> {
     try {
-      // TODO: fetch latest on read.
-      return await this.read(id);
+      const {model} = await this._syncRead(id);
+      if (!model) throw new Error('NOT_FOUND');
+      return {model};
     } catch (error) {
       if (error instanceof Error && error.message === 'NOT_FOUND')
         return await this.load(id);
@@ -718,65 +725,60 @@ export class LevelLocalRepo implements LocalRepo {
     });
   }
 
-  public async pull(id: BlockId): Promise<void> {
+  /**
+   * Pull from remote.
+   */
+  public async pull(id: BlockId): Promise<{model: Model, meta: BlockMeta}> {
     const keyBase = await this.blockKeyBase(id);
-    const modelKey = keyBase + Defaults.Model;
-    let seq = -1;
     try {
-      const modelTupleBlob = await this.kv.get(modelKey);
-      if (modelTupleBlob) {
-        [[seq]] = await this.decode(modelTupleBlob, true) as BlockModelValue;
-        return await this.pullExisting(id, keyBase, seq);
-      }
+      const {seq} = await this.readMeta(keyBase);
+      return await this.pullExisting(id, keyBase, seq);
     } catch (error) {
-      if (!!error && typeof error === 'object' && (error as any).code === 'LEVEL_NOT_FOUND') {
-        return await this.pullNew(id, keyBase, seq);
-      }
+      if (!!error && typeof error === 'object' && (error as any).code === 'LEVEL_NOT_FOUND')
+        return await this.pullNew(id, keyBase);
       throw error;
     }
   }
 
-  protected async pullNew(id: BlockId, keyBase: string, seq: number): Promise<void> {
+  protected async pullNew(id: BlockId, keyBase: string): Promise<{model: Model, meta: BlockMeta}> {
     const blockId = id.join('/');
     const {block} = await this.opts.rpc.read(blockId);
     const pubsub = this.pubsub;
-    const modelBlob = await this.lockBlock(keyBase, async () => {
-      const [_, modelMeta] = await this.readModel(keyBase);
-      const seq2 = modelMeta[0];
-      if (seq2 !== seq) throw new Error('CONFLICT');
+    return this.lockBlock(keyBase, async () => {
+      const exists = await this._exists(keyBase);
+      if (exists) throw new Error('CONFLICT');
       const model = Model.load(block.snapshot.blob, this.sid);
-      let nextSeq = block.snapshot.seq;
+      let seq = block.snapshot.seq;
       for (const batch of block.tip) {
-        if (batch.seq <= nextSeq) continue;
-        nextSeq = batch.seq;
+        if (batch.seq <= seq) continue;
+        seq = batch.seq;
         for (const patch of batch.patches)
           model.applyPatch(Patch.fromBinary(patch.blob));
       }
-      modelMeta[0] = nextSeq;
-      const meta: BlockMetaValue = {
+      const meta: BlockMeta = {
         time: 0,
-        ts: Date.now(),
+        seq,
       };
-      const modelBlob = model.toBinary();
-      await this._wrModel(keyBase, modelMeta, modelBlob, meta);
-      return modelBlob;
+      const blob = model.toBinary();
+      await this._wrModel(keyBase, blob, meta);
+      pubsub.pub({type: 'reset', id, model: blob});
+      return {model, meta};
     });
-    pubsub.pub({type: 'reset', id, model: modelBlob});
   }
 
-  protected async pullExisting(id: BlockId, keyBase: string, seq: number): Promise<void> {
+  protected async pullExisting(id: BlockId, keyBase: string, seq: number): Promise<{model: Model, meta: BlockMeta}> {
     // TODO: try catching up using batches, if not possible, reset
     // TODO: load batches to catch up with remote
     const blockId = id.join('/');
     const pull = await this.opts.rpc.pull(blockId, seq);
     const nextSeq = pull.batches.length ? pull.batches[pull.batches.length - 1].seq : pull.snapshot?.seq ?? seq;
     const pubsub = this.pubsub;
-    return await this.lockBlock(keyBase, async () => {
-      const [[model, modelMeta], meta] = await Promise.all([
+    return this.lockBlock(keyBase, async () => {
+      const [model, meta] = await Promise.all([
         this.readModel(keyBase),
         this.readMeta(keyBase),
       ]);
-      const seq2 = modelMeta[0];
+      const seq2 = meta.seq;
       if (seq2 !== seq) throw new Error('CONFLICT');
       if (pull.snapshot) {
         if (nextSeq > seq2) {
@@ -784,12 +786,12 @@ export class LevelLocalRepo implements LocalRepo {
           for (const batch of pull.batches)
             for (const patch of batch.patches)
               model.applyPatch(Patch.fromBinary(patch.blob));
-          meta.ts = Date.now();
           const modelBlob = model.toBinary();
-          await this._wrModel(keyBase, [nextSeq], modelBlob, meta);
+          meta.seq = nextSeq;
+          await this._wrModel(keyBase, modelBlob, meta);
           pubsub.pub({type: 'reset', id, model: modelBlob});
         }
-        return;
+        return {model, meta};
       }
       if (!model) throw new Error('NO_MODEL');
       const patches: Uint8Array[] = [];
@@ -798,9 +800,10 @@ export class LevelLocalRepo implements LocalRepo {
           model.applyPatch(Patch.fromBinary(patch.blob));
           patches.push(patch.blob);
         }
-      modelMeta[0] = nextSeq;
-      await this._wrModel(keyBase, modelMeta, model.toBinary(), meta);
+      meta.seq = nextSeq;
+      await this._wrModel(keyBase, model.toBinary(), meta);
       pubsub.pub({type: 'merge', id, patches});
+      return {model, meta};
     });
   }
 
@@ -890,31 +893,33 @@ export class LevelLocalRepo implements LocalRepo {
 
   protected async _mergeBatch(id: BlockId, batch: ServerBatch): Promise<void> {
     const keyBase = await this.blockKeyBase(id);
-    await this.lockBlock(keyBase, async () => {
-      try {  
-        const [modelMeta, blob] = await this.readModel0(keyBase);
-        const [seq] = modelMeta;
-        if (seq + 1 !== batch.seq) {
-          await this.pull(id);
-          return;
-        }
-        const model = Model.load(blob, this.sid);
-        if (!model) throw new Error('NO_MODEL');
-        const patches: Uint8Array[] = [];
-        for (const patch of batch.patches) {
-          model.applyPatch(Patch.fromBinary(patch.blob));
-          patches.push(patch.blob);
-        }
-        modelMeta[0] = batch.seq;
-        await this._wrModel(keyBase, modelMeta, model.toBinary());
-        this.pubsub.pub({type: 'merge', id, patches});
-      } catch (error) {
-        if (!!error && typeof error === 'object' && (error as any).code === 'LEVEL_NOT_FOUND') {
-          await this.pullNew(id, keyBase, -1);
-          return;
-        }
-        throw error;
+    try {
+      const meta = await this.readMeta(keyBase);
+      if (meta.seq + 1 !== batch.seq) {
+        await this.pull(id);
+        return;
       }
+    } catch (error) {
+      if (!!error && typeof error === 'object' && (error as any).code === 'LEVEL_NOT_FOUND') {
+        await this.pullNew(id, keyBase);
+        return;
+      }
+      throw error;
+    }
+    await this.lockBlock(keyBase, async () => {
+      const [model, meta] = await Promise.all([
+        this.readModel(keyBase),
+        this.readMeta(keyBase),
+      ]);
+      if (meta.seq + 1 !== batch.seq) throw new Error('CONFLICT');  
+      const patches: Uint8Array[] = [];
+      for (const patch of batch.patches) {
+        model.applyPatch(Patch.fromBinary(patch.blob));
+        patches.push(patch.blob);
+      }
+      meta.seq = batch.seq;
+      await this._wrModel(keyBase, model.toBinary(), meta);
+      this.pubsub.pub({type: 'merge', id, patches});
     });
   }
 }

@@ -6,26 +6,16 @@ import type {PubSub} from '../../pubsub';
 export type BinStrLevel = AbstractLevel<any, string, Uint8Array>;
 export type BinStrLevelOperation = AbstractBatchOperation<BinStrLevel, string, Uint8Array>;
 
-export type BlockModelValue = [meta: BlockModelMetadata, model: Uint8Array];
-
-export type BlockModelMetadata = [
-  /**
-   * The batch sequence number which the model is at.
-   */
-  seq: number,
-];
-
-export interface BlockMetaValue {
+export interface BlockMeta {
   /**
    * The latest logical time that was successfully synced with the remote.
    */
   time: number;
 
   /**
-   * The last wall clock time the block was synced with the remote successfully,
-   * in milliseconds.
+   * The sequence number of the last remote batch that was successfully pulled.
    */
-  ts: number;
+  seq: number;
 
   /**
    * Whether to track the history of the block. By default the block will
@@ -35,6 +25,18 @@ export interface BlockMetaValue {
    */
   hist?: boolean;
 }
+
+export type LevelLocalRepoCursor = [
+  /**
+   * The logical time of the local operations that the client has seen.
+   */
+  time: number,
+
+  /**
+   * The remote batch sequence number which the the client has seen.
+   */
+  seq: number,
+];
 
 export interface CrudLocalRepoCipher {
   encrypt(plaintext: Uint8Array): Promise<Uint8Array>;

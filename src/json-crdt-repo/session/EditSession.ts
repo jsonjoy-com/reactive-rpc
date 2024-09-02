@@ -7,6 +7,8 @@ export class EditSession {
   public log: Log;
   protected _stop$ = new Subject<void>();
 
+  protected cursor?: undefined | number;
+
   public get model(): Model {
     return this.log.end;
   }
@@ -46,20 +48,14 @@ export class EditSession {
     if (this.saveInProgress) return null;
     this.saveInProgress = true;
     try {
-      if (!log.patches.size()) {
-        const isNew = log.end.clock.time === 1;
-        if (isNew) {
-          const {remote} = await this.repo.create({id: this.id, patches: []});
-          return {remote};
-        }
-        return {};
-      }
       const patches: Patch[] = [];
       log.patches.forEach((patch) => {
         patches.push(patch.v);
       });
       // TODO: After async call check that sync state is still valid. New patches, might have been added.
-      const res = await this.repo.sync({id: this.id, patches});
+      const {id, cursor} = this;
+      const res = await this.repo.sync({id, patches, cursor});
+      if (typeof cursor !== undefined) this.cursor = cursor;
       return {remote: res.remote};
     } finally {
       this.saveInProgress = false;

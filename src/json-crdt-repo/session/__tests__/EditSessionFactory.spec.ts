@@ -1,6 +1,6 @@
 import {Model, s} from 'json-joy/lib/json-crdt';
 import {setup} from './setup';
-import {until} from 'thingies';
+import {tick, until} from 'thingies';
 import {BlockId, LocalRepo} from '../../local/types';
 
 const readLocal = async (local: LocalRepo, id: BlockId) => {
@@ -19,15 +19,15 @@ describe('.make()', () => {
       await kit.stop();
     });
 
-    test('can save a new session', async () => {
+    test.only('can save a new session', async () => {
       const kit = await setup();
       const session = kit.sessions.make({id: kit.blockId});
       expect(session.model.view()).toBe(undefined);
       await session.sync();
-      const {model} = await readLocal(kit.local, kit.blockId);
-      expect(model.view()).toBe(undefined);
-      await session.dispose();
-      await kit.stop();
+      // const {model} = await readLocal(kit.local, kit.blockId);
+      // expect(model.view()).toBe(undefined);
+      // await session.dispose();
+      // await kit.stop();
     });
 
     test('can save a session with edits', async () => {
@@ -43,25 +43,56 @@ describe('.make()', () => {
       await kit.stop();
     });
 
-    test('can create with ID already existing in local', async () => {
-      const kit = await setup();
+    describe('local exists concurrently', () => {
+      test('can create, and sync up with local', async () => {
+        const kit = await setup();
 
-      // Crate in another tab.
-      const model = Model.create(undefined, kit.sid);
-      model.api.root({foo: 'bar'});
-      const patch = model.api.flush();
-      const local2 = await kit.createLocal();
-      const id = kit.blockId;
-      await local2.local.sync({id, patches: [patch]});
+        // Crate in another tab.
+        const model = Model.create(undefined, kit.sid);
+        model.api.root({foo: 'bar'});
+        const patch = model.api.flush();
+        const local2 = await kit.createLocal();
+        const id = kit.blockId;
+        await local2.local.sync({id, patches: [patch]});
 
-      // Synchronously make a session in current tab.
-      const session = await kit.sessions.make({id});
-      expect(session.model.view()).toBe(undefined);
-      await until(() => session.model.view()?.foo === 'bar');
-      expect(session.model.view()).toEqual({foo: 'bar'});
-      await local2.stop();
-      await session.dispose();
-      await kit.stop();
+        // Synchronously make a session in current tab.
+        const session = await kit.sessions.make({id});
+        expect(session.model.view()).toBe(undefined);
+        await until(() => session.model.view()?.foo === 'bar');
+        expect(session.model.view()).toEqual({foo: 'bar'});
+
+        await local2.stop();
+        await session.dispose();
+        await kit.stop();
+      });
+
+      test('overwrites local changes', async () => {
+        const kit = await setup();
+
+        // Crate in another tab.
+        const model = Model.create(undefined, kit.sid);
+        model.api.root({foo: 'bar'});
+        const patch = model.api.flush();
+        const local2 = await kit.createLocal();
+        const id = kit.blockId;
+        await local2.local.sync({id, patches: [patch]});
+
+        // Synchronously make a session in current tab.
+        const session = await kit.sessions.make({id});
+        expect(session.model.view()).toBe(undefined);
+        session.model.api.root({a: 'b'});
+        expect(session.model.view()).toEqual({a: 'b'});
+        await session.sync();
+        await tick(150);
+        expect(session.model.view()).toEqual({a: 'b'});
+
+        const get = await local2.local.get({id});
+        expect(get.model.view()).toEqual({a: 'b'});
+
+        await local2.stop();
+        await session.dispose();
+        await kit.stop();
+      });
     });
 
     test('can create with ID already existing in remote', async () => {

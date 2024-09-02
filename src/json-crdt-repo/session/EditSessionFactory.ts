@@ -19,7 +19,8 @@ export class EditSessionFactory {
       api.root(schema);
       api.flush();
     }
-    if (pull) session.loadSilent();
+    // if (pull) session.loadSilent();
+    if (pull) session.sync().catch(() => {});
     return session;
   }
 

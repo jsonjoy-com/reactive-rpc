@@ -31,7 +31,7 @@ export interface LocalRepo {
    *
    * @param id Unique ID of the block.
    */
-  pull(id: BlockId): Promise<void>;
+  pull(id: BlockId): Promise<{model: Model}>;
 
   /**
    * Deletes a block (document) from the local repo.
@@ -57,6 +57,13 @@ export interface LocalRepoCreateResponse {
    * synchronized with the server or remote peers.
    */
   remote: Promise<void>;
+
+  /**
+   * Model snapshot that the client should reset its "start" state to. The
+   * `Model` is sent when `rebase` patches are not available, or when the
+   * patch set is too large.
+   */
+  model: Model;
 }
 
 /**
@@ -74,18 +81,18 @@ export interface LocalRepoSyncRequest {
   id: BlockId;
 
   /**
+   * The last known cursor returned in the `.sync()` call response. The cursor
+   * should be omitted in the first `.sync()` call, and then set to the value
+   * returned in the previous `.sync()` call.
+   */
+  cursor?: undefined | unknown;
+
+  /**
    * When a new block is created, the client can specify whether the block
    * should be created only if it does not exist yet, or if it should be
    * created only if it already exists.
    */
   throwIf?: 'missing' | 'exists';
-
-  /**
-   * Latest known cursor position of already loaded data. If `null`, means that
-   * no data was loaded yet. Setting this to `null` will load the latest
-   * `Model` snapshot, making this call equivalent to "read" operation.
-   */
-  cursor?: ITimestampStruct;
 
   /**
    * List of changes that the client wants to persist.
@@ -94,6 +101,13 @@ export interface LocalRepoSyncRequest {
 }
 
 export interface LocalRepoSyncResponse {
+  /**
+   * Cursor that the client should use in the next `.sync()` call. If the cursor
+   * is not set, the client should use the cursor from the previous `.sync()`
+   * call.
+   */
+  cursor?: undefined | unknown;
+
   /**
    * List of changes that the client should apply to the local state.
    */
