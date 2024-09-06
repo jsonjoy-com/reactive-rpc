@@ -107,7 +107,7 @@ export interface LocalRepoSyncResponse {
    * is not set, the client should use the cursor from the previous `.sync()`
    * call.
    */
-  cursor?: undefined | unknown;
+  cursor: undefined | unknown;
 
   /**
    * List of changes that the client should apply to the local state.

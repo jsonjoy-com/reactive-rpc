@@ -641,12 +641,17 @@ export class LevelLocalRepo implements LocalRepo {
     const keyBase = await this.blockKeyBase(id);
     if (!patches || !patches.length) throw new Error('EMPTY_BATCH');
     const rebasedPatches: Uint8Array[] = [];
+    const cursor = [0, -1];
     // TODO: Check if `patches` need rebasing, if not, just merge.
     // TODO: Return correct response.
     // TODO: Check that remote state is in sync, too.
     await this.lockBlock(keyBase, async () => {
-      let nextTick = 0;
-      const tip = await this.readFrontierTip(keyBase);
+      let nextTick = 1;
+      const [tip, meta] = await Promise.all([
+        this.readFrontierTip(keyBase),
+        this.readMeta(keyBase),
+      ]);
+      cursor[1] = meta.seq;
       if (tip) {
         const patchTime = tip.getId()?.time ?? 0;
         const patchSpan = tip.span();
@@ -666,7 +671,10 @@ export class LevelLocalRepo implements LocalRepo {
           rebased = patch.rebase(nextTick);
           nextTick = rebased.getId()!.time + rebased.span();
         }
-        const patchKey = this.frontierKey(keyBase, rebased.getId()!.time);
+        const id = rebased.getId()!;
+        const time = id.time;
+        cursor[0] = time + rebased.span() - 1;
+        const patchKey = this.frontierKey(keyBase, time);
         const uint8 = rebased.toBinary();
         rebasedPatches.push(uint8);
         const op: BinStrLevelOperation = {
@@ -682,7 +690,7 @@ export class LevelLocalRepo implements LocalRepo {
     remote.catch(() => {});
     if (rebasedPatches.length)
       this.pubsub.pub({type: 'merge', id, patches: rebasedPatches});
-    return {remote};
+    return {cursor, remote};
   }
 
   private async _syncRead(id: BlockId): Promise<LocalRepoSyncResponse> {
