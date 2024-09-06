@@ -1,4 +1,4 @@
-import type {ITimestampStruct, Model, Patch} from 'json-joy/lib/json-crdt';
+import type {Model, Patch} from 'json-joy/lib/json-crdt';
 import type {Observable} from 'rxjs';
 
 export type BlockId = [...collection: string[], id: string] | string[];
@@ -16,15 +16,16 @@ export interface LocalRepo {
   create(request: LocalRepoCreateRequest): Promise<LocalRepoCreateResponse>;
 
   /**
+   * Reads a block (document) from the local repo. Simply fetches the current
+   * state of the block stored in the repo.
+   */
+  get(request: LocalRepoGetRequest): Promise<LocalRepoGetResponse>;
+
+  /**
    * Synchronizes an in-memory editing session changes to the locally stored
    * data. The `sync` call is used to create, read, and update data.
    */
   sync(request: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse>;
-
-  /**
-   * Reads a block (document) from the local repo.
-   */
-  get(request: LocalRepoGetRequest): Promise<LocalRepoGetResponse>;
 
   /**
    * Retrieves the latest state of the block from the remote.
@@ -132,6 +133,12 @@ export interface LocalRepoGetRequest {
    * Unique ID of the block.
    */
   id: BlockId;
+
+  /**
+   * Whether to load the block from the remote, if it does not exist locally.
+   * Defaults to `false`.
+   */
+  remote?: boolean;
 }
 
 export interface LocalRepoGetResponse {

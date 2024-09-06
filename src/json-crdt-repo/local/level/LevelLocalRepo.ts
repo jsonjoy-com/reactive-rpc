@@ -584,6 +584,18 @@ export class LevelLocalRepo implements LocalRepo {
     return {model, remote};
   }
 
+  public async get({id, remote}: LocalRepoGetRequest): Promise<LocalRepoGetResponse> {
+    try {
+      const {model} = await this._syncRead(id);
+      if (!model) throw new Error('NOT_FOUND');
+      return {model};
+    } catch (error) {
+      if (remote && error instanceof Error && error.message === 'NOT_FOUND')
+        return await this.load(id);
+      throw error;
+    }
+  }
+
   public async sync(req: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
     const cursor = req.cursor as LevelLocalRepoCursor | undefined;
     const {id, patches, throwIf} = req;
@@ -604,7 +616,7 @@ export class LevelLocalRepo implements LocalRepo {
           return await this._syncCreate(req);
         } catch (error) {
           if (error instanceof Error && error.message === 'EXISTS')
-            // TODO: make sure reset does not happen, if model are the same.
+            // TODO: make sure reset does not happen, if models are the same.
             return await this._syncRead(id);
           throw error;
         }
@@ -618,10 +630,10 @@ export class LevelLocalRepo implements LocalRepo {
 
   private async _syncCreate(req: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
     const {remote, model} = await this.create(req);
-    return {
-      cursor: model.clock.time,
-      remote,
-    };
+    const time = model.clock.time - 1;
+    const seq = -1;
+    const cursor = [time, seq];
+    return {cursor, remote};
   }
 
   private async _syncRebaseAndMerge(req: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
@@ -675,25 +687,14 @@ export class LevelLocalRepo implements LocalRepo {
 
   private async _syncRead(id: BlockId): Promise<LocalRepoSyncResponse> {
     const keyBase = await this.blockKeyBase(id);
-    const [model, frontier] = await Promise.all([this.readModel(keyBase), this.readFrontier0(keyBase)]);
+    const [model, meta, frontier] = await Promise.all([this.readModel(keyBase), this.readMeta(keyBase), this.readFrontier0(keyBase)]);
     model.applyBatch(frontier);
+    const cursor = [model.clock.time - 1, meta.seq];
     return {
       model,
-      cursor: model.clock.time,
+      cursor,
       remote: Promise.resolve(),
     };
-  }
-
-  public async get({id}: LocalRepoGetRequest): Promise<LocalRepoGetResponse> {
-    try {
-      const {model} = await this._syncRead(id);
-      if (!model) throw new Error('NOT_FOUND');
-      return {model};
-    } catch (error) {
-      if (error instanceof Error && error.message === 'NOT_FOUND')
-        return await this.load(id);
-      throw error;
-    }
   }
 
   public async del(id: BlockId): Promise<void> {
