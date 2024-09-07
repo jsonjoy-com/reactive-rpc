@@ -137,7 +137,7 @@ describe('.sync()', () => {
           id: kit.blockId,
           patches: patches2,
         });
-        expect(res2.model!).toBe(undefined);
+        expect(res2.model!.view()).toEqual({foo: 'bar'});
         expect(res2.remote).toEqual(expect.any(Promise));
         expect(res2.cursor).toEqual([model2.clock.time - 1, -1]);
         const get1 = await kit.local.get({id: kit.blockId});
@@ -204,6 +204,41 @@ describe('.sync()', () => {
       const get2 = await kit.local.get({id: kit.blockId});
       expect(get2.model.view()).toEqual({a: 'b'});
       expect(get2.model.clock.sid).toBe(kit.sid);
+      await kit.stop();
+    });
+
+    test('create with schema, when block exists and is already advanced, returns reset model', async () => {
+      const kit = await setup();
+      const schema = s.obj({a: s.str('b')});
+      const model1 = Model.create(schema, kit.sid);
+      const patches = [model1.api.flush()];
+      model1.api.obj([]).set({x: 1});
+      patches.push(model1.api.flush());
+      expect(model1.view()).toEqual({a: 'b', x: 1});
+      const res1 = await kit.local.sync({
+        id: kit.blockId,
+        patches: patches,
+      });
+      expect(res1.model).toBe(undefined);
+      expect(res1.remote).toEqual(expect.any(Promise));
+      expect(res1.cursor).toEqual([model1.clock.time - 1, -1]);
+      const model2 = Model.create(schema, kit.sid);
+      const patches2 = [model2.api.flush()];
+      expect(model2.view()).toEqual({a: 'b'});
+      const res2 = await kit.local.sync({
+        id: kit.blockId,
+        patches: patches2,
+      });
+      expect(model2.clock.time < model1.clock.time).toBe(true);
+      expect(model2.clock.sid).toBe(model1.clock.sid);
+      expect(res2.model!.view()).toEqual({a: 'b', x: 1});
+      expect(res2.remote).toEqual(expect.any(Promise));
+      expect(res2.cursor).toEqual([expect.any(Number), -1]);
+      expect((res2.cursor as any)[0] > model2.clock.time).toBe(true);
+      expect((res2.cursor as any)[0]).toBe(res2.model!.clock.time - 1);
+      const get1 = await kit.local.get({id: kit.blockId});
+      expect(get1.model.view()).toEqual({a: 'b', x: 1});
+      expect(get1.model.clock.sid).toBe(kit.sid);
       await kit.stop();
     });
 
