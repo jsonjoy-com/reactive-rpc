@@ -85,6 +85,25 @@ describe('.sync()', () => {
         await kit.stop();
       });
 
+      test('can create with schema', async () => {
+        const kit = await setup();
+        const schema = s.obj({schema: s.con(true), id: s.con('asdf')});
+        const model = Model.create(schema, kit.sid);
+        const patches = [model.api.flush()];
+        const res1 = await kit.local.sync({
+          id: kit.blockId,
+          patches,
+        });
+        expect(res1.model).toBe(undefined);
+        expect(res1.remote).toEqual(expect.any(Promise));
+        expect(res1.cursor).toEqual([model.clock.time - 1, -1]);
+        expect(model.clock.time > 1).toBe(true);
+        const get1 = await kit.local.get({id: kit.blockId});
+        expect(get1.model.view()).toEqual({schema: true, id: 'asdf'});
+        expect(get1.model.clock.sid).toBe(kit.sid);
+        await kit.stop();
+      });
+
       test('can create a new block, with multiple patches', async () => {
         const kit = await setup();
         const model = Model.create(undefined, kit.sid);
@@ -123,6 +142,37 @@ describe('.sync()', () => {
         expect(res2.cursor).toEqual([model2.clock.time - 1, -1]);
         const get1 = await kit.local.get({id: kit.blockId});
         expect(get1.model.view()).toEqual({foo: 'bar'});
+        expect(get1.model.clock.sid).toBe(kit.sid);
+        await kit.stop();
+      });
+
+      test('when a block with the same schema and ID exists', async () => {
+        const kit = await setup();
+        const schema = s.obj({a: s.str('b')});
+        const model1 = Model.create(schema, kit.sid);
+        const patches = [model1.api.flush()];
+        expect(model1.view()).toEqual({a: 'b'});
+        const res1 = await kit.local.sync({
+          id: kit.blockId,
+          patches: patches,
+        });
+        expect(res1.model).toBe(undefined);
+        expect(res1.remote).toEqual(expect.any(Promise));
+        expect(res1.cursor).toEqual([model1.clock.time - 1, -1]);
+        const model2 = Model.create(schema, kit.sid);
+        const patches2 = [model2.api.flush()];
+        expect(model2.view()).toEqual({a: 'b'});
+        const res2 = await kit.local.sync({
+          id: kit.blockId,
+          patches: patches2,
+        });
+        expect(model2.clock.time).toBe(model1.clock.time);
+        expect(model2.clock.sid).toBe(model1.clock.sid);
+        expect(res2.model!).toBe(undefined);
+        expect(res2.remote).toEqual(expect.any(Promise));
+        expect(res2.cursor).toEqual([model2.clock.time - 1, -1]);
+        const get1 = await kit.local.get({id: kit.blockId});
+        expect(get1.model.view()).toEqual({a: 'b'});
         expect(get1.model.clock.sid).toBe(kit.sid);
         await kit.stop();
       });

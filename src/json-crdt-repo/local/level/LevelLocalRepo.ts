@@ -665,7 +665,10 @@ export class LevelLocalRepo implements LocalRepo {
         const patchId = patch.getId();
         if (!patchId) throw new Error('PATCH_ID_MISSING');
         const isSchemaPatch = patchId.sid === SESSION.GLOBAL && patchId.time === 1;
-        if (isSchemaPatch) continue;
+        if (isSchemaPatch) {
+          cursor[0] = patchId.time + patch.span() - 1;
+          continue;
+        }
         let rebased = patch;
         if (patchId.sid === sid) {
           rebased = patch.rebase(nextTick);
