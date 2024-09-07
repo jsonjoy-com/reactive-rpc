@@ -399,7 +399,6 @@ export class LevelLocalRepo implements LocalRepo {
     const patches: ServerPatch[] = [];
     const syncMarkerKey = Defaults.SyncRoot + '!' + id.join('!');
     const ops: BinStrLevelOperation[] = [{type: 'del', key: syncMarkerKey}];
-    const encoder = this.codec.encoder;
     for await (const [key, blob] of this.readFrontierBlobs0(keyBase)) {
       ops.push({type: 'del', key});
       patches.push({blob});
@@ -428,6 +427,7 @@ export class LevelLocalRepo implements LocalRepo {
         assertTimeout();
         // TODO: handle case when block is deleted on the server.
         // Process pull
+        const merge: Uint8Array[] = []; // List of merge patches to emit over pubsub.
         const pull = response.pull;
         if (pull) {
           const snapshot = pull.snapshot;
@@ -446,7 +446,11 @@ export class LevelLocalRepo implements LocalRepo {
           if (batches) {
             for (const b of batches) {
               const patches = b.patches;
-              for (const patch of patches) model.applyPatch(Patch.fromBinary(patch.blob));
+              for (const patch of patches) {
+                const blob = patch.blob;
+                merge.push(blob);
+                model.applyPatch(Patch.fromBinary(blob));
+              }
               if (hist) {
                 ops.push({
                   type: 'put',
@@ -459,7 +463,11 @@ export class LevelLocalRepo implements LocalRepo {
           }
         }
         // Process the latest batch
-        for (const patch of patches) model.applyPatch(Patch.fromBinary(patch.blob));
+        for (const patch of patches) {
+          const blob = patch.blob;
+          merge.push(blob);
+          model.applyPatch(Patch.fromBinary(blob));
+        }
         const batch: LocalBatch = {...response.batch, patches};
         const seq = batch.seq;
         if (hist) {
@@ -477,6 +485,7 @@ export class LevelLocalRepo implements LocalRepo {
         assertTimeout();
         ops.push(...modelOps);
         await this.kv.batch(ops);
+        if (merge.length) this.pubsub.pub({type: 'merge', id, patches: merge});
         if (pull) {
           // const data: LevelLocalRepoRemotePull = {
           //   id,

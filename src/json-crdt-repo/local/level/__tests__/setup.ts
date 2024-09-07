@@ -1,6 +1,6 @@
 import {LevelLocalRepo, LevelLocalRepoOpts} from '../LevelLocalRepo';
 import {Locks} from 'thingies/lib/Locks';
-import {Model} from 'json-joy/lib/json-crdt';
+import {Model, Patch} from 'json-joy/lib/json-crdt';
 import {Log} from 'json-joy/lib/json-crdt/log/Log';
 import {BehaviorSubject} from 'rxjs';
 import {setup as remoteSetup} from '../../../remote/__tests__/setup';
@@ -44,6 +44,14 @@ export const setup = async (
   const {sid, local, pubsub, stop} = createLocal();
   local.start();
   const log = Log.fromNewModel(Model.create(undefined, sid));
+  const getModelFromRemote = async (id: string = blockId.join('/')): Promise<Model> => {
+    const res = await remote.client.call('block.get', {id});
+    const model = Model.fromBinary(res.block.snapshot.blob);
+    for (const batch of res.block.tip)
+      for (const patch of batch.patches)
+        model.applyPatch(Patch.fromBinary(patch.blob));
+    return model;
+  };
   log.end.api.root({foo: 'bar'});
   log.end.api.flush();
   return {
@@ -58,6 +66,7 @@ export const setup = async (
     id,
     col,
     blockId,
+    getModelFromRemote,
     stop,
   };
 };
