@@ -178,6 +178,35 @@ describe('.sync()', () => {
       });
     });
 
+    test('create block with schema, when empty block exists', async () => {
+      const kit = await setup();
+      const schema = s.obj({a: s.str('b')});
+      const res1 = await kit.local.sync({
+        id: kit.blockId,
+        patches: [],
+      });
+      expect(res1.model).toBe(undefined);
+      expect(res1.remote).toEqual(expect.any(Promise));
+      expect(res1.cursor).toEqual([0, -1]);
+      const get1 = await kit.local.get({id: kit.blockId});
+      expect(get1.model.view()).toEqual(undefined);
+      expect(get1.model.clock.sid).toBe(kit.sid);
+      const model2 = Model.create(schema, kit.sid);
+      const patches2 = [model2.api.flush()];
+      expect(model2.view()).toEqual({a: 'b'});
+      const res2 = await kit.local.sync({
+        id: kit.blockId,
+        patches: patches2,
+      });
+      expect(res2.model!).toBe(undefined);
+      expect(res2.remote).toEqual(expect.any(Promise));
+      expect(res2.cursor).toEqual([model2.clock.time - 1, -1]);
+      const get2 = await kit.local.get({id: kit.blockId});
+      expect(get2.model.view()).toEqual({a: 'b'});
+      expect(get2.model.clock.sid).toBe(kit.sid);
+      await kit.stop();
+    });
+
     // describe('create', () => {
     //   test('can create a new block', async () => {
     //     const kit = await setup();

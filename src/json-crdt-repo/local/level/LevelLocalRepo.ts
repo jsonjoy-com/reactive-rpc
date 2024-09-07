@@ -1,4 +1,4 @@
-import {BehaviorSubject, defer, Observable, Subject, type Subscription} from 'rxjs';
+import {BehaviorSubject, defer, Observable, type Subscription} from 'rxjs';
 import {catchError, filter, finalize, map, share, switchMap, tap} from 'rxjs/operators';
 import {gzip, ungzip} from '@jsonjoy.com/util/lib/compression/gzip';
 import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
@@ -667,7 +667,10 @@ export class LevelLocalRepo implements LocalRepo {
         const isSchemaPatch = patchId.sid === SESSION.GLOBAL && patchId.time === 1;
         if (isSchemaPatch) {
           cursor[0] = patchId.time + patch.span() - 1;
-          continue;
+          if (tip) {
+            const patchAheadOfTip = patchId.time > tip.getId()!.time;
+            if (!patchAheadOfTip) continue;
+          }
         }
         let rebased = patch;
         if (patchId.sid === sid) {
