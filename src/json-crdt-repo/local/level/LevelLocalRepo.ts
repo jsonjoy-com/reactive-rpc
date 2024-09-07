@@ -656,7 +656,8 @@ export class LevelLocalRepo implements LocalRepo {
       cursor[1] = meta.seq;
       if (tip) {
         const tipTime = tip.getId()?.time ?? 0;
-        nextTick = tipTime + tip.span() + 1; // TODO: Shall we add 1 here?
+        nextTick = tipTime + tip.span();
+        cursor[0] = nextTick - 1;
         if (tip.getId()?.sid !== SESSION.GLOBAL) nonSchemaPatchesInFrontier = true;
       }
       const ops: BinStrLevelOperation[] = [];
@@ -698,7 +699,7 @@ export class LevelLocalRepo implements LocalRepo {
     remote.catch(() => {});
     if (rebasedPatches.length)
       this.pubsub.pub({type: 'rebase', id, patches: rebasedPatches});
-    const needsReset = nonSchemaPatchesInFrontier || nonSchemaPatchesInWrite;
+    const needsReset = nonSchemaPatchesInFrontier;
     if (needsReset) {
       const {cursor, model} = await this._syncRead0(keyBase);
       return {cursor, model, remote};
