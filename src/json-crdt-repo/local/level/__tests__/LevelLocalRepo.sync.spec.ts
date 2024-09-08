@@ -439,6 +439,7 @@ describe('.sync()', () => {
         });
         const {model: model2} = await kit.local.sync({id: kit.blockId});
         expect(model2?.view()).toEqual({foo: 'bar'});
+        await kit.stop();
       });
 
       const testCreateAndMerge = async (schema: undefined | NodeBuilder) => {
@@ -470,6 +471,8 @@ describe('.sync()', () => {
         });
         const read2 = await kit.local.sync({id: kit.blockId});
         expect(read2.model?.view()).toEqual({foo: 'baz'});
+        await local2.stop();
+        await kit.stop();
       };
 
       test('can merge new block patches, with concurrently created same-ID block from another tab', async () => {
@@ -524,6 +527,7 @@ describe('.sync()', () => {
         });
         const read2 = await kit.local.sync({id: kit.blockId});
         expect(read2.model?.view()).toEqual({foo: 'baz', x: 1, y: 2});
+        await kit.stop();
       });
 
       test('stores the new block on remote', async () => {
@@ -540,12 +544,27 @@ describe('.sync()', () => {
         const res = await kit.remote.remote.read(blockId);
         const model2 = Model.load(res.block.snapshot.blob);
         expect(model2.view()).toEqual({foo: 'bar'});
+        await kit.stop();
       });
     });
   });
   
   describe('update', () => {
-    test.todo('test merge on create with remote Model already available');
+    test('can push an update', async () => {
+
+    });
+
+    test.todo('can push multiple updates');
+    test.todo('can push an update when local already advanced');
+    test.todo('can push an update when local already advanced by multiple patches');
+    test.todo('can push an update when remote already advanced');
+    test.todo('can push an update when remote already advanced by multiple patches');
+    test.todo('can push an update when local and remote have already advanced by different patches');
+    
+    describe('can push empty patch to re-sync with local', () => {
+      test.todo('no changes if in-sync');
+      test.todo('receives patches to catch up with local');
+    });
   });
   
   describe('read', () => {
@@ -560,6 +579,7 @@ describe('.sync()', () => {
       });
       const {model: model2} = await kit.local.sync({id: kit.blockId});
       expect(model2?.view()).toEqual({foo: 'bar'});
+      await kit.stop();
     });
 
     test('can read block created by another tab', async () => {
@@ -574,24 +594,27 @@ describe('.sync()', () => {
       const local2 = await kit.createLocal();
       const {model: model2} = await local2.local.sync({id: kit.blockId});
       expect(model2?.view()).toEqual({foo: 'bar'});
+      await local2.stop();
+      await kit.stop();
     });
 
-    test('can read block from remote', async () => {
-      const kit = await setup();
-      const schema = s.obj({foo: s.str('bar')});
-      const model = Model.create(schema, kit.sid);
-      await kit.remote.client.call('block.new', {
-        id: kit.blockId.join('/'),
-        batch: {
-          patches: [{
-            blob: model.api.flush()!.toBinary(),
-          }],
-        }
-      });
-      // const {model: model2, pull} = await kit.local.sync({id: kit.blockId});
-      // console.log(pull);
-      // expect(model2?.view()).toEqual({foo: 'bar'});
-    });
+    // TODO: Use .load() method instead of .sync() method
+    // test('can read block from remote', async () => {
+    //   const kit = await setup();
+    //   const schema = s.obj({foo: s.str('bar')});
+    //   const model = Model.create(schema, kit.sid);
+    //   await kit.remote.client.call('block.new', {
+    //     id: kit.blockId.join('/'),
+    //     batch: {
+    //       patches: [{
+    //         blob: model.api.flush()!.toBinary(),
+    //       }],
+    //     }
+    //   });
+    //   const {model: model2} = await kit.local.sync({id: kit.blockId});
+    //   expect(model2?.view()).toEqual({foo: 'bar'});
+    //   await kit.stop();
+    // });
 
     test.todo('can read block from remote, but create one locally in the meantime');
   });
