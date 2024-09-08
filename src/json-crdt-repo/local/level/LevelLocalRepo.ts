@@ -285,7 +285,7 @@ export class LevelLocalRepo implements LocalRepo {
     const keyBase = await this.blockKeyBase(id);
     const metaKey = keyBase + Defaults.Metadata;
     const meta: BlockMeta = {
-      time: -1,
+      time: 0,
       seq,
     };
     const modelBlob = model.toBinary();
@@ -486,16 +486,6 @@ export class LevelLocalRepo implements LocalRepo {
         ops.push(...modelOps);
         await this.kv.batch(ops);
         if (merge.length) this.pubsub.pub({type: 'merge', id, patches: merge});
-        if (pull) {
-          // const data: LevelLocalRepoRemotePull = {
-          //   id,
-          //   batch,
-          //   batches: pull.batches,
-          //   snapshot: pull.snapshot
-          // };
-          // TODO: Emit something here...
-          // this.pubsub.pub(['pull', data]);
-        }
         return true;
       });
     });
@@ -563,7 +553,7 @@ export class LevelLocalRepo implements LocalRepo {
   public async create({id, patches}: LocalRepoCreateRequest): Promise<LocalRepoCreateResponse> {
     const keyBase = await this.blockKeyBase(id);
     const meta: BlockMeta = {
-      time: -1,
+      time: 0,
       seq: -1,
     };
     const ops: BinStrLevelOperation[] = [];
@@ -648,19 +638,17 @@ export class LevelLocalRepo implements LocalRepo {
     // TODO: Check if `patches` need rebasing, if not, just merge.
     // TODO: Return correct response.
     // TODO: Check that remote state is in sync, too.
-    let nonSchemaPatchesInFrontier = false;
-    let nonSchemaPatchesInWrite = false;
+    let needsReset = false;
     await this.lockBlock(keyBase, async () => {
-      let nextTick = 1;
       const [tip, meta] = await Promise.all([
         this.readFrontierTip(keyBase),
         this.readMeta(keyBase),
       ]);
+      let nextTick = meta.time + 1;
       cursor = meta.seq;
       if (tip) {
         const tipTime = tip.getId()?.time ?? 0;
         nextTick = tipTime + tip.span();
-        if (tip.getId()?.sid !== SESSION.GLOBAL) nonSchemaPatchesInFrontier = true;
       }
       const ops: BinStrLevelOperation[] = [];
       const sid = this.sid;
@@ -675,9 +663,10 @@ export class LevelLocalRepo implements LocalRepo {
             const patchAheadOfTip = patchId.time > tip.getId()!.time;
             if (!patchAheadOfTip) continue;
           }
-        } else nonSchemaPatchesInWrite = true;
+        }
         let rebased = patch;
         if (patchId.sid === sid && nextTick > patchId.time) {
+          needsReset = true;
           rebased = patch.rebase(nextTick);
           nextTick = rebased.getId()!.time + rebased.span();
         }
@@ -695,7 +684,6 @@ export class LevelLocalRepo implements LocalRepo {
     remote.catch(() => {});
     if (rebasedPatches.length)
       this.pubsub.pub({type: 'rebase', id, patches: rebasedPatches});
-    const needsReset = nonSchemaPatchesInFrontier;
     if (needsReset) {
       const {cursor, model} = await this._syncRead0(keyBase);
       return {cursor, model, remote};

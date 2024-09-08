@@ -236,7 +236,7 @@ describe('.sync()', () => {
         });
         expect(model2.clock.time < model1.clock.time).toBe(true);
         expect(model2.clock.sid).toBe(model1.clock.sid);
-        expect(res2.model!.view()).toEqual({a: 'b', x: 1});
+        expect(res2.model).toBe(undefined);
         expect(res2.remote).toEqual(expect.any(Promise));
         expect(res2.cursor).toEqual(-1);
         const get1 = await kit.local.get({id: kit.blockId});
@@ -649,26 +649,29 @@ describe('.sync()', () => {
       expect(model2.view()).toEqual([1, 2, 3]);
       expect(sync1.remote).toEqual(expect.any(Promise));
 
-      // model1.api.arr([]).del(0, 1);
-      // model2.api.arr([]).ins(3, [4]);
-      // expect(model1.view()).toEqual([2, 3]);
-      // expect(model2.view()).toEqual([1, 2, 3, 4]);
-      // const sync3 = await local2.local.sync({
-      //   id: kit.blockId,
-      //   patches: [model1.api.flush()],
-      //   cursor: sync1.cursor,
-      // });
-      // const get1 = await kit.local.get({id: kit.blockId});
-      // expect(get1.model.view()).toEqual([2, 3]);
-      // const sync4 = await kit.local.sync({
-      //   id: kit.blockId,
-      //   cursor: sync2.cursor,
-      //   patches: [model2.api.flush()],
-      // });
+      // Update models concurrently in both tabs
+      model1.api.arr([]).del(0, 1);
+      model2.api.arr([]).ins(3, [4]);
+      expect(model1.view()).toEqual([2, 3]);
+      expect(model2.view()).toEqual([1, 2, 3, 4]);
 
-      // console.log(sync4);
-      
+      // Save changes of the other tab
+      const sync3 = await local2.local.sync({
+        id: kit.blockId,
+        patches: [model1.api.flush()],
+        cursor: sync1.cursor,
+      });
+      expect(sync3.model).toBe(undefined);
+      const get1 = await kit.local.get({id: kit.blockId});
+      expect(get1.model.view()).toEqual([2, 3]);
 
+      // Save changes of the first tab
+      const sync4 = await kit.local.sync({
+        id: kit.blockId,
+        cursor: sync2.cursor,
+        patches: [model2.api.flush()],
+      });
+      expect(sync4.model?.view()).toEqual([2, 3, 4]);
 
       await local2.stop();
       await kit.stop();
