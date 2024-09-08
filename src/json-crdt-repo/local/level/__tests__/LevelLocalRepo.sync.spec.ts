@@ -550,8 +550,42 @@ describe('.sync()', () => {
   });
   
   describe('update', () => {
-    test('can push an update', async () => {
-
+    test('can write updates', async () => {
+      const kit = await setup();
+      const sync1 = await kit.local.sync({
+        id: kit.blockId,
+        patches: [],
+      });
+      expect(sync1.model).toBe(undefined);
+      expect(sync1.cursor).toEqual([0, -1]);
+      const get1 = await kit.local.get({id: kit.blockId});
+      expect(get1.model.view()).toEqual(undefined);
+      const model = Model.create(undefined, kit.sid);
+      model.api.root({foo: 'bar'});
+      const patches1 = [model.api.flush()];
+      const sync2 = await kit.local.sync({
+        id: kit.blockId,
+        patches: patches1,
+        cursor: sync1.cursor,
+      });
+      expect(sync2.model).toBe(undefined);
+      expect(sync2.remote).toEqual(expect.any(Promise));
+      expect((sync2.cursor as any)[0]).toBe(model.clock.time - 1);
+      const get2 = await kit.local.get({id: kit.blockId});
+      expect(get2.model.view()).toEqual({foo: 'bar'});
+      model.api.obj([]).set({x: 1});
+      const patches2 = [model.api.flush()];
+      const sync3 = await kit.local.sync({
+        id: kit.blockId,
+        patches: patches2,
+        cursor: sync2.cursor,
+      });
+      expect(sync3.model).toBe(undefined);
+      expect(sync3.remote).toEqual(expect.any(Promise));
+      expect((sync3.cursor as any)[0]).toBe(model.clock.time - 1);
+      const get3 = await kit.local.get({id: kit.blockId});
+      expect(get3.model.view()).toEqual({foo: 'bar', x: 1});
+      await kit.stop();
     });
 
     test.todo('can push multiple updates');

@@ -685,7 +685,7 @@ export class LevelLocalRepo implements LocalRepo {
           }
         } else nonSchemaPatchesInWrite = true;
         let rebased = patch;
-        if (patchId.sid === sid) {
+        if (patchId.sid === sid && nextTick > patchId.time) {
           rebased = patch.rebase(nextTick);
           nextTick = rebased.getId()!.time + rebased.span();
         }
