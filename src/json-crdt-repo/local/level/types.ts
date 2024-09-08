@@ -26,17 +26,10 @@ export interface BlockMeta {
   hist?: boolean;
 }
 
-export type LevelLocalRepoCursor = [
-  /**
-   * The logical time of the local operations that the client has seen.
-   */
-  time: number,
-
-  /**
-   * The remote batch sequence number which the the client has seen.
-   */
-  seq: number,
-];
+/**
+ * The remote batch sequence number which the the client has seen.
+ */
+export type LevelLocalRepoCursor = number;
 
 export interface CrudLocalRepoCipher {
   encrypt(plaintext: Uint8Array): Promise<Uint8Array>;

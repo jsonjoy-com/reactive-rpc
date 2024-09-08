@@ -630,18 +630,12 @@ export class LevelLocalRepo implements LocalRepo {
           throw error;
         }
       } else return await this._syncRead(id);
-    } else {
-      const time = +cursor[0];
-      const seq = +cursor[1];
-      return await this._syncRebaseAndMerge(req);
-    }
+    } else return await this._syncRebaseAndMerge(req);
   }
 
   private async _syncCreate(req: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
-    const {remote, model} = await this.create(req);
-    const time = model.clock.time - 1;
-    const seq = -1;
-    const cursor = [time, seq];
+    const {remote} = await this.create(req);
+    const cursor: LevelLocalRepoCursor = -1;
     return {cursor, remote};
   }
 
@@ -650,7 +644,7 @@ export class LevelLocalRepo implements LocalRepo {
     const keyBase = await this.blockKeyBase(id);
     if (!patches || !patches.length) throw new Error('EMPTY_BATCH');
     const rebasedPatches: Uint8Array[] = [];
-    const cursor = [0, -1];
+    let cursor: LevelLocalRepoCursor = -1;
     // TODO: Check if `patches` need rebasing, if not, just merge.
     // TODO: Return correct response.
     // TODO: Check that remote state is in sync, too.
@@ -662,11 +656,10 @@ export class LevelLocalRepo implements LocalRepo {
         this.readFrontierTip(keyBase),
         this.readMeta(keyBase),
       ]);
-      cursor[1] = meta.seq;
+      cursor = meta.seq;
       if (tip) {
         const tipTime = tip.getId()?.time ?? 0;
         nextTick = tipTime + tip.span();
-        cursor[0] = nextTick - 1;
         if (tip.getId()?.sid !== SESSION.GLOBAL) nonSchemaPatchesInFrontier = true;
       }
       const ops: BinStrLevelOperation[] = [];
@@ -678,7 +671,6 @@ export class LevelLocalRepo implements LocalRepo {
         if (!patchId) throw new Error('PATCH_ID_MISSING');
         const isSchemaPatch = patchId.sid === SESSION.GLOBAL && patchId.time === 1;
         if (isSchemaPatch) {
-          cursor[0] = patchId.time + patch.span() - 1;
           if (tip) {
             const patchAheadOfTip = patchId.time > tip.getId()!.time;
             if (!patchAheadOfTip) continue;
@@ -691,15 +683,10 @@ export class LevelLocalRepo implements LocalRepo {
         }
         const id = rebased.getId()!;
         const time = id.time;
-        cursor[0] = time + rebased.span() - 1;
         const patchKey = this.frontierKey(keyBase, time);
         const uint8 = rebased.toBinary();
         rebasedPatches.push(uint8);
-        const op: BinStrLevelOperation = {
-          type: 'put',
-          key: patchKey,
-          value: uint8,
-        };
+        const op: BinStrLevelOperation = {type: 'put', key: patchKey,value: uint8};
         ops.push(op);
       }
       await this.kv.batch(ops);
@@ -719,10 +706,11 @@ export class LevelLocalRepo implements LocalRepo {
   private async _syncRead0(keyBase: string): Promise<LocalRepoSyncResponse> {
     const [model, meta, frontier] = await Promise.all([this.readModel(keyBase), this.readMeta(keyBase), this.readFrontier0(keyBase)]);
     model.applyBatch(frontier);
-    const cursor = [model.clock.time - 1, meta.seq];
+    const cursor: LevelLocalRepoCursor = meta.seq;
     return {
       model,
       cursor,
+      // TODO: `remote` should load the block from the server.
       remote: Promise.resolve(),
     };
   }

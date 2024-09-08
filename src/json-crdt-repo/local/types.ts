@@ -110,14 +110,9 @@ export interface LocalRepoSyncResponse {
   cursor: undefined | unknown;
 
   /**
-   * List of changes that the client should apply to the local state.
-   */
-  rebase?: Patch[];
-
-  /**
    * Model snapshot that the client should reset its "start" state to. The
-   * `Model` is sent when `rebase` patches are not available, or when the
-   * patch set is too large.
+   * `Model` is sent when the *sync* call detects that the client is behind the
+   * remote or the local frontier.
    */
   model?: Model;
 

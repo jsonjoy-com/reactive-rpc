@@ -16,7 +16,7 @@ describe('.sync()', () => {
         });
         expect(res1.model).toBe(undefined);
         expect(res1.remote).toEqual(expect.any(Promise));
-        expect(res1.cursor).toEqual([0, -1]);
+        expect(res1.cursor).toEqual(-1);
         const get1 = await kit.local.get({id: kit.blockId});
         expect(get1.model.view()).toEqual(undefined);
         expect(get1.model.clock.sid).toBe(kit.sid);
@@ -35,7 +35,7 @@ describe('.sync()', () => {
         });
         expect(res1.model!.view()).toBe(undefined);
         expect(res1.remote).toEqual(expect.any(Promise));
-        expect(res1.cursor).toEqual([0, -1]);
+        expect(res1.cursor).toEqual(-1);
         const get1 = await kit.local.get({id: kit.blockId});
         expect(get1.model.view()).toEqual(undefined);
         expect(get1.model.clock.sid).toBe(kit.sid);
@@ -51,14 +51,14 @@ describe('.sync()', () => {
         });
         expect(res1.model).toBe(undefined);
         expect(res1.remote).toEqual(expect.any(Promise));
-        expect(res1.cursor).toEqual([0, -1]);
+        expect(res1.cursor).toEqual(-1);
         const res2 = await kit.local.sync({
           id: kit.blockId,
           patches: [],
         });
         expect(res2.model!.view()).toBe(undefined);
         expect(res2.remote).toEqual(expect.any(Promise));
-        expect(res2.cursor).toEqual([0, -1]);
+        expect(res2.cursor).toEqual(-1);
         const get1 = await kit.local.get({id: kit.blockId});
         expect(get1.model.view()).toEqual(undefined);
         expect(get1.model.clock.sid).toBe(kit.sid);
@@ -79,7 +79,7 @@ describe('.sync()', () => {
         });
         expect(res1.model).toBe(undefined);
         expect(res1.remote).toEqual(expect.any(Promise));
-        expect(res1.cursor).toEqual([model.clock.time - 1, -1]);
+        expect(res1.cursor).toEqual(-1);
         const get1 = await kit.local.get({id: kit.blockId});
         expect(get1.model.view()).toEqual({foo: 'bar'});
         expect(get1.model.clock.sid).toBe(kit.sid);
@@ -97,7 +97,7 @@ describe('.sync()', () => {
         });
         expect(res1.model).toBe(undefined);
         expect(res1.remote).toEqual(expect.any(Promise));
-        expect(res1.cursor).toEqual([model.clock.time - 1, -1]);
+        expect(res1.cursor).toEqual(-1);
         expect(model.clock.time > 1).toBe(true);
         const get1 = await kit.local.get({id: kit.blockId});
         expect(get1.model.view()).toEqual({schema: true, id: 'asdf'});
@@ -118,7 +118,7 @@ describe('.sync()', () => {
         });
         expect(res1.model).toBe(undefined);
         expect(res1.remote).toEqual(expect.any(Promise));
-        expect(res1.cursor).toEqual([model.clock.time - 1, -1]);
+        expect(res1.cursor).toEqual(-1);
         const get1 = await kit.local.get({id: kit.blockId});
         expect(get1.model.view()).toEqual({foo: 'bar', x: 1});
         expect(get1.model.clock.sid).toBe(kit.sid);
@@ -140,7 +140,7 @@ describe('.sync()', () => {
         });
         expect(res2.model).toBe(undefined);
         expect(res2.remote).toEqual(expect.any(Promise));
-        expect(res2.cursor).toEqual([model2.clock.time - 1, -1]);
+        expect(res2.cursor).toEqual(-1);
         const get1 = await kit.local.get({id: kit.blockId});
         expect(get1.model.view()).toEqual({foo: 'bar'});
         expect(get1.model.clock.sid).toBe(kit.sid);
@@ -159,7 +159,7 @@ describe('.sync()', () => {
         });
         expect(res1.model).toBe(undefined);
         expect(res1.remote).toEqual(expect.any(Promise));
-        expect(res1.cursor).toEqual([model1.clock.time - 1, -1]);
+        expect(res1.cursor).toEqual(-1);
         const model2 = Model.create(schema, kit.sid);
         const patches2 = [model2.api.flush()];
         expect(model2.view()).toEqual({a: 'b'});
@@ -171,7 +171,7 @@ describe('.sync()', () => {
         expect(model2.clock.sid).toBe(model1.clock.sid);
         expect(res2.model!).toBe(undefined);
         expect(res2.remote).toEqual(expect.any(Promise));
-        expect(res2.cursor).toEqual([model2.clock.time - 1, -1]);
+        expect(res2.cursor).toEqual(-1);
         const get1 = await kit.local.get({id: kit.blockId});
         expect(get1.model.view()).toEqual({a: 'b'});
         expect(get1.model.clock.sid).toBe(kit.sid);
@@ -190,7 +190,7 @@ describe('.sync()', () => {
         });
         expect(res1.model).toBe(undefined);
         expect(res1.remote).toEqual(expect.any(Promise));
-        expect(res1.cursor).toEqual([0, -1]);
+        expect(res1.cursor).toEqual(-1);
         const get1 = await kit.local.get({id: kit.blockId});
         expect(get1.model.view()).toEqual(undefined);
         expect(get1.model.clock.sid).toBe(kit.sid);
@@ -203,7 +203,7 @@ describe('.sync()', () => {
         });
         expect(res2.model!).toBe(undefined);
         expect(res2.remote).toEqual(expect.any(Promise));
-        expect(res2.cursor).toEqual([model2.clock.time - 1, -1]);
+        expect(res2.cursor).toEqual(-1);
         const get2 = await kit.local.get({id: kit.blockId});
         expect(get2.model.view()).toEqual({a: 'b'});
         expect(get2.model.clock.sid).toBe(kit.sid);
@@ -226,7 +226,7 @@ describe('.sync()', () => {
         });
         expect(res1.model).toBe(undefined);
         expect(res1.remote).toEqual(expect.any(Promise));
-        expect(res1.cursor).toEqual([model1.clock.time - 1, -1]);
+        expect(res1.cursor).toEqual(-1);
         const model2 = Model.create(schema, kit.sid);
         const patches2 = [model2.api.flush()];
         expect(model2.view()).toEqual({a: 'b'});
@@ -238,9 +238,7 @@ describe('.sync()', () => {
         expect(model2.clock.sid).toBe(model1.clock.sid);
         expect(res2.model!.view()).toEqual({a: 'b', x: 1});
         expect(res2.remote).toEqual(expect.any(Promise));
-        expect(res2.cursor).toEqual([expect.any(Number), -1]);
-        expect((res2.cursor as any)[0] > model2.clock.time).toBe(true);
-        expect((res2.cursor as any)[0]).toBe(res2.model!.clock.time - 1);
+        expect(res2.cursor).toEqual(-1);
         const get1 = await kit.local.get({id: kit.blockId});
         expect(get1.model.view()).toEqual({a: 'b', x: 1});
         expect(get1.model.clock.sid).toBe(kit.sid);
@@ -263,7 +261,7 @@ describe('.sync()', () => {
         });
         expect(res1.model).toBe(undefined);
         expect(res1.remote).toEqual(expect.any(Promise));
-        expect(res1.cursor).toEqual([model1.clock.time - 1, -1]);
+        expect(res1.cursor).toEqual(-1);
         const model2 = Model.create(schema, kit.sid);
         const patches2 = [model2.api.flush()];
         expect(model2.view()).toEqual({a: 'b'});
@@ -280,9 +278,7 @@ describe('.sync()', () => {
         expect(model2.clock.sid).toBe(model1.clock.sid);
         expect(res2.model!.view()).toEqual({a: 'b', x: 1, y: 2, z: 3});
         expect(res2.remote).toEqual(expect.any(Promise));
-        expect(res2.cursor).toEqual([expect.any(Number), -1]);
-        expect((res2.cursor as any)[0]).toBe(res2.model!.clock.time - 1);
-        expect((res2.cursor as any)[0] > model2.clock.time).toBe(true);
+        expect(res2.cursor).toEqual(-1);
         const get1 = await kit.local.get({id: kit.blockId});
         expect(get1.model.view()).toEqual({a: 'b', x: 1, y: 2, z: 3});
         expect(get1.model.clock.sid).toBe(kit.sid);
@@ -302,7 +298,7 @@ describe('.sync()', () => {
         });
         expect(res1.model).toBe(undefined);
         expect(res1.remote).toEqual(expect.any(Promise));
-        expect(res1.cursor).toEqual([model1.clock.time - 1, -1]);
+        expect(res1.cursor).toEqual(-1);
         const model2 = Model.create(schema, kit.sid);
         const patches2 = [model2.api.flush()];
         expect(model2.view()).toEqual({a: 'b'});
@@ -319,7 +315,7 @@ describe('.sync()', () => {
         expect(model2.clock.sid).toBe(model1.clock.sid);
         expect(res2.model).toBe(undefined);
         expect(res2.remote).toEqual(expect.any(Promise));
-        expect(res2.cursor).toEqual([model2.clock.time - 1, -1]);
+        expect(res2.cursor).toEqual(-1);
         const get1 = await kit.local.get({id: kit.blockId});
         expect(get1.model.view()).toEqual({a: 'b', y: 2, z: 3});
         expect(get1.model.clock.sid).toBe(kit.sid);
@@ -345,7 +341,7 @@ describe('.sync()', () => {
         });
         expect(res2.model!).toBe(undefined);
         expect(res2.remote).toEqual(expect.any(Promise));
-        expect(res2.cursor).toEqual([model2.clock.time - 1, -1]);
+        expect(res2.cursor).toEqual(-1);
         await res2.remote;
         const model3 = await kit.getModelFromRemote();
         expect(model3.view()).toEqual({a: 'b'});
@@ -374,7 +370,7 @@ describe('.sync()', () => {
         });
         expect(res2.model!).toBe(undefined);
         expect(res2.remote).toEqual(expect.any(Promise));
-        expect(res2.cursor).toEqual([model2.clock.time - 1, -1]);
+        expect(res2.cursor).toEqual(-1);
         await res2.remote;
         const model3 = await kit.getModelFromRemote();
         expect(model3.view()).toEqual({a: 'b'});
@@ -410,7 +406,7 @@ describe('.sync()', () => {
         });
         expect(res2.model!).toBe(undefined);
         expect(res2.remote).toEqual(expect.any(Promise));
-        expect(res2.cursor).toEqual([model2.clock.time - 1, -1]);
+        expect(res2.cursor).toEqual(-1);
         await res2.remote;
         const model3 = await kit.getModelFromRemote();
         expect(model3.view()).toEqual({a: 'b', x: 1});
@@ -557,7 +553,7 @@ describe('.sync()', () => {
         patches: [],
       });
       expect(sync1.model).toBe(undefined);
-      expect(sync1.cursor).toEqual([0, -1]);
+      expect(sync1.cursor).toEqual(-1);
       const get1 = await kit.local.get({id: kit.blockId});
       expect(get1.model.view()).toEqual(undefined);
       const model = Model.create(undefined, kit.sid);
@@ -570,7 +566,6 @@ describe('.sync()', () => {
       });
       expect(sync2.model).toBe(undefined);
       expect(sync2.remote).toEqual(expect.any(Promise));
-      expect((sync2.cursor as any)[0]).toBe(model.clock.time - 1);
       const get2 = await kit.local.get({id: kit.blockId});
       expect(get2.model.view()).toEqual({foo: 'bar'});
       model.api.obj([]).set({x: 1});
@@ -582,14 +577,103 @@ describe('.sync()', () => {
       });
       expect(sync3.model).toBe(undefined);
       expect(sync3.remote).toEqual(expect.any(Promise));
-      expect((sync3.cursor as any)[0]).toBe(model.clock.time - 1);
       const get3 = await kit.local.get({id: kit.blockId});
       expect(get3.model.view()).toEqual({foo: 'bar', x: 1});
       await kit.stop();
     });
 
-    test.todo('can push multiple updates');
-    test.todo('can push an update when local already advanced');
+    test('can write multiple patches per update', async () => {
+      const kit = await setup();
+      const sync1 = await kit.local.sync({
+        id: kit.blockId,
+        patches: [],
+      });
+      expect(sync1.model).toBe(undefined);
+      expect(sync1.cursor).toEqual(-1);
+      const get1 = await kit.local.get({id: kit.blockId});
+      expect(get1.model.view()).toEqual(undefined);
+      const model = Model.create(undefined, kit.sid);
+      model.api.root({foo: 'bar'});
+      const patches1 = [model.api.flush()];
+      model.api.str(['foo']).del(2, 1);
+      patches1.push(model.api.flush());
+      model.api.str(['foo']).ins(2, 'z');
+      patches1.push(model.api.flush());
+      const sync2 = await kit.local.sync({
+        id: kit.blockId,
+        patches: patches1,
+        cursor: sync1.cursor,
+      });
+      expect(sync2.model).toBe(undefined);
+      expect(sync2.remote).toEqual(expect.any(Promise));
+      const get2 = await kit.local.get({id: kit.blockId});
+      expect(get2.model.view()).toEqual({foo: 'baz'});
+      model.api.obj([]).set({x: 1});
+      const patches2 = [model.api.flush()];
+      model.api.obj([]).set({y: 2});
+      patches2.push(model.api.flush());
+      model.api.obj([]).set({z: 3});
+      patches2.push(model.api.flush());
+      model.api.obj([]).set({y: 4});
+      patches2.push(model.api.flush());
+      const sync3 = await kit.local.sync({
+        id: kit.blockId,
+        patches: patches2,
+        cursor: sync2.cursor,
+      });
+      expect(sync3.model).toBe(undefined);
+      expect(sync3.remote).toEqual(expect.any(Promise));
+      const get3 = await kit.local.get({id: kit.blockId});
+      expect(get3.model.view()).toEqual({foo: 'baz', x: 1, y: 4, z: 3});
+      await kit.stop();
+    });
+
+    test('can push an update when local already advanced', async () => {
+      const kit = await setup();
+
+      // Create in another tab
+      const local2 = await kit.createLocal();
+      const model1 = Model.create(undefined, kit.sid);
+      model1.api.root([1, 2, 3]);
+      const patches1 = [model1.api.flush()];
+      const sync1 = await local2.local.sync({
+        id: kit.blockId,
+        patches: patches1,
+      });
+
+      // Load block in the first tab
+      const sync2 = await kit.local.sync({
+        id: kit.blockId,
+      });
+      const model2 = sync2.model!;
+      expect(model2.view()).toEqual([1, 2, 3]);
+      expect(sync1.remote).toEqual(expect.any(Promise));
+
+      // model1.api.arr([]).del(0, 1);
+      // model2.api.arr([]).ins(3, [4]);
+      // expect(model1.view()).toEqual([2, 3]);
+      // expect(model2.view()).toEqual([1, 2, 3, 4]);
+      // const sync3 = await local2.local.sync({
+      //   id: kit.blockId,
+      //   patches: [model1.api.flush()],
+      //   cursor: sync1.cursor,
+      // });
+      // const get1 = await kit.local.get({id: kit.blockId});
+      // expect(get1.model.view()).toEqual([2, 3]);
+      // const sync4 = await kit.local.sync({
+      //   id: kit.blockId,
+      //   cursor: sync2.cursor,
+      //   patches: [model2.api.flush()],
+      // });
+
+      // console.log(sync4);
+      
+
+
+      await local2.stop();
+      await kit.stop();
+    });
+
     test.todo('can push an update when local already advanced by multiple patches');
     test.todo('can push an update when remote already advanced');
     test.todo('can push an update when remote already advanced by multiple patches');
