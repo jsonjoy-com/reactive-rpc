@@ -677,7 +677,65 @@ describe('.sync()', () => {
       await kit.stop();
     });
 
-    test.todo('can push an update when local already advanced by multiple patches');
+    test('can push an update when local already advanced by multiple patches', async () => {
+      const kit = await setup();
+
+      // Create in another tab
+      const local2 = await kit.createLocal();
+      const model1 = Model.create(undefined, kit.sid);
+      model1.api.root([1, 2, 3]);
+      const patches1 = [model1.api.flush()];
+      const sync1 = await local2.local.sync({
+        id: kit.blockId,
+        patches: patches1,
+      });
+
+      // Load block in the first tab
+      const sync2 = await kit.local.sync({
+        id: kit.blockId,
+      });
+      const model2 = sync2.model!;
+      expect(model2.view()).toEqual([1, 2, 3]);
+      expect(sync1.remote).toEqual(expect.any(Promise));
+
+      // Update models concurrently in both tabs
+      model1.api.arr([]).del(0, 1);
+      model2.api.arr([]).ins(3, [4]);
+      expect(model1.view()).toEqual([2, 3]);
+      expect(model2.view()).toEqual([1, 2, 3, 4]);
+
+      // Save changes of the other tab
+      const sync3 = await local2.local.sync({
+        id: kit.blockId,
+        patches: [model1.api.flush()],
+        cursor: sync1.cursor,
+      });
+      expect(sync3.model).toBe(undefined);
+      const get1 = await kit.local.get({id: kit.blockId});
+      expect(get1.model.view()).toEqual([2, 3]);
+
+      // Add more changes to the other tab
+      model1.api.arr([]).del(0, 1);
+      model1.api.arr([]).ins(1, [5]);
+      const sync4 = await local2.local.sync({
+        id: kit.blockId,
+        patches: [model1.api.flush()],
+        cursor: sync3.cursor,
+      });
+      expect(sync4.model).toBe(undefined);
+
+      // Save changes of the first tab
+      const sync5 = await kit.local.sync({
+        id: kit.blockId,
+        cursor: sync2.cursor,
+        patches: [model2.api.flush()],
+      });
+      expect(sync5.model?.view()).toEqual([3, 4, 5]);
+
+      await local2.stop();
+      await kit.stop();
+    });
+
     test.todo('can push an update when remote already advanced');
     test.todo('can push an update when remote already advanced by multiple patches');
     test.todo('can push an update when local and remote have already advanced by different patches');
