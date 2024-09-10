@@ -10,7 +10,7 @@ import {once} from 'thingies/lib/once';
 import {timeout} from 'thingies/lib/timeout';
 import {pubsub} from '../../pubsub';
 import type {ServerBatch, ServerHistory, ServerPatch} from '../../remote/types';
-import type {BlockId, LocalRepo, LocalRepoEvent, LocalRepoDeleteEvent, LocalRepoMergeEvent, LocalRepoRebaseEvent, LocalRepoResetEvent, LocalRepoSyncRequest, LocalRepoSyncResponse, LocalRepoGetResponse, LocalRepoGetRequest, LocalRepoCreateResponse, LocalRepoCreateRequest} from '../types';
+import type {BlockId, LocalRepo, LocalRepoEvent, LocalRepoDeleteEvent, LocalRepoMergeEvent, LocalRepoRebaseEvent, LocalRepoResetEvent, LocalRepoSyncRequest, LocalRepoSyncResponse, LocalRepoGetResponse, LocalRepoGetRequest, LocalRepoCreateResponse, LocalRepoCreateRequest, LocalRepoGetIfResponse, LocalRepoGetIfRequest} from '../types';
 import type {BinStrLevel, BinStrLevelOperation, BlockMeta, LocalBatch, SyncResult, LevelLocalRepoPubSub, LevelLocalRepoCursor} from './types';
 import type {CrudLocalRepoCipher} from './types';
 import type {Locks} from 'thingies/lib/Locks';
@@ -382,7 +382,9 @@ export class LevelLocalRepo implements LocalRepo {
   }
 
   protected async markDirtyAndSync(id: BlockId): Promise<boolean> {
+    if (this._stopped) return false;
     this.markDirty(id).catch((error) => {
+      if (this._stopped) return;
       console.error(error);
     });
     return await this.push(id, true);
@@ -398,6 +400,7 @@ export class LevelLocalRepo implements LocalRepo {
    * @param pull Whether to pull if there are no patches to push.
    */
   protected async push(id: BlockId, doPull: boolean = false): Promise<boolean> {
+    if (this._stopped) return false;
     if (!this.connected$.getValue()) throw new Error('DISCONNECTED');
     const keyBase = await this.blockKeyBase(id);
     const remote = this.opts.rpc;
@@ -595,6 +598,7 @@ export class LevelLocalRepo implements LocalRepo {
     const remote = this.markDirtyAndSync(id)
       .then(() => {})
       .catch((error) => {
+        if (this._stopped) return;
         console.error(error);
       });
     remote.catch(() => {});
@@ -613,10 +617,34 @@ export class LevelLocalRepo implements LocalRepo {
     }
   }
 
+  public async getIf(request: LocalRepoGetIfRequest): Promise<null | LocalRepoGetIfResponse> {
+    let get: boolean = false;
+    const keyBase = await this.blockKeyBase(request.id);
+    const meta = await this.readMeta(keyBase);
+    if (typeof request.cursor === 'number') {
+      if (request.cursor < meta.seq) get = true;
+    }
+    if (!get && typeof request.time === 'number') {
+      if (request.time < meta.time) get = true;
+      else {
+        const tip = await this.readFrontierTip(keyBase);
+        if (tip) {
+          const tipTime = tip.getId()?.time ?? 0;
+          if (request.time < tipTime + tip.span()) get = true;
+        }
+      }
+    }
+    if (!get) return null;
+    const [model, frontier] = await Promise.all([this.readModel(keyBase), this.readFrontier0(keyBase)]);
+    model.applyBatch(frontier);
+    const cursor: LevelLocalRepoCursor = meta.seq;
+    return {model, cursor};
+  }
+
   public async sync(req: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
     const cursor = req.cursor as LevelLocalRepoCursor | undefined;
     const {id, patches, throwIf} = req;
-    const isNewSession = !Array.isArray(cursor);
+    const isNewSession = cursor === undefined;
     const isCreate = !!patches;
     const isWrite = !!patches && patches.length !== 0;
     if (isNewSession) {
@@ -638,7 +666,6 @@ export class LevelLocalRepo implements LocalRepo {
           throw error;
         }
       } else {
-        console.log('read');
         return await this._syncRead(id);
       }
     } else return await this._syncMerge(req);
@@ -704,6 +731,7 @@ export class LevelLocalRepo implements LocalRepo {
     const remote = this.markDirtyAndSync(id)
       .then(() => {})
       .catch((error) => {
+        if (this._stopped) return;
         console.error(error);
       });
     if (rebasedPatches.length)

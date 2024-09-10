@@ -24,12 +24,14 @@ export class EditSessionFactory {
       api.root(schema);
       api.flush();
     }
-    if (pull) session.save().catch(() => {});
+    if (pull) session.sync().catch(() => {});
     return session;
   }
 
   /**
-   * Creates a new editing session asynchronously from an existing block.
+   * Creates a new editing session asynchronously from an existing local block.
+   * It is also possible to block on remote state check in case the block does
+   * not exist locally, or to pull the latest state from the remote.
    */
   public async load(opts: EditSessionLoadOpts): Promise<EditSession> {
     const id = opts.id;

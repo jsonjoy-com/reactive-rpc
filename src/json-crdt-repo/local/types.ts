@@ -22,6 +22,12 @@ export interface LocalRepo {
   get(request: LocalRepoGetRequest): Promise<LocalRepoGetResponse>;
 
   /**
+   * Reads a block from the local repo, if the model clock or the remote cursor
+   * is behind.
+   */
+  getIf(request: LocalRepoGetIfRequest): Promise<null | LocalRepoGetIfResponse>;
+
+  /**
    * Synchronizes an in-memory editing session changes to the locally stored
    * data. The `sync` call is used to create, read, and update data.
    */
@@ -138,6 +144,28 @@ export interface LocalRepoGetRequest {
 
 export interface LocalRepoGetResponse {
   model: Model;
+}
+
+export interface LocalRepoGetIfRequest {
+  /**
+   * Unique ID of the block.
+   */
+  id: BlockId;
+
+  /**
+   * The last known cursor returned in the `.sync()` call response.
+   */
+  cursor?: unknown | undefined;
+
+  /**
+   * The last model clock time.
+   */
+  time?: number;
+}
+
+export interface LocalRepoGetIfResponse {
+  model: Model;
+  cursor: unknown;
 }
 
 /**

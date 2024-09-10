@@ -7,8 +7,7 @@ import type {BlockId, LocalRepo, LocalRepoDeleteEvent, LocalRepoEvent, LocalRepo
 export class EditSession {
   public log: Log;
   protected _stop$ = new Subject<void>();
-
-  protected cursor?: undefined | number;
+  public cursor?: undefined | unknown;
 
   public get model(): Model {
     return this.log.end;
@@ -40,9 +39,10 @@ export class EditSession {
   private saveInProgress = false;
 
   /**
-   * Save any pending changes to the local repo.
+   * Push (persist) any in-memory changes and pull (load) the latest state
+   * from the local repo.
    */
-  @concurrency(1) public async save(): Promise<null | {remote?: Promise<void>}> {
+  @concurrency(1) public async sync(): Promise<null | {remote?: Promise<void>}> {
     const log = this.log;
     const api = log.end.api;
     api.flush();
@@ -53,11 +53,19 @@ export class EditSession {
         patches.push(patch.v);
       });
       // TODO: After async call check that sync state is still valid. New patches, might have been added.
-      const {id, cursor} = this;
-      const res = await this.repo.sync({id, patches, cursor});
-      if (typeof cursor !== undefined) this.cursor = cursor;
-      if (res.model) this.reset(res.model);
-      return {remote: res.remote};
+      if (patches.length || this.cursor === undefined) {
+        const res = await this.repo.sync({id: this.id, patches, cursor: this.cursor});
+        if (typeof res.cursor !== undefined) this.cursor = res.cursor;
+        if (res.model) this.reset(res.model);
+        return {remote: res.remote};
+      } else {
+        const res = await this.repo.getIf({id: this.id, time: this.model.clock.time - 1, cursor: this.cursor});
+        if (res) {
+          this.reset(res.model);
+          this.cursor = res.cursor;
+        }
+        return null;
+      }
     } finally {
       this.saveInProgress = false;
       this.drainEvents();
@@ -120,7 +128,6 @@ export class EditSession {
   private events: LocalRepoEvent[] = [];
 
   private onEvent = (event: LocalRepoEvent): void => {
-    console.log('event', event);
     this.events.push(event);
     this.drainEvents();
   };

@@ -23,7 +23,6 @@ describe('.make()', () => {
   describe('no schema', () => {
     test('can synchronously create an editing session', async () => {
       const kit = await setup();
-      kit.local.stop();
       const session = kit.sessions.make({id: kit.blockId});
       expect(session.model.view()).toBe(undefined);
       await session.dispose();
@@ -48,7 +47,7 @@ describe('.make()', () => {
       const kit = await setup();
       const session = kit.sessions.make({id: kit.blockId});
       expect(session.model.view()).toBe(undefined);
-      await session.save();
+      await session.sync();
       await untilExists(kit.local, kit.blockId);
       const {model} = await readLocal(kit.local, kit.blockId);
       expect(model.view()).toBe(undefined);
@@ -60,9 +59,9 @@ describe('.make()', () => {
       const kit = await setup();
       const session = kit.sessions.make({id: kit.blockId});
       expect(session.model.view()).toBe(undefined);
-      await session.save();
+      await session.sync();
       session.model.api.root({foo: 'bar'});
-      await session.save();
+      await session.sync();
       const {model} = await readLocal(kit.local, kit.blockId);
       expect(model.view()).toEqual({foo: 'bar'});
       await session.dispose();
@@ -110,7 +109,7 @@ describe('.make()', () => {
         expect(session.model.view()).toBe(undefined);
         session.model.api.root({a: 'b'});
         expect(session.model.view()).toEqual({a: 'b'});
-        await session.save();
+        await session.sync();
         await tick(150);
         expect(session.model.view()).toEqual({a: 'b'});
 
@@ -151,7 +150,7 @@ describe('.make()', () => {
       const schema = s.obj({xyz: s.con(123)});
       const session = kit.sessions.make({id: kit.blockId, schema});
       expect(session.model.view()).toEqual({xyz: 123});
-      await session.save();
+      await session.sync();
       const {model} = await kit.local.sync({id: kit.blockId});
       expect(model!.view()).toEqual({xyz: 123});
       await session.dispose();
@@ -178,7 +177,7 @@ describe('.load()', () => {
     const session = kit.sessions.make({id: kit.blockId});
     expect(session.model.view()).toBe(undefined);
     session.model.api.root({foo: 'bar'});
-    await session.save();
+    await session.sync();
     const session2 = await kit.sessions.load({id: kit.blockId});
     expect(session2.model.view()).toEqual({foo: 'bar'});
     await session.dispose();
