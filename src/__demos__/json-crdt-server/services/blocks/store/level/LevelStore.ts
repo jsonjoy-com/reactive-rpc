@@ -94,8 +94,10 @@ export class LevelStore implements types.Store {
       const base = this.batchBase(id);
       const keys = await this.kv.keys({lt: base + '~', limit: 1, reverse: true}).all();
       if (!keys || keys.length < 1) return;
-      const key = keys[0];
-      const seq = parseInt(key.slice(base.length), 36);
+      const key = keys[0].slice(base.length);
+      if (!key) return;
+      const seq = parseInt(key, 36);
+      if (seq !== seq) return;
       return seq;
     });
   }
