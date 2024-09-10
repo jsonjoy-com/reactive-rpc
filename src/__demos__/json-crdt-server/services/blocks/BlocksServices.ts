@@ -167,11 +167,17 @@ export class BlocksServices {
     return {batches};
   }
 
-  public async pull(id: string, lastKnownSeq: number): Promise<{batches: StoreBatch[], snapshot?: StoreSnapshot}> {
+  public async pull(id: string, lastKnownSeq: number, create: boolean = false): Promise<{batches: StoreBatch[], snapshot?: StoreSnapshot}> {
     const {store} = this;
     if (typeof lastKnownSeq !== 'number' || lastKnownSeq !== Math.round(lastKnownSeq) || lastKnownSeq < -1) throw RpcError.validation('INVALID_SEQ');
     const seq = await store.seq(id);
-    if (seq === undefined) throw RpcError.notFound();
+    if (seq === undefined) {
+      if (create) {
+        const res = await this.create(id);
+        return {snapshot: res.block.snapshot, batches: res.batch ? [res.batch] : []};
+      }
+      throw RpcError.notFound();
+    }
     if (lastKnownSeq > seq) throw RpcError.validation('SEQ_TOO_HIGH');
     if (lastKnownSeq === seq) return {batches: []};
     const delta = seq - lastKnownSeq;

@@ -12,7 +12,17 @@ export const pull =
       }),
       t.prop('seq', BlockCurRef).options({
         title: 'Last Known Sequence Number',
-        description: 'The sequence number that the client is caught up to. If ',
+        description: 'The sequence number that the client is caught up to. If '
+          + 'the client is not caught up to the latest state of the block, the '
+          + 'server will return a list of batches that the client needs to apply '
+          + 'to get to the latest state. If the client is too far behind, the '
+          + 'server will return a snapshot of the block.'
+          + '\n\n'
+          + 'The initial value should be `-1`.',
+      }),
+      t.propOpt('create', t.bool).options({
+        title: 'Create Block',
+        description: 'Whether to create a new block if it does not exist.',
       }),
     );
     
@@ -35,7 +45,7 @@ export const pull =
       description: 'Returns a list of most recent change batches or a snapshot of a block.',
     });
 
-    return r.prop('block.pull', Func, async ({id, seq}) => {
-      return await services.blocks.pull(id, seq);
+    return r.prop('block.pull', Func, async ({id, seq, create}) => {
+      return await services.blocks.pull(id, seq, !!create);
     });
   };

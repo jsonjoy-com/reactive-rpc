@@ -1,7 +1,7 @@
 import {Model, Patch} from 'json-joy/lib/json-crdt';
 import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
 import {RpcErrorCodes} from '../../common/rpc/caller';
-import {tick, until} from 'thingies';
+import {of, tick, until} from 'thingies';
 import type {ApiTestSetup} from '../../common/rpc/__tests__/runApiTests';
 import type {JsonCrdtTestSetup} from '../../__demos__/json-crdt-server/__tests__/setup';
 import type {TBlockEvent} from '../../__demos__/json-crdt-server/routes/block/schema';
@@ -685,6 +685,48 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         for (let i = -1; i <= 150; i++) await assertPull(i);
         await stop();
       }, 20000);
+
+      test('can create a new block, if it does not exist', async () => {
+        const {call, stop} = await setup();
+        const id = getId();
+        const get1 = await of(call('block.get', {id}));
+        expect(get1[1]).toMatchObject({message: 'NOT_FOUND'});
+        const result = await call('block.pull', {
+          id,
+          seq: -1,
+          create: true,
+        });
+        expect(result).toMatchObject({
+          batches: [],
+          snapshot: {
+            id,
+            seq: -1,
+            ts: expect.any(Number),
+            blob: expect.any(Uint8Array),
+          },
+        });
+        const model = Model.fromBinary(result.snapshot!.blob);
+        expect(model.view()).toBe(undefined);
+        expect(model.clock.sid).toBe(SESSION.GLOBAL);
+        expect(model.clock.time).toBe(1);
+        const get2 = await call('block.get', {id});
+        expect(get2).toMatchObject({
+          block: {
+            snapshot: {
+              id,
+              seq: -1,
+              blob: expect.any(Uint8Array),
+              ts: expect.any(Number),
+            },
+            tip: [],
+          }
+        });
+        const model2 = Model.fromBinary(get2.block.snapshot.blob);
+        expect(model2.view()).toBe(undefined);
+        expect(model2.clock.sid).toBe(SESSION.GLOBAL);
+        expect(model2.clock.time).toBe(1);
+        await stop();
+      });
     });
 
     describe('block.get', () => {
