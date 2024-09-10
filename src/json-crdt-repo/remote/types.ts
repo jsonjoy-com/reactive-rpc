@@ -44,14 +44,14 @@ export interface RemoteHistory<
   /**
    * Catch up with the latest changes of the block. Returns the batch list
    * necessary to apply to the block to get the latest state. Or, might return
-   * the latest snapshot of the block, if the history is too. The batch list
-   * might be non-empty, even if the snapshot is returned, in case the snapshot
-   * is not up-to-date.
+   * the latest snapshot of the block, if the history is too long. The batch
+   * list might be non-empty, even if the snapshot is returned, in case the
+   * snapshot is not up-to-date.
    *
    * @param id ID of the block.
    * @param seq The cursor of the last known model state of the block.
    */
-  pull(id: string, seq: Cursor): Promise<{batches: Batch[]; snapshot?: Snapshot}>;
+  pull(id: string, seq: Cursor, create?: boolean): Promise<{batches: Batch[]; snapshot?: Snapshot}>;
 
   /**
    * Load block history going forward from the given cursor. This method is

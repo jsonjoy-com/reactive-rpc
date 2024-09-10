@@ -1,5 +1,6 @@
 import {Log} from 'json-joy/lib/json-crdt/log/Log';
 import {Model, Patch} from 'json-joy/lib/json-crdt';
+import {concurrency} from 'thingies/lib/concurrencyDecorator';
 import {Subject, takeUntil} from 'rxjs';
 import type {BlockId, LocalRepo, LocalRepoDeleteEvent, LocalRepoEvent, LocalRepoMergeEvent, LocalRepoRebaseEvent, LocalRepoResetEvent} from '../local/types';
 
@@ -41,11 +42,10 @@ export class EditSession {
   /**
    * Save any pending changes to the local repo.
    */
-  public async sync(): Promise<null | {remote?: Promise<void>}> {
+  @concurrency(1) public async save(): Promise<null | {remote?: Promise<void>}> {
     const log = this.log;
     const api = log.end.api;
     api.flush();
-    if (this.saveInProgress) return null;
     this.saveInProgress = true;
     try {
       const patches: Patch[] = [];
@@ -56,6 +56,7 @@ export class EditSession {
       const {id, cursor} = this;
       const res = await this.repo.sync({id, patches, cursor});
       if (typeof cursor !== undefined) this.cursor = cursor;
+      if (res.model) this.reset(res.model);
       return {remote: res.remote};
     } finally {
       this.saveInProgress = false;
@@ -119,6 +120,7 @@ export class EditSession {
   private events: LocalRepoEvent[] = [];
 
   private onEvent = (event: LocalRepoEvent): void => {
+    console.log('event', event);
     this.events.push(event);
     this.drainEvents();
   };

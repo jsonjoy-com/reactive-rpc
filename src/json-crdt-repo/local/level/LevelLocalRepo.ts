@@ -166,6 +166,7 @@ export class LevelLocalRepo implements LocalRepo {
   }
 
   private _conSub: Subscription | undefined = undefined;
+  private _stopped = false;
 
   @once
   public start(): void {
@@ -179,6 +180,7 @@ export class LevelLocalRepo implements LocalRepo {
 
   @once
   public stop(): void {
+    this._stopped = true;
     this._conSub?.unsubscribe();
   }
 
@@ -380,8 +382,10 @@ export class LevelLocalRepo implements LocalRepo {
   }
 
   protected async markDirtyAndSync(id: BlockId): Promise<boolean> {
-    this.markDirty(id).catch(() => {});
-    return await this.push(id);
+    this.markDirty(id).catch((error) => {
+      console.error(error);
+    });
+    return await this.push(id, true);
   }
 
   protected remoteTimeout(): number {
@@ -390,6 +394,8 @@ export class LevelLocalRepo implements LocalRepo {
 
   /**
    * Pushes to remote.
+   * @param id Block ID.
+   * @param pull Whether to pull if there are no patches to push.
    */
   protected async push(id: BlockId, doPull: boolean = false): Promise<boolean> {
     if (!this.connected$.getValue()) throw new Error('DISCONNECTED');
@@ -403,13 +409,19 @@ export class LevelLocalRepo implements LocalRepo {
       ops.push({type: 'del', key});
       patches.push({blob});
     }
-    if (!patches && !doPull) return false;
+    if (!patches.length) {
+      if (doPull) {
+        await this.pull(id);
+      }
+      return false;
+    }
     // TODO: handle case when this times out, but actually succeeds, so on re-sync it handles the case when the block is already synced.
     return await this.lockBlock(keyBase, async () => {
       const TIMEOUT = this.remoteTimeout();
       const startTime = Date.now();
       const assertTimeout = () => {
         if (Date.now() - startTime > TIMEOUT) throw new Error('TIMEOUT');
+        if (this._stopped) throw new Error('STOPPED');
       };
       return await timeout(TIMEOUT, async () => {
         const read = await Promise.all([
@@ -485,7 +497,9 @@ export class LevelLocalRepo implements LocalRepo {
         assertTimeout();
         ops.push(...modelOps);
         await this.kv.batch(ops);
-        if (merge.length) this.pubsub.pub({type: 'merge', id, patches: merge});
+        if (merge.length) {
+          this.pubsub.pub({type: 'merge', id, patches: merge});
+        }
         return true;
       });
     });
@@ -578,7 +592,11 @@ export class LevelLocalRepo implements LocalRepo {
       if (exists) throw new Error('EXISTS');
       await this.kv.batch(ops);
     });
-    const remote = this.markDirtyAndSync(id).then(() => {});
+    const remote = this.markDirtyAndSync(id)
+      .then(() => {})
+      .catch((error) => {
+        console.error(error);
+      });
     remote.catch(() => {});
     return {model, remote};
   }
@@ -607,7 +625,7 @@ export class LevelLocalRepo implements LocalRepo {
           return await this._syncCreate(req);
         } catch (error) {
           if (error instanceof Error && error.message === 'EXISTS')
-              return await this._syncRebaseAndMerge(req);
+              return await this._syncMerge(req);
           throw error;
         }
       } else if (isCreate) {
@@ -619,8 +637,11 @@ export class LevelLocalRepo implements LocalRepo {
             return await this._syncRead(id);
           throw error;
         }
-      } else return await this._syncRead(id);
-    } else return await this._syncRebaseAndMerge(req);
+      } else {
+        console.log('read');
+        return await this._syncRead(id);
+      }
+    } else return await this._syncMerge(req);
   }
 
   private async _syncCreate(req: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
@@ -629,7 +650,7 @@ export class LevelLocalRepo implements LocalRepo {
     return {cursor, remote};
   }
 
-  private async _syncRebaseAndMerge(req: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
+  private async _syncMerge(req: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
     const {id, patches} = req;
     const keyBase = await this.blockKeyBase(id);
     if (!patches || !patches.length) throw new Error('EMPTY_BATCH');
@@ -680,8 +701,11 @@ export class LevelLocalRepo implements LocalRepo {
       }
       await this.kv.batch(ops);
     });
-    const remote = this.markDirtyAndSync(id).then(() => {});
-    remote.catch(() => {});
+    const remote = this.markDirtyAndSync(id)
+      .then(() => {})
+      .catch((error) => {
+        console.error(error);
+      });
     if (rebasedPatches.length)
       this.pubsub.pub({type: 'rebase', id, patches: rebasedPatches});
     if (needsReset) {

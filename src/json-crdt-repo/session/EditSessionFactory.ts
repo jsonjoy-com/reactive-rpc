@@ -10,6 +10,11 @@ export interface EditSessionFactoryOpts {
 export class EditSessionFactory {
   constructor(protected readonly opts: EditSessionFactoryOpts) {}
 
+  /**
+   * Creates a new editing session synchronously (immediately). If the block
+   * with a given ID already exists, it asynchronously synchronizes the local
+   * and remote state.
+   */
   public make({id, schema, pull = true}: EditSessionMakeOpts): EditSession {
     const opts = this.opts;
     const model = Model.create(void 0, opts.sid);
@@ -19,11 +24,13 @@ export class EditSessionFactory {
       api.root(schema);
       api.flush();
     }
-    // if (pull) session.loadSilent();
-    if (pull) session.sync().catch(() => {});
+    if (pull) session.save().catch(() => {});
     return session;
   }
 
+  /**
+   * Creates a new editing session asynchronously from an existing block.
+   */
   public async load(opts: EditSessionLoadOpts): Promise<EditSession> {
     const id = opts.id;
     const repo = this.opts.repo;
