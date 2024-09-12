@@ -145,6 +145,11 @@ export interface LevelLocalRepoOpts {
    * Maximum backoff time in milliseconds for the sync loop.
    */
   readonly syncLoopMaxBackoff?: number;
+
+  /**
+   * If specified, background sync errors will be emitted here.
+   */
+  readonly onSyncError?: (error: Error | unknown) => void;
 }
 
 export class LevelLocalRepo implements LocalRepo {
@@ -385,7 +390,7 @@ export class LevelLocalRepo implements LocalRepo {
     if (this._stopped) return false;
     this.markDirty(id).catch((error) => {
       if (this._stopped) return;
-      console.error(error);
+      this.opts.onSyncError?.(error);
     });
     return await this.push(id, true);
   }
@@ -599,7 +604,7 @@ export class LevelLocalRepo implements LocalRepo {
       .then(() => {})
       .catch((error) => {
         if (this._stopped) return;
-        console.error(error);
+        this.opts.onSyncError?.(error);
       });
     remote.catch(() => {});
     return {model, remote};
@@ -732,7 +737,7 @@ export class LevelLocalRepo implements LocalRepo {
       .then(() => {})
       .catch((error) => {
         if (this._stopped) return;
-        console.error(error);
+        this.opts.onSyncError?.(error);
       });
     if (rebasedPatches.length)
       this.pubsub.pub({type: 'rebase', id, patches: rebasedPatches});

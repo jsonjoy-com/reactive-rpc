@@ -33,6 +33,7 @@ export const setup = async (
       rpc: remote.remote,
       connected$: new BehaviorSubject(true),
       pubsub,
+      onSyncError: (error) => console.error(error),
       ...opts.local,
     });
     const stop = async () => {
