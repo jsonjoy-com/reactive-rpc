@@ -7,7 +7,6 @@ import type {BlockId, LocalRepo, LocalRepoDeleteEvent, LocalRepoEvent, LocalRepo
 export class EditSession {
   public log: Log;
   protected _stop$ = new Subject<void>();
-  public cursor?: undefined | unknown;
 
   public get model(): Model {
     return this.log.end;
@@ -17,6 +16,7 @@ export class EditSession {
     public readonly repo: LocalRepo,
     public readonly id: BlockId,
     protected start: Model,
+    public cursor: undefined | unknown = undefined
   ) {
     this.log = new Log(() => this.start.clone());
     this.repo.change$(this.id)

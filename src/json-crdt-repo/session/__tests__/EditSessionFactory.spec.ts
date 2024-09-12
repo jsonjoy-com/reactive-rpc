@@ -1,6 +1,6 @@
 import {Model, s} from 'json-joy/lib/json-crdt';
 import {setup} from './setup';
-import {tick, until} from 'thingies';
+import {of, tick, until} from 'thingies';
 import {BlockId, LocalRepo} from '../../local/types';
 
 const readLocal = async (local: LocalRepo, id: BlockId) => {
@@ -160,16 +160,28 @@ describe('.make()', () => {
 });
 
 describe('.load()', () => {
-  test.skip('can create a new block', async () => {
+  test('throws if the block does not exist in the local repo', async () => {
+    const kit = await setup();
+    const [, error] = await of(kit.sessions.load({id: kit.blockId}));
+    expect((error as any)!.message).toBe('NOT_FOUND');
+    await kit.stop();
   });
 
-  test.skip('can load block which exists locally', async () => {
+  test('can "make" a new block, if it does not exist', async () => {
+    const kit = await setup();
+    const session = await kit.sessions.load({id: kit.blockId, make: {}});
+    expect(session.model.view()).toBe(undefined);
+    await session.dispose();
+    await kit.stop();
   });
 
-  test.skip('can load block which exists remotely', async () => {
-  });
-
-  test.skip('can load block which exists remotely with timeout', async () => {
+  test('can "make" a new block with schema, if it does not exist', async () => {
+    const kit = await setup();
+    const schema = s.obj({xyz: s.con(123)});
+    const session = await kit.sessions.load({id: kit.blockId, make: {schema}});
+    expect(session.model.view()).toEqual({xyz: 123});
+    await session.dispose();
+    await kit.stop();
   });
 
   test('can load block which exists locally', async () => {
@@ -181,7 +193,68 @@ describe('.load()', () => {
     const session2 = await kit.sessions.load({id: kit.blockId});
     expect(session2.model.view()).toEqual({foo: 'bar'});
     await session.dispose();
+    await session2.dispose();
     await kit.stop();
+  });
+
+  test('can update block, which exists locally', async () => {
+    const kit = await setup();
+    const session = kit.sessions.make({id: kit.blockId});
+    expect(session.model.view()).toBe(undefined);
+    session.model.api.root({foo: 'bar'});
+    await session.sync();
+    const session2 = await kit.sessions.load({id: kit.blockId});
+    expect(session2.model.view()).toEqual({foo: 'bar'});
+    session2.model.api.obj([]).set({x: 1});
+    expect(session2.model.view()).toEqual({foo: 'bar', x: 1});
+    const session3 = await kit.sessions.load({id: kit.blockId});
+    await session2.sync();
+    await until(() => session3.model.view()?.x === 1);
+    expect(session3.model.view()).toEqual({foo: 'bar', x: 1});
+    await session.dispose();
+    await session2.dispose();
+    await session3.dispose();
+    await kit.stop();
+  });
+
+  test('throws when loading block, which exists on remote, but missing in local repo', async () => {
+    const kit = await setup();
+    // Create on remote.
+    const model = Model.create(undefined, kit.sid);
+    model.api.root({foo: 'bar'});
+    const patch = model.api.flush();
+    const id = kit.blockId;
+    await kit.remote.client.call('block.new', {id: id.join('/'), batch: {patches: [{blob: patch.toBinary()}]}});
+    const model2 = await kit.getModelFromRemote(kit.blockId.join('/'));
+    expect(model2.view()).toEqual({foo: 'bar'});
+    // Load session with the same ID.
+    const [, error] = await of(kit.sessions.load({id}));
+    expect((error as any)!.message).toBe('NOT_FOUND');
+    await kit.stop();
+  });
+
+  test('can load block which exists remotely', async () => {
+    const kit = await setup();
+    // Create on remote.
+    const model = Model.create(undefined, kit.sid);
+    model.api.root({foo: 'bar'});
+    const patch = model.api.flush();
+    const id = kit.blockId;
+    await kit.remote.client.call('block.new', {id: id.join('/'), batch: {patches: [{blob: patch.toBinary()}]}});
+    const model2 = await kit.getModelFromRemote(kit.blockId.join('/'));
+    expect(model2.view()).toEqual({foo: 'bar'});
+    // Load session with the same ID.
+    const session = await kit.sessions.load({id, remote: {timeout: 100}});
+    expect(session.model.view()).toEqual({foo: 'bar'});
+    await session.dispose();
+    await kit.stop();
+  });
+
+  test('can specify timeout when loading from remote', async () => {
+    
+  });
+
+  test.skip('can load block which exists remotely with timeout', async () => {
   });
 
   // test('can load an existing block (created remotely)', async () => {

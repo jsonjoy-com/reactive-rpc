@@ -29,16 +29,30 @@ export class EditSessionFactory {
   }
 
   /**
-   * Creates a new editing session asynchronously from an existing local block.
+   * Load block from the local repo. Creates a new editing session
+   * asynchronously from an existing local block.
+   * 
    * It is also possible to block on remote state check in case the block does
    * not exist locally, or to pull the latest state from the remote.
    */
   public async load(opts: EditSessionLoadOpts): Promise<EditSession> {
     const id = opts.id;
     const repo = this.opts.repo;
-    const {model} = await repo.get({id});
-    const session = new EditSession(repo, id, model);
-    return session;
+    try {
+      const {model} = await repo.get({id});
+      // TODO: need to set `cursor` here.
+      const session = new EditSession(repo, id, model);
+      return session;
+    } catch (error) {
+      if (error instanceof Error && error.message === 'NOT_FOUND') {
+        if (opts.remote) {
+          const {model, cursor} = await repo.pull(id);
+          const session = new EditSession(repo, id, model, cursor);
+          return session;
+        } else if (opts.make) return this.make({...opts.make, id});
+      }
+      throw error;
+    }
   }
 }
 
@@ -67,6 +81,12 @@ export interface EditSessionMakeOpts {
 export interface EditSessionLoadOpts {
   /** Block ID. */
   id: BlockId;
+
+  /**
+   * If specified, will create a new block, if one does not already exist. Will
+   * use these `make` options and provide them to the `make()` call.
+   */
+  make?: Omit<EditSessionMakeOpts, 'id'>;
 
   /** Thew new block schema, if any. */
   schema?: NodeBuilder;

@@ -38,7 +38,7 @@ export interface LocalRepo {
    *
    * @param id Unique ID of the block.
    */
-  pull(id: BlockId): Promise<{model: Model}>;
+  pull(id: BlockId): Promise<LocalRepoPullResponse>;
 
   /**
    * Deletes a block (document) from the local repo.
@@ -127,6 +127,22 @@ export interface LocalRepoSyncResponse {
    * synchronized with the server or remote peers.
    */
   remote?: Promise<void>;
+}
+
+export interface LocalRepoPullResponse {
+  /**
+   * Cursor that the client should use in the next `.sync()` call. If the cursor
+   * is not set, the client should use the cursor from the previous `.sync()`
+   * call.
+   */
+  cursor: undefined | unknown;
+
+  /**
+   * Model snapshot that the client should reset its "start" state to. The
+   * `Model` is sent when the *sync* call detects that the client is behind the
+   * remote or the local frontier.
+   */
+  model: Model;
 }
 
 export interface LocalRepoGetRequest {

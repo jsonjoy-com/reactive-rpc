@@ -10,7 +10,7 @@ import {once} from 'thingies/lib/once';
 import {timeout} from 'thingies/lib/timeout';
 import {pubsub} from '../../pubsub';
 import type {ServerBatch, ServerHistory, ServerPatch} from '../../remote/types';
-import type {BlockId, LocalRepo, LocalRepoEvent, LocalRepoDeleteEvent, LocalRepoMergeEvent, LocalRepoRebaseEvent, LocalRepoResetEvent, LocalRepoSyncRequest, LocalRepoSyncResponse, LocalRepoGetResponse, LocalRepoGetRequest, LocalRepoCreateResponse, LocalRepoCreateRequest, LocalRepoGetIfResponse, LocalRepoGetIfRequest} from '../types';
+import type {BlockId, LocalRepo, LocalRepoEvent, LocalRepoDeleteEvent, LocalRepoMergeEvent, LocalRepoRebaseEvent, LocalRepoResetEvent, LocalRepoSyncRequest, LocalRepoSyncResponse, LocalRepoGetResponse, LocalRepoGetRequest, LocalRepoCreateResponse, LocalRepoCreateRequest, LocalRepoGetIfResponse, LocalRepoGetIfRequest, LocalRepoPullResponse} from '../types';
 import type {BinStrLevel, BinStrLevelOperation, BlockMeta, LocalBatch, SyncResult, LevelLocalRepoPubSub, LevelLocalRepoCursor} from './types';
 import type {CrudLocalRepoCipher} from './types';
 import type {Locks} from 'thingies/lib/Locks';
@@ -792,14 +792,17 @@ export class LevelLocalRepo implements LocalRepo {
   /**
    * Pull from remote.
    */
-  public async pull(id: BlockId): Promise<{model: Model, meta: BlockMeta}> {
+  public async pull(id: BlockId): Promise<LocalRepoPullResponse> {
     const keyBase = await this.blockKeyBase(id);
     try {
       const {seq} = await this.readMeta(keyBase);
-      return await this.pullExisting(id, keyBase, seq);
+      const {model, meta} = await this.pullExisting(id, keyBase, seq);
+      return {model, cursor: meta.seq};
     } catch (error) {
-      if (!!error && typeof error === 'object' && (error as any).code === 'LEVEL_NOT_FOUND')
-        return await this.pullNew(id, keyBase);
+      if (!!error && typeof error === 'object' && (error as any).code === 'LEVEL_NOT_FOUND') {
+        const {model, meta} = await this.pullNew(id, keyBase);
+        return {model, cursor: meta.seq};
+      }
       throw error;
     }
   }
