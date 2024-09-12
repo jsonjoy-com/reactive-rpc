@@ -1,7 +1,7 @@
 import {Model, s, NodeBuilder, Patch} from 'json-joy/lib/json-crdt';
 import {setup} from './setup';
 import {Log} from 'json-joy/lib/json-crdt/log/Log';
-import {tick} from 'thingies';
+import {tick, until} from 'thingies';
 import {BehaviorSubject} from 'rxjs';
 import {LocalRepoEvent, LocalRepoMergeEvent} from '../../types';
 
@@ -736,7 +736,52 @@ describe('.sync()', () => {
       await kit.stop();
     });
 
-    test.todo('can push an update when remote already advanced');
+    test('can push an update when remote already advanced', async () => {
+      const kit = await setup();
+      await kit.remote.client.call('block.new', {
+        id: kit.blockId.join('/'),
+      });
+      const model1 = await kit.getModelFromRemote();
+      model1.api.root({foo: 'bar'});
+      expect(model1.view()).toEqual({foo: 'bar'}); 
+      const res = await kit.remote.client.call('block.upd', {
+        id: kit.blockId.join('/'),
+        batch: {
+          patches: [{
+            blob: model1.api.flush()!.toBinary(),
+          }],
+        }
+      });
+      const model2 = (await kit.getModelFromRemote()).fork();
+      expect(model2.view()).toEqual({foo: 'bar'});
+      await kit.local.pull(kit.blockId);
+      const get1 = await kit.local.get({id: kit.blockId});
+      expect(get1.model.view()).toEqual({foo: 'bar'});
+      model1.api.obj([]).set({x: 1});
+      await kit.remote.client.call('block.upd', {
+        id: kit.blockId.join('/'),
+        batch: {
+          patches: [{
+            blob: model1.api.flush()!.toBinary(),
+          }],
+        }
+      });
+      const model3 = await kit.getModelFromRemote();
+      expect(model3.view()).toEqual({foo: 'bar', x: 1});
+      model2.api.obj([]).set({y: 2});
+      await kit.local.sync({
+        id: kit.blockId,
+        patches: [model2.api.flush()],
+      });
+      await until(async () => {
+        const get = await kit.local.get({id: kit.blockId});
+        return get.model.view().x === 1 && get.model.view().y === 2;
+      });
+      const get2 = await kit.local.get({id: kit.blockId});
+      expect(get2.model.view()).toEqual({foo: 'bar', x: 1, y: 2});
+      await kit.stop();
+    });
+
     test.todo('can push an update when remote already advanced by multiple patches');
     test.todo('can push an update when local and remote have already advanced by different patches');
     
