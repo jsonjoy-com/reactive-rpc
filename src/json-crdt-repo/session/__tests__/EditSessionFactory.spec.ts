@@ -244,28 +244,87 @@ describe('.load()', () => {
     const model2 = await kit.getModelFromRemote(kit.blockId.join('/'));
     expect(model2.view()).toEqual({foo: 'bar'});
     // Load session with the same ID.
-    const session = await kit.sessions.load({id, remote: {timeout: 100}});
+    const session = await kit.sessions.load({id, remote: {}});
     expect(session.model.view()).toEqual({foo: 'bar'});
     await session.dispose();
     await kit.stop();
   });
 
-  test('can specify timeout when loading from remote', async () => {
-    
+  test('can specify timeout when loading from remote, and throw if it is exceeded', async () => {
+    const kit = await setup();
+    // Create on remote.
+    const model = Model.create(undefined, kit.sid);
+    model.api.root({foo: 'bar'});
+    const patch = model.api.flush();
+    const id = kit.blockId;
+    await kit.remote.client.call('block.new', {id: id.join('/'), batch: {patches: [{blob: patch.toBinary()}]}});
+    const model2 = await kit.getModelFromRemote(kit.blockId.join('/'));
+    expect(model2.view()).toEqual({foo: 'bar'});
+    // Load session with the same ID.
+    const [, error] = await of(kit.sessions.load({id, remote: {timeout: 1}}));
+    expect(error).toEqual(new Error('TIMEOUT'));
+    await kit.stop();
   });
 
-  test.skip('can load block which exists remotely with timeout', async () => {
+  test('can specify timeout when loading from remote, and not throw if it is not exceeded', async () => {
+    const kit = await setup();
+    // Create on remote.
+    const model = Model.create(undefined, kit.sid);
+    model.api.root({foo: 'bar'});
+    const patch = model.api.flush();
+    const id = kit.blockId;
+    await kit.remote.client.call('block.new', {id: id.join('/'), batch: {patches: [{blob: patch.toBinary()}]}});
+    const model2 = await kit.getModelFromRemote(kit.blockId.join('/'));
+    expect(model2.view()).toEqual({foo: 'bar'});
+    // Load session with the same ID.
+    const session = await kit.sessions.load({id, remote: {timeout: 1111}});
+    expect(session.model.view()).toEqual({foo: 'bar'});
+    await session.dispose();
+    await kit.stop();
   });
 
-  // test('can load an existing block (created remotely)', async () => {
-  //   const kit = await setup();
-  //   const model = Model.create(undefined, kit.sid);
-  //   model.api.root({foo: 'bar'});
-  //   const patch = model.api.flush();
-  //   await kit.remote.remote.create(kit.blockId.join('/'), {patches: [{blob: patch.toBinary()}]});
-  //   const session = await kit.sessions.load({id: kit.blockId, remote: {timeout: 100}});
-  //   // expect(session.model.view()).toEqual({foo: 'bar'});
-  //   // await session.dispose();
-  //   await kit.stop();
-  // });
+  test('can specify timeout when loading from remote, but does not throw if "make" is specified', async () => {
+    const kit = await setup();
+    // Create on remote.
+    const model = Model.create(undefined, kit.sid);
+    model.api.root({foo: 'bar'});
+    const patch = model.api.flush();
+    const id = kit.blockId;
+    await kit.remote.client.call('block.new', {id: id.join('/'), batch: {patches: [{blob: patch.toBinary()}]}});
+    const model2 = await kit.getModelFromRemote(kit.blockId.join('/'));
+    expect(model2.view()).toEqual({foo: 'bar'});
+    // Load session with the same ID.
+    const schema = s.obj({xyz: s.con(123)});
+    const session = await kit.sessions.load({id, remote: {timeout: 1}, make: {schema}});
+    expect(session.model.view()).toEqual({xyz: 123});
+    await session.dispose();
+    await kit.stop();
+  });
+
+  test('can force throw if block exists on remote', async () => {
+    const kit = await setup();
+    // Create on remote.
+    const model = Model.create(undefined, kit.sid);
+    model.api.root({foo: 'bar'});
+    const patch = model.api.flush();
+    const id = kit.blockId;
+    await kit.remote.client.call('block.new', {id: id.join('/'), batch: {patches: [{blob: patch.toBinary()}]}});
+    const model2 = await kit.getModelFromRemote(kit.blockId.join('/'));
+    expect(model2.view()).toEqual({foo: 'bar'});
+    // Load session with the same ID.
+    const schema = s.obj({xyz: s.con(123)});
+    const [, error] = await of(kit.sessions.load({id, remote: {throwIf: 'exists'}, make: {schema}}));
+    expect((error as any)!.message).toBe('CONFLICT');
+    await kit.stop();
+  });
+
+  test('can force throw if block does not exist on remote', async () => {
+    const kit = await setup();
+    const id = kit.blockId;
+    // Load session with the same ID.
+    const schema = s.obj({xyz: s.con(123)});
+    const [, error] = await of(kit.sessions.load({id, remote: {throwIf: 'missing'}, make: {schema}}));
+    expect((error as any)!.message).toBe('NOT_FOUND');
+    await kit.stop();
+  });
 });

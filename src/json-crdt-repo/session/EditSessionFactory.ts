@@ -1,6 +1,7 @@
 import {Model, NodeBuilder} from 'json-joy/lib/json-crdt';
 import {BlockId, LocalRepo} from '../local/types';
 import {EditSession} from './EditSession';
+import {timeout} from 'thingies/lib/timeout';
 
 export interface EditSessionFactoryOpts {
   readonly sid: number;
@@ -45,11 +46,23 @@ export class EditSessionFactory {
       return session;
     } catch (error) {
       if (error instanceof Error && error.message === 'NOT_FOUND') {
-        if (opts.remote) {
-          const {model, cursor} = await repo.pull(id);
-          const session = new EditSession(repo, id, model, cursor);
-          return session;
-        } else if (opts.make) return this.make({...opts.make, id});
+        const remote = opts.remote;
+        if (remote) {
+          const timeoutMs = remote.timeout;
+          try {
+            const {model, cursor} = await (typeof timeoutMs === 'number' ? timeout(timeoutMs, repo.pull(id)) : repo.pull(id));
+            if (remote.throwIf === 'exists') throw new Error('CONFLICT');
+            const session = new EditSession(repo, id, model, cursor);
+            return session;
+          } catch (error) {
+            if (error instanceof Error && error.message === 'TIMEOUT') {
+              if (!opts.make) throw error;
+            } else if (error instanceof Error && error.message === 'NOT_FOUND') {
+              if (remote.throwIf === 'missing') throw error;
+            } else throw error;
+          }
+        }
+        if (opts.make) return this.make({...opts.make, id});
       }
       throw error;
     }
@@ -91,13 +104,21 @@ export interface EditSessionLoadOpts {
   /** Thew new block schema, if any. */
   schema?: NodeBuilder;
 
-  local?: {
-    throwIf?: '' | 'missing' | 'exists';
-  };
-
   remote?: {
-    throwIf?: '' | 'missing' | 'exists';
+    /**
+     * Time in milliseconds to wait for the remote to respond. If the remote
+     * does not respond in time, the call will proceed with the local state.
+     * 
+     * If upsert `make` option is not provided, the call will throw a "TIMEOUT"
+     * error.
+     */
     timeout?: number;
-    throwOnTimeout?: boolean;
+
+    /**
+     * Defaults to an empty string. Otherwise, if "missing", will throw a
+     * "NOT_FOUND" error if the block does not exist remotely. If "exists", will
+     * a "CONFLICT" error if the block exists remotely.
+     */
+    throwIf?: '' | 'missing' | 'exists';
   };
 }
