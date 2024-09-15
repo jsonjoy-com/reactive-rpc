@@ -68,6 +68,7 @@ export interface LevelLocalRepoPubSubMessageLocalRebase {
   type: 'rebase';
   id: BlockId;
   patches: Uint8Array[];
+  session?: number;
 }
 
 export interface LevelLocalRepoPubSubMessageDelete {

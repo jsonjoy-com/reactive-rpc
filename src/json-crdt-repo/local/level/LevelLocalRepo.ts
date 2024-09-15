@@ -278,7 +278,7 @@ export class LevelLocalRepo implements LocalRepo {
     await this.kv.batch(ops);
   }
 
-  protected async load(id: BlockId): Promise<{model: Model}> {
+  protected async load(id: BlockId): Promise<{model: Model, cursor: number}> {
     const blockId = id.join('/');
     const res = await this.opts.rpc.read(blockId);
     const block = res.block;
@@ -319,7 +319,7 @@ export class LevelLocalRepo implements LocalRepo {
     });
     // TODO: Emit something here...
     // this.pubsub.pub(['pull', {id, batches: [], snapshot: {seq, blob: modelBlob}}])
-    return {model};
+    return {model, cursor: seq};
   }
 
   protected async readMeta(keyBase: string): Promise<BlockMeta> {
@@ -612,9 +612,9 @@ export class LevelLocalRepo implements LocalRepo {
 
   public async get({id, remote}: LocalRepoGetRequest): Promise<LocalRepoGetResponse> {
     try {
-      const {model} = await this._syncRead(id);
+      const {model, cursor} = await this._syncRead(id);
       if (!model) throw new Error('NOT_FOUND');
-      return {model};
+      return {model, cursor};
     } catch (error) {
       if (remote && error instanceof Error && error.message === 'NOT_FOUND')
         return await this.load(id);
@@ -635,7 +635,7 @@ export class LevelLocalRepo implements LocalRepo {
         const tip = await this.readFrontierTip(keyBase);
         if (tip) {
           const tipTime = tip.getId()?.time ?? 0;
-          if (request.time < tipTime + tip.span()) get = true;
+          if (request.time < tipTime + tip.span() - 1) get = true;
         }
       }
     }
@@ -740,7 +740,7 @@ export class LevelLocalRepo implements LocalRepo {
         this.opts.onSyncError?.(error);
       });
     if (rebasedPatches.length)
-      this.pubsub.pub({type: 'rebase', id, patches: rebasedPatches});
+      this.pubsub.pub({type: 'rebase', id, patches: rebasedPatches, session: req.session});
     if (needsReset) {
       const {cursor, model} = await this._syncRead0(keyBase);
       return {cursor, model, remote};
@@ -889,7 +889,7 @@ export class LevelLocalRepo implements LocalRepo {
               if (!deepEqual(id, msg.id)) return;
               const rebase: Patch[] = [];
               for (const blob of msg.patches) rebase.push(Patch.fromBinary(blob));
-              const event: LocalRepoRebaseEvent = {rebase};
+              const event: LocalRepoRebaseEvent = {rebase, session: msg.session};
               return event;
             }
             // case 'pull': {
