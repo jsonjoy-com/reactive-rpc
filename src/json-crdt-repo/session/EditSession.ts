@@ -123,6 +123,7 @@ export class EditSession {
     log.patches.forEach(({v}) => {
       const patch = v.rebase(nextTick);
       rebased.push(patch);
+      newEnd.applyPatch(patch);
       nextTick += patch.span();
     });
     log.patches.clear();

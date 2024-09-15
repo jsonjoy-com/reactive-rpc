@@ -35,6 +35,8 @@ describe('sync', () => {
     expect(session1.model.view()).toMatchObject({id: 'asdf', s1: 's1'});
     expect(session2.model.view()).toMatchObject({id: 'asdf', s2: 's2'});
     await session1.sync();
+    expect(session1.model.view()).toMatchObject({id: 'asdf', s1: 's1'});
+    expect(session2.model.view()).toMatchObject({id: 'asdf', s2: 's2'});
     await session2.sync();
     await until(() => session1.model.view().s2 === 's2');
     await until(() => session2.model.view().s1 === 's1');
