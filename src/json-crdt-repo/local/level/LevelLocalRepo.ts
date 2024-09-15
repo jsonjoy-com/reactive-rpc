@@ -892,22 +892,6 @@ export class LevelLocalRepo implements LocalRepo {
               const event: LocalRepoRebaseEvent = {rebase, session: msg.session};
               return event;
             }
-            // case 'pull': {
-            //   if (!deepEqual(id, data.id)) return;
-            //   const {batch, batches, snapshot} = data as LevelLocalRepoRemotePull;
-            //   const merge: Patch[] = [];
-            //   if (batches) for (const b of batches) for (const p of b.patches) merge.push(Patch.fromBinary(p.blob));
-            //   if (snapshot) {
-            //     const reset = Model.load(snapshot.blob, this.sid);
-            //     if (batch) for (const p of batch.patches) reset.applyPatch(Patch.fromBinary(p.blob));
-            //     reset.applyBatch(merge);
-            //     const event: LocalRepoResetEvent = {reset};
-            //     return event;
-            //   } else {
-            //     const event: LocalRepoChangeEvent = {merge};
-            //     return event;
-            //   }
-            // }
             case 'reset': {
               if (!deepEqual(id, msg.id)) return;
               const reset = Model.load(msg.model, this.sid);
@@ -916,9 +900,14 @@ export class LevelLocalRepo implements LocalRepo {
             }
             case 'merge': {
               if (!deepEqual(id, msg.id)) return;
-              const event: LocalRepoMergeEvent = {
-                merge: msg.patches.map((blob) => Patch.fromBinary(blob))
-              };
+              const merge: Patch[] = [];
+              for (const blob of msg.patches) {
+                const patch = Patch.fromBinary(blob);
+                if (patch.getId()?.sid === SESSION.GLOBAL) continue;
+                merge.push(patch);
+              }
+              if (!merge.length) return;
+              const event: LocalRepoMergeEvent = {merge};
               return event;
             }
             case 'del': {

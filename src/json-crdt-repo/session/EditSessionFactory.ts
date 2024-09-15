@@ -21,9 +21,9 @@ export class EditSessionFactory {
     const model = Model.create(void 0, opts.sid);
     const session = new EditSession(opts.repo, id, model);
     if (schema) {
-      const api = session.model.api;
-      api.root(schema);
-      api.flush();
+      const sessionModel = session.model;
+      sessionModel.setSchema(schema);
+      sessionModel.api.flush();
     }
     if (pull) session.sync().catch(() => {});
     return session;
@@ -40,9 +40,8 @@ export class EditSessionFactory {
     const id = opts.id;
     const repo = this.opts.repo;
     try {
-      const {model} = await repo.get({id});
-      // TODO: need to set `cursor` here.
-      const session = new EditSession(repo, id, model);
+      const {model, cursor} = await repo.get({id});
+      const session = new EditSession(repo, id, model, cursor);
       return session;
     } catch (error) {
       if (error instanceof Error && error.message === 'NOT_FOUND') {

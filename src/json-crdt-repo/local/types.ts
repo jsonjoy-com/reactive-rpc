@@ -105,6 +105,13 @@ export interface LocalRepoSyncRequest {
    * List of changes that the client wants to persist.
    */
   patches?: Patch[];
+
+  /**
+   * The session ID, which originated this sync call. The session ID is
+   * forwarded in events, so the client can distinguish between its own changes
+   * and changes made by other clients.
+   */
+  session?: number;
 }
 
 export interface LocalRepoSyncResponse {
@@ -137,11 +144,7 @@ export interface LocalRepoPullResponse {
    */
   cursor: undefined | unknown;
 
-  /**
-   * Model snapshot that the client should reset its "start" state to. The
-   * `Model` is sent when the *sync* call detects that the client is behind the
-   * remote or the local frontier.
-   */
+  /** The latest state of the block. */
   model: Model;
 }
 
@@ -159,6 +162,14 @@ export interface LocalRepoGetRequest {
 }
 
 export interface LocalRepoGetResponse {
+  /**
+   * Cursor that the client should use in the next `.sync()` call. If the cursor
+   * is not set, the client should use the cursor from the previous `.sync()`
+   * call.
+   */
+  cursor: undefined | unknown;
+
+  /** The latest state of the block. */
   model: Model;
 }
 
@@ -216,6 +227,8 @@ export interface LocalRepoRebaseEvent {
    * switches tabs, the changes are already synchronized.
    */
   rebase: Patch[];
+
+  session?: number;
 }
 
 export interface LocalRepoResetEvent {

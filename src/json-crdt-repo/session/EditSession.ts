@@ -6,7 +6,9 @@ import type {BlockId, LocalRepo, LocalRepoDeleteEvent, LocalRepoEvent, LocalRepo
 
 export class EditSession {
   public log: Log;
+  protected _stopped = false;
   protected _stop$ = new Subject<void>();
+  protected readonly session: number = Math.floor(Math.random() * 0x7fffffff);
 
   public get model(): Model {
     return this.log.end;
@@ -25,6 +27,7 @@ export class EditSession {
   }
 
   public dispose(): void {
+    this._stopped = true;
     this._stop$.next();
   }
 
@@ -52,9 +55,19 @@ export class EditSession {
       log.patches.forEach((patch) => {
         patches.push(patch.v);
       });
+      const length = patches.length;
       // TODO: After async call check that sync state is still valid. New patches, might have been added.
-      if (patches.length || this.cursor === undefined) {
-        const res = await this.repo.sync({id: this.id, patches, cursor: this.cursor});
+      if (length || this.cursor === undefined) {
+        const res = await this.repo.sync({id: this.id, patches, cursor: this.cursor, session: this.session});
+        // TODO: After sync call succeeds, remove the patches from the log.
+        // TODO: reset the `start` model manually
+        if (length) {
+          const last = patches[length - 1];
+          const lastId = last.getId();
+          if (lastId) {
+            this.log.advanceTo(lastId);
+          }
+        }
         if (typeof res.cursor !== undefined) this.cursor = res.cursor;
         if (res.model) this.reset(res.model);
         return {remote: res.remote};
@@ -128,12 +141,16 @@ export class EditSession {
   private events: LocalRepoEvent[] = [];
 
   private onEvent = (event: LocalRepoEvent): void => {
+    if (this._stopped) return;
+    if ((event as LocalRepoRebaseEvent).rebase) {
+      if ((event as LocalRepoRebaseEvent).session === this.session) return;
+    }
     this.events.push(event);
     this.drainEvents();
   };
 
   private drainEvents(): void {
-    if (this.saveInProgress) return;
+    if (this.saveInProgress || this._stopped) return;
     const events = this.events;
     const length = events.length;
     for (let i = 0; i < length; i++) {
