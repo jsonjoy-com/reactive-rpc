@@ -16,10 +16,11 @@ export class EditSessionFactory {
    * with a given ID already exists, it asynchronously synchronizes the local
    * and remote state.
    */
-  public make({id, schema, pull = true}: EditSessionMakeOpts): EditSession {
-    const opts = this.opts;
-    const model = Model.create(void 0, opts.sid);
-    const session = new EditSession(opts.repo, id, model);
+  public make(opts: EditSessionMakeOpts): EditSession {
+    const {id, schema, pull = true} = opts;
+    const factoryOpts = this.opts;
+    const model = Model.create(void 0, factoryOpts.sid);
+    const session = new EditSession(factoryOpts.repo, id, model, undefined, opts.session);
     if (schema) {
       const sessionModel = session.model;
       sessionModel.setSchema(schema);
@@ -83,6 +84,11 @@ export interface EditSessionMakeOpts {
    * block with the same ID already exists. Defaults to `true`.
    */
   pull?: boolean;
+
+  /**
+   * Internal unique session ID.
+   */
+  session?: number;
 }
 
 /**

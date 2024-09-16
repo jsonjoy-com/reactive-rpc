@@ -1,6 +1,7 @@
 import {Log} from 'json-joy/lib/json-crdt/log/Log';
 import {Model, Patch} from 'json-joy/lib/json-crdt';
 import {concurrency} from 'thingies/lib/concurrencyDecorator';
+import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
 import {Subject, takeUntil} from 'rxjs';
 import type {BlockId, LocalRepo, LocalRepoDeleteEvent, LocalRepoEvent, LocalRepoMergeEvent, LocalRepoRebaseEvent, LocalRepoResetEvent} from '../local/types';
 
@@ -8,7 +9,6 @@ export class EditSession {
   public log: Log;
   protected _stopped = false;
   protected _stop$ = new Subject<void>();
-  protected readonly session: number = Math.floor(Math.random() * 0x7fffffff);
 
   public get model(): Model {
     return this.log.end;
@@ -18,7 +18,8 @@ export class EditSession {
     public readonly repo: LocalRepo,
     public readonly id: BlockId,
     protected start: Model,
-    public cursor: undefined | unknown = undefined
+    public cursor: undefined | unknown = undefined,
+    protected readonly session: number = Math.floor(Math.random() * 0x7fffffff),
   ) {
     this.log = new Log(() => this.start.clone());
     this.repo.change$(this.id)
@@ -59,14 +60,13 @@ export class EditSession {
       // TODO: After async call check that sync state is still valid. New patches, might have been added.
       if (length || this.cursor === undefined) {
         const res = await this.repo.sync({id: this.id, patches, cursor: this.cursor, session: this.session});
+        if (this._stopped) return null;
         // TODO: After sync call succeeds, remove the patches from the log.
-        // TODO: reset the `start` model manually
         if (length) {
           const last = patches[length - 1];
           const lastId = last.getId();
-          if (lastId) {
-            this.log.advanceTo(lastId);
-          }
+          if (lastId) this.log.advanceTo(lastId);
+          this.start.applyBatch(patches);
         }
         if (typeof res.cursor !== undefined) this.cursor = res.cursor;
         if (res.model) this.reset(res.model);
@@ -115,8 +115,12 @@ export class EditSession {
     const end = log.end;
     // TODO: Remove this condition, make flush always safe to call.
     if (end.api.builder.patch.ops.length) end.api.flush();
-    const newEnd = log.start();
-    newEnd.applyBatch(patches);
+    if (log.patches.size() === 0) {
+      this.merge(patches);
+      return;
+    }
+    this.start.applyBatch(patches);
+    const newEnd = this.start.clone();
     const lastPatch = patches[patches.length - 1];
     let nextTick = lastPatch.getId()!.time + lastPatch.span();
     const rebased: Patch[] = [];
@@ -133,8 +137,20 @@ export class EditSession {
 
   protected merge(patches: Patch[]): void {
     if (!patches.length) return;
-    this.log.end.applyBatch(patches);
-    this.start.applyBatch(patches);
+    const start = this.start;
+    const log = this.log;
+    const end = log.end;
+    const sid = end.clock.sid;
+    for (const patch of patches) {
+      const patchId = patch.getId();
+      if (!patchId) continue;
+      const patchSid = patchId.sid;
+      if (patchSid === SESSION.GLOBAL) continue;
+      if (patchSid === sid && patchId.time < end.clock.time) continue;
+      end.applyPatch(patch);
+      start.applyPatch(patch);
+      log.patches.del(patchId);
+    }
   }
 
   // ------------------------------------------------ reactive event processing

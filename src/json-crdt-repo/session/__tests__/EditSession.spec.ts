@@ -1,6 +1,7 @@
 import {s} from 'json-joy/lib/json-crdt';
 import {setup} from './setup';
-import {tick, until} from 'thingies';
+import {until} from 'thingies/lib/until';
+import {tick} from 'thingies';
 
 describe('sync', () => {
   test('removes patches from log on sync', async () => {
@@ -26,8 +27,10 @@ describe('sync', () => {
   test('can edit two sessions in parallel', async () => {
     const kit = await setup();
     const schema = s.obj({id: s.con('asdf')});
-    const session1 = kit.sessions.make({id: kit.blockId, schema});
-    const session2 = kit.sessions.make({id: kit.blockId, schema});
+    const session1 = kit.sessions.make({id: kit.blockId, schema, session: 1});
+    const session2 = kit.sessions.make({id: kit.blockId, schema, session: 2});
+    expect(session1.model.view()).toEqual({id: 'asdf'});
+    expect(session2.model.view()).toEqual({id: 'asdf'});
     await session1.sync();
     await session2.sync();
     session1.model.api.obj([]).set({s1: 's1'});
@@ -42,6 +45,74 @@ describe('sync', () => {
     await until(() => session2.model.view().s1 === 's1');
     expect(session1.model.view()).toEqual({id: 'asdf', s1: 's1', s2: 's2'});
     expect(session2.model.view()).toEqual({id: 'asdf', s2: 's2', s1: 's1'});
+    await session1.dispose();
+    await session2.dispose();
+    await kit.stop();
+  });
+
+  test('concurrently creating same ID block with same schema, results in predictable logical time', async () => {
+    const kit = await setup();
+    const schema = s.obj({a: s.con('a')});
+    const session1 = kit.sessions.make({id: kit.blockId, schema});
+    const session2 = kit.sessions.make({id: kit.blockId, schema});
+    expect(session1.model.view()).toEqual({a: 'a'});
+    expect(session2.model.view()).toEqual({a: 'a'});
+    await session1.sync();
+    await session2.sync();
+    expect(session1.model.clock.time).toBe(session2.model.clock.time);
+    const {model} = await kit.local.sync({
+      id: kit.blockId,
+    });
+    expect(model!.clock.time).toBe(session1.model.clock.time);
+    await session1.dispose();
+    await session2.dispose();
+    await kit.stop();
+  });
+
+  test('one session can listen to all changes of another session', async () => {
+    const kit = await setup();
+    const schema = s.obj({a: s.con('a')});
+    const session1 = kit.sessions.make({id: kit.blockId, schema, session: 1});
+    const session2 = kit.sessions.make({id: kit.blockId, schema, session: 2});
+    await session1.sync();
+    await session2.sync();
+    expect(session1.log.patches.size()).toBe(0);
+    expect(session2.log.patches.size()).toBe(0);
+    expect(session1.model.view()).toEqual({a: 'a'});
+    expect(session2.model.view()).toEqual({a: 'a'});
+    session1.model.api.obj([]).set({b: 'b'});
+    expect(session1.model.view()).toEqual({a: 'a', b: 'b'});
+    expect(session2.model.view()).toEqual({a: 'a'});
+    await session1.sync();
+    expect(session1.log.patches.size()).toBe(0);
+    expect(session2.log.patches.size()).toBe(0);
+    await tick(123);
+    expect(session1.log.patches.size()).toBe(0);
+    expect(session2.log.patches.size()).toBe(0);
+    await until(() => session2.model.view().b === 'b');
+    expect(session1.model.view()).toEqual({a: 'a', b: 'b'});
+    expect(session2.model.view()).toEqual({a: 'a', b: 'b'});
+    session1.model.api.obj([]).set({c: 'c'});
+    session1.model.api.obj([]).set({d: 'd'});
+    expect(session1.model.view()).toEqual({a: 'a', b: 'b', c: 'c', d: 'd'});
+    expect(session2.model.view()).toEqual({a: 'a', b: 'b'});
+    await session1.sync();
+    await session1.sync();
+    session1.model.api.obj([]).set({e: 'e'});
+    expect(session1.model.view()).toEqual({a: 'a', b: 'b', c: 'c', d: 'd', e: 'e'});
+    await session1.sync();
+    await session1.sync();
+    await session1.sync();
+    await until(() => {
+      try {
+        expect(session2.model.view()).toEqual({a: 'a', b: 'b', c: 'c', d: 'd', e: 'e'});
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    expect(session1.model.view()).toEqual({a: 'a', b: 'b', c: 'c', d: 'd', e: 'e'});
+    expect(session2.model.view()).toEqual({a: 'a', b: 'b', c: 'c', d: 'd', e: 'e'});
     await session1.dispose();
     await session2.dispose();
     await kit.stop();
