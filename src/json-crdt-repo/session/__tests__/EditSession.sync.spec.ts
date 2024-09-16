@@ -86,7 +86,7 @@ describe('sync', () => {
     await session1.sync();
     expect(session1.log.patches.size()).toBe(0);
     expect(session2.log.patches.size()).toBe(0);
-    await tick(123);
+    await tick(5);
     expect(session1.log.patches.size()).toBe(0);
     expect(session2.log.patches.size()).toBe(0);
     await until(() => session2.model.view().b === 'b');
@@ -113,6 +113,45 @@ describe('sync', () => {
     });
     expect(session1.model.view()).toEqual({a: 'a', b: 'b', c: 'c', d: 'd', e: 'e'});
     expect(session2.model.view()).toEqual({a: 'a', b: 'b', c: 'c', d: 'd', e: 'e'});
+    await session1.dispose();
+    await session2.dispose();
+    await kit.stop();
+  });
+
+  test('sessions converge to the same view', async () => {
+    const kit = await setup();
+    const schema = s.obj({a: s.con('a')});
+    const session1 = kit.sessions.make({id: kit.blockId, schema, session: 1});
+    const session2 = kit.sessions.make({id: kit.blockId, schema, session: 2});
+    await session1.sync();
+    await session2.sync();
+    expect(session1.log.patches.size()).toBe(0);
+    expect(session2.log.patches.size()).toBe(0);
+    session1.model.api.obj([]).set({b: 'b'});
+    session1.model.api.obj([]).set({c: 'c'});
+    await tick(5);
+    session1.model.api.obj([]).set({d: 'd'});
+    const session3 = kit.sessions.make({id: kit.blockId, schema, session: 3});
+    await tick(5);
+    session1.model.api.obj([]).set({e: 'e'});
+    await tick(5);
+    session1.model.api.obj([]).set({f: 'f'});
+    const session4 = kit.sessions.make({id: kit.blockId, schema, session: 4});
+    await session1.sync();
+    await until(async () => {
+      try {
+        expect(session1.model.view()).toEqual(session2.model.view());
+        expect(session1.model.view()).toEqual(session3.model.view());
+        expect(session1.model.view()).toEqual(session4.model.view());
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    expect(session1.model.view()).toEqual({a: 'a', b: 'b', c: 'c', d: 'd', e: 'e', f: 'f'});
+    expect(session1.model.view()).toEqual(session2.model.view());
+    expect(session1.model.view()).toEqual(session3.model.view());
+    expect(session1.model.view()).toEqual(session4.model.view());
     await session1.dispose();
     await session2.dispose();
     await kit.stop();
