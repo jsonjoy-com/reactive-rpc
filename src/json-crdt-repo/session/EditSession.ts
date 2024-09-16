@@ -1,14 +1,18 @@
 import {Log} from 'json-joy/lib/json-crdt/log/Log';
 import {Model, Patch} from 'json-joy/lib/json-crdt';
 import {concurrency} from 'thingies/lib/concurrencyDecorator';
+import {createRace} from 'thingies/lib/createRace';
 import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
-import {Subject, takeUntil} from 'rxjs';
+import {Subject} from 'rxjs';
+import {first, takeUntil} from 'rxjs/operators';
 import type {BlockId, LocalRepo, LocalRepoDeleteEvent, LocalRepoEvent, LocalRepoMergeEvent, LocalRepoRebaseEvent, LocalRepoResetEvent} from '../local/types';
 
 export class EditSession {
   public log: Log;
   protected _stopped = false;
   protected _stop$ = new Subject<void>();
+  public onsyncerror?: (error: Error | unknown) => void;
+  private _syncRace = createRace();
 
   public get model(): Model {
     return this.log.end;
@@ -22,6 +26,12 @@ export class EditSession {
     protected readonly session: number = Math.floor(Math.random() * 0x7fffffff),
   ) {
     this.log = new Log(() => this.start.clone());
+    const flushUnsubscribe = this.log.end.api.onFlush.listen((a) => {
+      this.syncLog();
+    });
+    this._stop$.pipe(first()).subscribe(() => {
+      flushUnsubscribe();
+    });
     this.repo.change$(this.id)
       .pipe(takeUntil(this._stop$))
       .subscribe(this.onEvent);
@@ -47,6 +57,7 @@ export class EditSession {
    * from the local repo.
    */
   @concurrency(1) public async sync(): Promise<null | {remote?: Promise<void>}> {
+    if (this._stopped) return null;
     const log = this.log;
     const api = log.end.api;
     api.flush();
@@ -69,10 +80,15 @@ export class EditSession {
           this.start.applyBatch(patches);
         }
         if (typeof res.cursor !== undefined) this.cursor = res.cursor;
-        if (res.model) this.reset(res.model);
+        if (res.model) {
+          this._syncRace(() => {
+            this.reset(res.model!);
+          });
+        }
         return {remote: res.remote};
       } else {
         const res = await this.repo.getIf({id: this.id, time: this.model.clock.time - 1, cursor: this.cursor});
+        if (this._stopped) return null;
         if (res) {
           this.reset(res.model);
           this.cursor = res.cursor;
@@ -83,6 +99,15 @@ export class EditSession {
       this.saveInProgress = false;
       this.drainEvents();
     }
+  }
+
+  public syncLog(): void {
+    if (!this.log.patches.size()) return;
+    this._syncRace(() => {
+      this.sync().then((error) => {
+        this.onsyncerror?.(error);
+      });
+    });
   }
 
   /**
@@ -168,23 +193,25 @@ export class EditSession {
 
   private drainEvents(): void {
     if (this.saveInProgress || this._stopped) return;
-    const events = this.events;
-    const length = events.length;
-    for (let i = 0; i < length; i++) {
-      const event = events[i];
-      try {
-        if ((event as LocalRepoResetEvent).reset) this.reset((event as LocalRepoResetEvent).reset);
-        else if ((event as LocalRepoRebaseEvent).rebase) this.rebase((event as LocalRepoRebaseEvent).rebase);
-        else if ((event as LocalRepoMergeEvent).merge) this.merge((event as LocalRepoMergeEvent).merge);
-        else if ((event as LocalRepoDeleteEvent).del) {
-          this.clear();
-          break;
+    this._syncRace(() => {
+      const events = this.events;
+      const length = events.length;
+      for (let i = 0; i < length; i++) {
+        const event = events[i];
+        try {
+          if ((event as LocalRepoResetEvent).reset) this.reset((event as LocalRepoResetEvent).reset);
+          else if ((event as LocalRepoRebaseEvent).rebase) this.rebase((event as LocalRepoRebaseEvent).rebase);
+          else if ((event as LocalRepoMergeEvent).merge) this.merge((event as LocalRepoMergeEvent).merge);
+          else if ((event as LocalRepoDeleteEvent).del) {
+            this.clear();
+            break;
+          }
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to apply event', event, error);
         }
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Failed to apply event', event, error);
       }
-    }
-    this.events = [];
+      this.events = [];
+    });
   }
 }

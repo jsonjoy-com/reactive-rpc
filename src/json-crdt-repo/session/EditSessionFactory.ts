@@ -26,7 +26,8 @@ export class EditSessionFactory {
       sessionModel.setSchema(schema);
       sessionModel.api.flush();
     }
-    if (pull) session.sync().catch(() => {});
+    if (pull && !session.log.patches.size()) session.sync().catch(() => {});
+    session.log.end.api.autoFlush();
     return session;
   }
 
