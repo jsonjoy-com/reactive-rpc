@@ -392,7 +392,12 @@ export class LevelLocalRepo implements LocalRepo {
       if (this._stopped) return;
       this.opts.onSyncError?.(error);
     });
-    return await this.push(id, true);
+    try {
+      return await this.push(id, true);
+    } catch (error) {
+      if (typeof error === 'object' && error && (error as any).message === 'Not Found') return false;
+      throw error;
+    }
   }
 
   protected remoteTimeout(): number {

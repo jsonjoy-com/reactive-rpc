@@ -51,7 +51,7 @@ describe('onFlush', () => {
       expect(session1.model.view()).toEqual(view);
     };
     await assertView(undefined);
-    session1.model.api.root({});
+    session3.model.api.root({});
     await assertView({});
     session2.model.api.obj([]).set({b: 'b'});
     await tick(3);
