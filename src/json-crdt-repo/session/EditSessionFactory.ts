@@ -52,7 +52,7 @@ export class EditSessionFactory {
           const timeoutMs = remote.timeout;
           try {
             const {model, cursor} = await (typeof timeoutMs === 'number' ? timeout(timeoutMs, repo.pull(id)) : repo.pull(id));
-            if (remote.throwIf === 'exists') throw new Error('CONFLICT');
+            if (remote.throwIf === 'exists') throw new Error('EXISTS');
             const session = new EditSession(repo, id, model, cursor);
             return session;
           } catch (error) {

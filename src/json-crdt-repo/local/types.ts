@@ -130,6 +130,11 @@ export interface LocalRepoSyncResponse {
   model?: Model;
 
   /**
+   * List of patches that the client should apply to the local editing session.
+   */
+  merge?: Patch[];
+
+  /**
    * Promise that resolves when the local changes have been successfully
    * synchronized with the server or remote peers.
    */

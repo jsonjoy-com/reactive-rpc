@@ -154,6 +154,7 @@ describe('sync', () => {
     expect(session1.model.view()).toEqual(session4.model.view());
     await session1.dispose();
     await session2.dispose();
+    await session3.dispose();
     await kit.stop();
   });
 });

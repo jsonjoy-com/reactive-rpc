@@ -84,6 +84,10 @@ export class EditSession {
           this._syncRace(() => {
             this.reset(res.model!);
           });
+        } else if (res.merge) {
+          this._syncRace(() => {
+            this.merge(res.merge!);
+          });
         }
         return {remote: res.remote};
       } else {

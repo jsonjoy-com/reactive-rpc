@@ -657,8 +657,9 @@ export class LevelLocalRepo implements LocalRepo {
         try {
           return await this._syncCreate(req);
         } catch (error) {
-          if (error instanceof Error && error.message === 'EXISTS')
-              return await this._syncMerge(req);
+          if (error instanceof Error && error.message === 'EXISTS') {
+            return await this._syncMerge(req);
+          }
           throw error;
         }
       } else if (isCreate) {
@@ -692,11 +693,13 @@ export class LevelLocalRepo implements LocalRepo {
     // TODO: Return correct response.
     // TODO: Check that remote state is in sync, too.
     let needsReset = false;
-    await this.lockBlock(keyBase, async () => {
+    const didPush = await this.lockBlock(keyBase, async () => {
       const [tip, meta] = await Promise.all([
         this.readFrontierTip(keyBase),
         this.readMeta(keyBase),
       ]);
+      if (meta.seq > -1 && (typeof req.cursor !== 'number' || (req.cursor < meta.seq)))
+        needsReset = true;
       let nextTick = meta.time + 1;
       cursor = meta.seq;
       if (tip) {
@@ -712,10 +715,8 @@ export class LevelLocalRepo implements LocalRepo {
         if (!patchId) throw new Error('PATCH_ID_MISSING');
         const isSchemaPatch = patchId.sid === SESSION.GLOBAL && patchId.time === 1;
         if (isSchemaPatch) {
-          if (tip) {
-            const patchAheadOfTip = patchId.time > tip.getId()!.time;
-            if (!patchAheadOfTip) continue;
-          }
+          const patchAheadOfTip = patchId.time >= nextTick;
+          if (!patchAheadOfTip) continue;
         }
         let rebased = patch;
         if (patchId.sid === sid && nextTick > patchId.time) {
@@ -723,6 +724,8 @@ export class LevelLocalRepo implements LocalRepo {
           rebased = patch.rebase(nextTick);
           nextTick = rebased.getId()!.time + rebased.span();
         }
+        if (req.session === 4) console.log(tip + '');
+        if (req.session === 4) console.log(rebased + '');
         const id = rebased.getId()!;
         const time = id.time;
         const patchKey = this.frontierKey(keyBase, time);
@@ -731,8 +734,16 @@ export class LevelLocalRepo implements LocalRepo {
         const op: BinStrLevelOperation = {type: 'put', key: patchKey,value: uint8};
         ops.push(op);
       }
-      await this.kv.batch(ops);
+      if (ops.length) {
+        await this.kv.batch(ops);
+        return true;
+      }
+      return false;
     });
+    if (!didPush && !needsReset) {
+      const merge = await this.readFrontier0(keyBase);
+      return {cursor, merge};
+    }
     const remote = this.markDirtyAndSync(id)
       .then(() => {})
       .catch((error) => {
@@ -748,10 +759,15 @@ export class LevelLocalRepo implements LocalRepo {
     return {cursor, remote};
   }
 
-  private async _syncRead0(keyBase: string): Promise<LocalRepoSyncResponse> {
+  protected async readLocal0(keyBase: string): Promise<[model: Model, cursor: LevelLocalRepoCursor]> {
     const [model, meta, frontier] = await Promise.all([this.readModel(keyBase), this.readMeta(keyBase), this.readFrontier0(keyBase)]);
     model.applyBatch(frontier);
     const cursor: LevelLocalRepoCursor = meta.seq;
+    return [model, cursor];
+  }
+
+  private async _syncRead0(keyBase: string): Promise<LocalRepoSyncResponse> {
+    const [model, cursor] = await this.readLocal0(keyBase);
     return {
       model,
       cursor,
@@ -800,13 +816,15 @@ export class LevelLocalRepo implements LocalRepo {
   public async pull(id: BlockId): Promise<LocalRepoPullResponse> {
     const keyBase = await this.blockKeyBase(id);
     try {
-      const {seq} = await this.readMeta(keyBase);
-      const {model, meta} = await this.pullExisting(id, keyBase, seq);
+      const {model, meta} = await this.pullExisting(id, keyBase);
       return {model, cursor: meta.seq};
     } catch (error) {
       if (!!error && typeof error === 'object' && (error as any).code === 'LEVEL_NOT_FOUND') {
         const {model, meta} = await this.pullNew(id, keyBase);
         return {model, cursor: meta.seq};
+      } else if (error instanceof Error && error.message === 'CONCURRENCY') {
+        const [model, cursor] = await this.readLocal0(keyBase);
+        return {model, cursor};
       }
       throw error;
     }
@@ -818,7 +836,7 @@ export class LevelLocalRepo implements LocalRepo {
     const pubsub = this.pubsub;
     return this.lockBlock(keyBase, async () => {
       const exists = await this._exists(keyBase);
-      if (exists) throw new Error('CONFLICT');
+      if (exists) throw new Error('EXISTS');
       const model = Model.load(block.snapshot.blob, this.sid);
       let seq = block.snapshot.seq;
       for (const batch of block.tip) {
@@ -838,10 +856,11 @@ export class LevelLocalRepo implements LocalRepo {
     });
   }
 
-  protected async pullExisting(id: BlockId, keyBase: string, seq: number): Promise<{model: Model, meta: BlockMeta}> {
+  protected async pullExisting(id: BlockId, keyBase: string): Promise<{model: Model, meta: BlockMeta}> {
     // TODO: try catching up using batches, if not possible, reset
     // TODO: load batches to catch up with remote
     const blockId = id.join('/');
+    const {seq} = await this.readMeta(keyBase);
     const pull = await this.opts.rpc.pull(blockId, seq);
     const nextSeq = pull.batches.length ? pull.batches[pull.batches.length - 1].seq : pull.snapshot?.seq ?? seq;
     const pubsub = this.pubsub;
@@ -851,7 +870,7 @@ export class LevelLocalRepo implements LocalRepo {
         this.readMeta(keyBase),
       ]);
       const seq2 = meta.seq;
-      if (seq2 !== seq) throw new Error('CONFLICT');
+      if (seq2 !== seq) throw new Error('CONCURRENCY');
       if (pull.snapshot) {
         if (nextSeq > seq2) {
           const model = Model.load(pull.snapshot.blob, this.sid);
