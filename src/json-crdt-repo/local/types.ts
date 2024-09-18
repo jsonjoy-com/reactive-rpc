@@ -95,13 +95,6 @@ export interface LocalRepoSyncRequest {
   cursor?: undefined | unknown;
 
   /**
-   * When a new block is created, the client can specify whether the block
-   * should be created only if it does not exist yet, or if it should be
-   * created only if it already exists.
-   */
-  throwIf?: 'missing' | 'exists';
-
-  /**
    * List of changes that the client wants to persist.
    */
   patches?: Patch[];

@@ -736,8 +736,6 @@ export class LevelLocalRepo implements LocalRepo {
           rebased = patch.rebase(nextTick);
           nextTick = rebased.getId()!.time + rebased.span();
         }
-        if (req.session === 4) console.log(tip + '');
-        if (req.session === 4) console.log(rebased + '');
         const id = rebased.getId()!;
         const time = id.time;
         const patchKey = this.frontierKey(keyBase, time);

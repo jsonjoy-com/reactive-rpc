@@ -26,7 +26,9 @@ export class EditSessionFactory {
       sessionModel.setSchema(schema);
       sessionModel.api.flush();
     }
-    if (pull && !session.log.patches.size()) session.sync().catch(() => {});
+    if (pull && !session.log.patches.size()) {
+      session.sync().catch(() => {});
+    }
     session.log.end.api.autoFlush();
     return session;
   }
@@ -44,6 +46,7 @@ export class EditSessionFactory {
     try {
       const {model, cursor} = await repo.get({id});
       const session = new EditSession(repo, id, model, cursor);
+      session.log.end.api.autoFlush();
       return session;
     } catch (error) {
       if (error instanceof Error && error.message === 'NOT_FOUND') {
@@ -54,6 +57,7 @@ export class EditSessionFactory {
             const {model, cursor} = await (typeof timeoutMs === 'number' ? timeout(timeoutMs, repo.pull(id)) : repo.pull(id));
             if (remote.throwIf === 'exists') throw new Error('EXISTS');
             const session = new EditSession(repo, id, model, cursor);
+            session.log.end.api.autoFlush();
             return session;
           } catch (error) {
             if (error instanceof Error && error.message === 'TIMEOUT') {
