@@ -424,6 +424,12 @@ export class LevelLocalRepo implements LocalRepo {
       patches.push({blob});
     }
     if (!patches.length) {
+      const meta = await this.readMeta(keyBase);
+      if (meta.seq === -1) {
+        remote.create(remoteId).catch((error) => {
+          this.opts.onSyncError?.(error);
+        });
+      }
       if (doPull) {
         await this.pull(id);
       }
@@ -654,7 +660,7 @@ export class LevelLocalRepo implements LocalRepo {
 
   public async sync(req: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
     const cursor = req.cursor as LevelLocalRepoCursor | undefined;
-    const {id, patches, throwIf} = req;
+    const {id, patches} = req;
     const isNewSession = cursor === undefined;
     const isCreate = !!patches;
     const isWrite = !!patches && patches.length !== 0;

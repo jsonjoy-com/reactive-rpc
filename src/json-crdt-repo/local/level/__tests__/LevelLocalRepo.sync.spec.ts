@@ -8,7 +8,7 @@ import {LocalRepoEvent, LocalRepoMergeEvent} from '../../types';
 describe('.sync()', () => {
   describe('new session', () => {
     describe('create empty', () => {
-      test('can create a new empty block', async () => {
+      test('can create a new empty block, stores in local repo', async () => {
         const kit = await setup();
         const res1 = await kit.local.sync({
           id: kit.blockId,
@@ -20,6 +20,28 @@ describe('.sync()', () => {
         const get1 = await kit.local.get({id: kit.blockId});
         expect(get1.model.view()).toEqual(undefined);
         expect(get1.model.clock.sid).toBe(kit.sid);
+        await kit.stop();
+      });
+
+      test('can create a new empty block, stores on remote', async () => {
+        const kit = await setup();
+        const res1 = await kit.local.sync({
+          id: kit.blockId,
+          patches: [],
+        });
+        expect(res1.model).toBe(undefined);
+        expect(res1.remote).toEqual(expect.any(Promise));
+        expect(res1.cursor).toEqual(-1);
+        await until(async () => {
+          try {
+            await kit.getModelFromRemote();
+            return true;
+          } catch {
+            return false;
+          }
+        });
+        const model = await kit.getModelFromRemote();
+        expect(model.view()).toEqual(undefined);
         await kit.stop();
       });
 
