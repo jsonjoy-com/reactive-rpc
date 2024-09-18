@@ -218,6 +218,8 @@ export interface LocalRepoMergeEvent {
    * the need to reset or rebase the editing session.
    */
   merge: Patch[];
+
+  cursor: unknown;
 }
 
 export interface LocalRepoRebaseEvent {

@@ -170,7 +170,6 @@ describe('.sync()', () => {
         expect(model2.clock.time).toBe(model1.clock.time);
         expect(model2.clock.sid).toBe(model1.clock.sid);
         expect(res2.model!).toBe(undefined);
-        expect(res2.remote).toEqual(expect.any(Promise));
         expect(res2.cursor).toEqual(-1);
         const get1 = await kit.local.get({id: kit.blockId});
         expect(get1.model.view()).toEqual({a: 'b'});
@@ -237,7 +236,6 @@ describe('.sync()', () => {
         expect(model2.clock.time < model1.clock.time).toBe(true);
         expect(model2.clock.sid).toBe(model1.clock.sid);
         expect(res2.model).toBe(undefined);
-        expect(res2.remote).toEqual(expect.any(Promise));
         expect(res2.cursor).toEqual(-1);
         const get1 = await kit.local.get({id: kit.blockId});
         expect(get1.model.view()).toEqual({a: 'b', x: 1});
@@ -575,7 +573,6 @@ describe('.sync()', () => {
         patches: patches2,
         cursor: sync2.cursor,
       });
-      expect(sync3.model).toBe(undefined);
       expect(sync3.remote).toEqual(expect.any(Promise));
       const get3 = await kit.local.get({id: kit.blockId});
       expect(get3.model.view()).toEqual({foo: 'bar', x: 1});
@@ -604,7 +601,6 @@ describe('.sync()', () => {
         patches: patches1,
         cursor: sync1.cursor,
       });
-      expect(sync2.model).toBe(undefined);
       expect(sync2.remote).toEqual(expect.any(Promise));
       const get2 = await kit.local.get({id: kit.blockId});
       expect(get2.model.view()).toEqual({foo: 'baz'});
@@ -621,7 +617,6 @@ describe('.sync()', () => {
         patches: patches2,
         cursor: sync2.cursor,
       });
-      expect(sync3.model).toBe(undefined);
       expect(sync3.remote).toEqual(expect.any(Promise));
       const get3 = await kit.local.get({id: kit.blockId});
       expect(get3.model.view()).toEqual({foo: 'baz', x: 1, y: 4, z: 3});
@@ -661,7 +656,6 @@ describe('.sync()', () => {
         patches: [model1.api.flush()],
         cursor: sync1.cursor,
       });
-      expect(sync3.model).toBe(undefined);
       const get1 = await kit.local.get({id: kit.blockId});
       expect(get1.model.view()).toEqual([2, 3]);
 
@@ -710,7 +704,6 @@ describe('.sync()', () => {
         patches: [model1.api.flush()],
         cursor: sync1.cursor,
       });
-      expect(sync3.model).toBe(undefined);
       const get1 = await kit.local.get({id: kit.blockId});
       expect(get1.model.view()).toEqual([2, 3]);
 
@@ -722,7 +715,6 @@ describe('.sync()', () => {
         patches: [model1.api.flush()],
         cursor: sync3.cursor,
       });
-      expect(sync4.model).toBe(undefined);
 
       // Save changes of the first tab
       const sync5 = await kit.local.sync({

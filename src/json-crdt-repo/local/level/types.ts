@@ -62,6 +62,7 @@ export interface LevelLocalRepoPubSubMessageRemoteMerge {
   type: 'merge';
   id: BlockId;
   patches: Uint8Array[];
+  seq: number;
 }
 
 export interface LevelLocalRepoPubSubMessageLocalRebase {

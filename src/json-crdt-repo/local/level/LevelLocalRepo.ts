@@ -396,6 +396,7 @@ export class LevelLocalRepo implements LocalRepo {
       return await this.push(id, true);
     } catch (error) {
       if (typeof error === 'object' && error && (error as any).message === 'Not Found') return false;
+      else if (error instanceof Error && error.message === 'DISCONNECTED') return false;
       throw error;
     }
   }
@@ -511,7 +512,7 @@ export class LevelLocalRepo implements LocalRepo {
         ops.push(...modelOps);
         await this.kv.batch(ops);
         if (merge.length) {
-          this.pubsub.pub({type: 'merge', id, patches: merge});
+          this.pubsub.pub({type: 'merge', id, patches: merge, seq: seq});
         }
         return true;
       });
@@ -898,7 +899,7 @@ export class LevelLocalRepo implements LocalRepo {
         }
       meta.seq = nextSeq;
       await this._wrModel(keyBase, model.toBinary(), meta);
-      pubsub.pub({type: 'merge', id, patches});
+      pubsub.pub({type: 'merge', id, patches, seq: meta.seq});
       return {model, meta};
     });
   }
@@ -931,7 +932,7 @@ export class LevelLocalRepo implements LocalRepo {
                 merge.push(patch);
               }
               if (!merge.length) return;
-              const event: LocalRepoMergeEvent = {merge};
+              const event: LocalRepoMergeEvent = {merge, cursor: msg.seq};
               return event;
             }
             case 'del': {
@@ -960,7 +961,7 @@ export class LevelLocalRepo implements LocalRepo {
       switchMap(async ({event}) => {
         switch (event[0]) {
           case 'new': await this.pull(id); break;
-          case 'upd': await this._mergeBatch(id, event[1].batch); break;
+          case 'upd': await this._onUpd(id, event[1].batch); break;
           case 'del': await this.del(id); break;
         }
       }),
@@ -976,8 +977,12 @@ export class LevelLocalRepo implements LocalRepo {
     return sub;
   }
 
-  protected async _mergeBatch(id: BlockId, batch: ServerBatch): Promise<void> {
+  protected async _onUpd(id: BlockId, batch: ServerBatch): Promise<void> {
     const keyBase = await this.blockKeyBase(id);
+    const firstPatch = batch.patches[0];
+    if (!firstPatch) return;
+    const firstPatchSid = Patch.fromBinary(firstPatch.blob).getId()?.sid;
+    if (firstPatchSid === this.sid) return;
     try {
       const meta = await this.readMeta(keyBase);
       if (meta.seq + 1 !== batch.seq) {
@@ -998,13 +1003,14 @@ export class LevelLocalRepo implements LocalRepo {
       ]);
       if (meta.seq + 1 !== batch.seq) throw new Error('CONFLICT');  
       const patches: Uint8Array[] = [];
-      for (const patch of batch.patches) {
-        model.applyPatch(Patch.fromBinary(patch.blob));
-        patches.push(patch.blob);
+      for (const serverPatch of batch.patches) {
+        const patch = Patch.fromBinary(serverPatch.blob);
+        model.applyPatch(patch);
+        patches.push(serverPatch.blob);
       }
       meta.seq = batch.seq;
       await this._wrModel(keyBase, model.toBinary(), meta);
-      this.pubsub.pub({type: 'merge', id, patches});
+      this.pubsub.pub({type: 'merge', id, patches, seq: meta.seq});
     });
   }
 }
