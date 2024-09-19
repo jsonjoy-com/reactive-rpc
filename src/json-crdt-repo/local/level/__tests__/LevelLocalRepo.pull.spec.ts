@@ -28,7 +28,7 @@ describe('.pull()', () => {
         }
       });
       await kit.local.pull(kit.blockId);
-      const get = await kit.local.get(kit.blockId);
+      const get = await kit.local.get({id: kit.blockId});
       expect(get.model.view()).toEqual({foo: 'bar'});
       await kit.stop();
     });
@@ -90,7 +90,7 @@ describe('.pull()', () => {
           }],
         },
       });
-      const get1 = await local.get(kit.blockId);
+      const get1 = await local.get({id: kit.blockId});
       expect(get1.model.view()).toEqual({foo: 'bar'});
       let cnt = 0;
       kit.local.change$(kit.blockId).subscribe((event) => {
@@ -98,11 +98,11 @@ describe('.pull()', () => {
         cnt++;
       });
       await kit.local.pull(kit.blockId);
-      const get2 = await local.get(kit.blockId);
+      const get2 = await local.get({id: kit.blockId});
       expect(get2.model.view()).toEqual({foo: 'baz', x: 1});
       await kit.local.pull(kit.blockId);
       await kit.local.pull(kit.blockId);
-      const get3 = await local.get(kit.blockId);
+      const get3 = await local.get({id: kit.blockId});
       expect(get3.model.view()).toEqual({foo: 'baz', x: 1});
       await kit.stop();
     });
@@ -244,7 +244,7 @@ describe('.pull()', () => {
       expect(model.view()).toEqual({foo: 'bar'});
       for (const patch of event.merge) model.applyPatch(patch);
       expect(model.view()).toEqual({foo: 'baz', x: 1});
-      const read = await kit.local.get(kit.blockId);
+      const read = await kit.local.get({id: kit.blockId});
       expect(read.model.view()).toEqual({foo: 'baz', x: 1});
       await kit.stop();
     });
@@ -295,7 +295,7 @@ describe('.pull()', () => {
       expect(model.view()).toEqual({foo: 'bar'});
       model.reset(<Model<any>>event.reset);
       expect(model.view()).toEqual({foo: 'baz', x: 123});
-      const read = await kit.local.get(kit.blockId);
+      const read = await kit.local.get({id: kit.blockId});
       expect(read.model.view()).toEqual({foo: 'baz', x: 123});
       await kit.stop();
     });
