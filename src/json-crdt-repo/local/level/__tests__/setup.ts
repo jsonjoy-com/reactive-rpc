@@ -25,7 +25,8 @@ export const setup = async (
   }) as unknown as BinStrLevel;
   const blockId = [...col, id];
   const createLocal = (sid: number = 12345678) => {
-    const pubsub = createPubsub('test-' + blockId.join('/')) as LevelLocalRepoPubSub;
+    const busName = 'test-' + id;
+    const pubsub = createPubsub(busName) as LevelLocalRepoPubSub;
     const local = new LevelLocalRepo({
       kv,
       locks,
