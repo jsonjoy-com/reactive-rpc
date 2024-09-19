@@ -699,7 +699,7 @@ export class LevelLocalRepo implements LocalRepo {
     const {id, patches} = req;
     const keyBase = await this.blockKeyBase(id);
     if (!patches || !patches.length) throw new Error('EMPTY_BATCH');
-    const rebasedPatches: Uint8Array[] = [];
+    const writtenPatches: Uint8Array[] = [];
     let cursor: LevelLocalRepoCursor = -1;
     // TODO: Check if `patches` need rebasing, if not, just merge.
     // TODO: Return correct response.
@@ -740,7 +740,7 @@ export class LevelLocalRepo implements LocalRepo {
         const time = id.time;
         const patchKey = this.frontierKey(keyBase, time);
         const uint8 = rebased.toBinary();
-        rebasedPatches.push(uint8);
+        writtenPatches.push(uint8);
         const op: BinStrLevelOperation = {type: 'put', key: patchKey,value: uint8};
         ops.push(op);
       }
@@ -750,6 +750,9 @@ export class LevelLocalRepo implements LocalRepo {
       }
       return false;
     });
+    if (writtenPatches.length) {
+      this.pubsub.pub({type: 'rebase', id, patches: writtenPatches, session: req.session});
+    }
     if (!didPush && !needsReset) {
       const merge = await this.readFrontier0(keyBase);
       return {cursor, merge};
@@ -760,8 +763,6 @@ export class LevelLocalRepo implements LocalRepo {
         if (this._stopped) return;
         this.opts.onSyncError?.(error);
       });
-    if (rebasedPatches.length)
-      this.pubsub.pub({type: 'rebase', id, patches: rebasedPatches, session: req.session});
     if (needsReset) {
       const {cursor, model} = await this._syncRead0(keyBase);
       return {cursor, model, remote};
