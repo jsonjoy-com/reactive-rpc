@@ -45,7 +45,7 @@ export class EditSessionFactory {
     const repo = this.opts.repo;
     try {
       const {model, cursor} = await repo.get({id});
-      const session = new EditSession(repo, id, model, cursor);
+      const session = new EditSession(repo, id, model, cursor, opts.session);
       session.log.end.api.autoFlush();
       return session;
     } catch (error) {
@@ -56,7 +56,7 @@ export class EditSessionFactory {
           try {
             const {model, cursor} = await (typeof timeoutMs === 'number' ? timeout(timeoutMs, repo.pull(id)) : repo.pull(id));
             if (remote.throwIf === 'exists') throw new Error('EXISTS');
-            const session = new EditSession(repo, id, model, cursor);
+            const session = new EditSession(repo, id, model, cursor, opts.session);
             session.log.end.api.autoFlush();
             return session;
           } catch (error) {
@@ -67,7 +67,7 @@ export class EditSessionFactory {
             } else throw error;
           }
         }
-        if (opts.make) return this.make({...opts.make, id});
+        if (opts.make) return this.make({session: opts.session, ...opts.make, id});
       }
       throw error;
     }
@@ -113,6 +113,11 @@ export interface EditSessionLoadOpts {
 
   /** Thew new block schema, if any. */
   schema?: NodeBuilder;
+
+  /**
+   * Internal unique session ID.
+   */
+  session?: number;
 
   remote?: {
     /**
