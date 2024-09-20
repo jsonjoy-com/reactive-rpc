@@ -45,6 +45,31 @@ export const setup = async (
   };
   const {sid, local, pubsub, stop} = createLocal();
   local.start();
+  const createRemote = (localOpts: Partial<LevelLocalRepoOpts> = {}) => {
+    const sid = localOpts.sid ?? 123456789;
+    const busName = 'test-' + id;
+    const pubsub = createPubsub(busName) as LevelLocalRepoPubSub;
+    const kv = new MemoryLevel<string, Uint8Array>({
+      keyEncoding: 'utf8',
+      valueEncoding: 'view',
+    }) as unknown as BinStrLevel;
+    const locks = new Locks();
+    const local = new LevelLocalRepo({
+      kv,
+      locks,
+      sid,
+      rpc: remote.remote,
+      connected$: new BehaviorSubject(true),
+      pubsub,
+      onSyncError: (error) => console.error(error),
+      ...opts.local,
+    });
+    const stop = async () => {
+      await local.stop();
+      pubsub.end();
+    };
+    return {kv, sid, local, pubsub, stop};
+  };
   const log = Log.fromNewModel(Model.create(undefined, sid));
   const getModelFromRemote = async (id: string = blockId.join('/')): Promise<Model> => {
     const res = await remote.client.call('block.get', {id});
@@ -60,6 +85,7 @@ export const setup = async (
     remote,
     locks,
     createLocal,
+    createRemote,
     pubsub,
     local,
     sid,

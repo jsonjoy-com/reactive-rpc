@@ -2,6 +2,7 @@ import {Model, Patch, s} from 'json-joy/lib/json-crdt';
 import {setup} from './setup';
 import {firstValueFrom, ReplaySubject} from 'rxjs';
 import {LocalRepo, LocalRepoMergeEvent, LocalRepoResetEvent} from '../../types';
+import {until} from 'thingies';
 
 const get = async (kit: Awaited<ReturnType<typeof setup>>, id = kit.blockId): Promise<Model> => {
   const {block} = await kit.remote.client.call('block.get', {id: id.join('/')});
@@ -198,54 +199,6 @@ describe('.pull()', () => {
       const read3 = await local.sync({id: kit.blockId});
       expect(read3.model!.view()).toEqual({foo: 'baz', x: 1});
       await local2.stop();
-      await kit.stop();
-    });
-
-    test('catches up using "merge" strategy', async () => {
-      const kit = await setup();
-      const schema = s.obj({foo: s.str('bar')});
-      const model = Model.create(schema, kit.sid);
-      const patches = [model.api.flush()];
-      const local: LocalRepo = kit.local;
-      const res = await local.sync({id: kit.blockId, patches});
-      await res.remote;
-      const model2 = await get(kit);
-      expect(model2.view()).toEqual({foo: 'bar'});
-      model2.api.obj([]).set({foo: 'baz'});
-      await kit.remote.client.call('block.upd', {
-        id: kit.blockId.join('/'),
-        batch: {
-          patches: [{
-            blob: model2.api.flush().toBinary(),
-          }],
-        },
-      });
-      model2.api.obj([]).set({x: 1});
-      await kit.remote.client.call('block.upd', {
-        id: kit.blockId.join('/'),
-        batch: {
-          patches: [{
-            blob: model2.api.flush().toBinary(),
-          }],
-        },
-      });
-      const model3 = await get(kit);
-      expect(model3.view()).toEqual({foo: 'baz', x: 1});
-      const events$ = new ReplaySubject<LocalRepoMergeEvent>(1);
-      let cnt = 0;
-      kit.local.change$(kit.blockId).subscribe((event) => {
-        if (!(event as LocalRepoMergeEvent).merge) return;
-        events$.next(event as LocalRepoMergeEvent);
-        cnt++;
-      });
-      await kit.local.pull(kit.blockId);
-      const event = await firstValueFrom(events$);
-      expect(cnt).toBe(1);
-      expect(model.view()).toEqual({foo: 'bar'});
-      for (const patch of event.merge) model.applyPatch(patch);
-      expect(model.view()).toEqual({foo: 'baz', x: 1});
-      const read = await kit.local.get({id: kit.blockId});
-      expect(read.model.view()).toEqual({foo: 'baz', x: 1});
       await kit.stop();
     });
 

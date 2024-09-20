@@ -819,6 +819,7 @@ export class LevelLocalRepo implements LocalRepo {
         }),
       ]);
     });
+    await this.opts.rpc.delete?.(id.join('/'));
   }
 
   /**

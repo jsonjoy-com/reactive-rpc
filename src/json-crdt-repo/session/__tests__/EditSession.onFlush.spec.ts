@@ -7,8 +7,8 @@ describe('onFlush', () => {
   test('removes patches from log on sync', async () => {
     const kit = await setup();
     const schema = s.obj({id: s.con('asdf')});
-    const session1 = kit.sessions.make({id: kit.blockId, schema, session: 1});
-    const session2 = kit.sessions.make({id: kit.blockId, schema, session: 2});
+    const {session: session1} = kit.sessions.make({id: kit.blockId, schema, session: 1});
+    const {session: session2} = kit.sessions.make({id: kit.blockId, schema, session: 2});
     session1.model.api.obj([]).set({a: 'a'});
     session1.model.api.obj([]).set({b: 'b'});
     await tick(5);
@@ -34,9 +34,9 @@ describe('onFlush', () => {
   test('synchronizes three editing sessions', async () => {
     const kit = await setup();
     const schema = undefined;
-    const session1 = kit.sessions.make({id: kit.blockId, session: 1, schema});
-    const session2 = kit.sessions.make({id: kit.blockId, session: 2, schema});
-    const session3 = kit.sessions.make({id: kit.blockId, session: 3, schema});
+    const {session: session1} = kit.sessions.make({id: kit.blockId, session: 1, schema});
+    const {session: session2} = kit.sessions.make({id: kit.blockId, session: 2, schema});
+    const {session: session3} = kit.sessions.make({id: kit.blockId, session: 3, schema});
     const assertView = async (view: any) => {
       await until(() => {
         try {

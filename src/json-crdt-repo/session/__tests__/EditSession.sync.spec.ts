@@ -7,7 +7,7 @@ describe('sync', () => {
   test('removes patches from log on sync', async () => {
     const kit = await setup();
     const schema = s.obj({id: s.con('asdf')});
-    const session = kit.sessions.make({id: kit.blockId, schema});
+    const {session} = kit.sessions.make({id: kit.blockId, schema});
     expect(session.model.view()).toEqual({id: 'asdf'});
     expect(session.log.patches.size()).toBe(1);
     await session.sync();
@@ -27,8 +27,8 @@ describe('sync', () => {
   test('can edit two sessions in parallel', async () => {
     const kit = await setup();
     const schema = s.obj({id: s.con('asdf')});
-    const session1 = kit.sessions.make({id: kit.blockId, schema, session: 1});
-    const session2 = kit.sessions.make({id: kit.blockId, schema, session: 2});
+    const {session: session1} = kit.sessions.make({id: kit.blockId, schema, session: 1});
+    const {session: session2} = kit.sessions.make({id: kit.blockId, schema, session: 2});
     expect(session1.model.view()).toEqual({id: 'asdf'});
     expect(session2.model.view()).toEqual({id: 'asdf'});
     await session1.sync();
@@ -53,8 +53,8 @@ describe('sync', () => {
   test('concurrently creating same ID block with same schema, results in predictable logical time', async () => {
     const kit = await setup();
     const schema = s.obj({a: s.con('a')});
-    const session1 = kit.sessions.make({id: kit.blockId, schema});
-    const session2 = kit.sessions.make({id: kit.blockId, schema});
+    const {session: session1} = kit.sessions.make({id: kit.blockId, schema});
+    const {session: session2} = kit.sessions.make({id: kit.blockId, schema});
     expect(session1.model.view()).toEqual({a: 'a'});
     expect(session2.model.view()).toEqual({a: 'a'});
     await session1.sync();
@@ -72,8 +72,8 @@ describe('sync', () => {
   test('one session can listen to all changes of another session', async () => {
     const kit = await setup();
     const schema = s.obj({a: s.con('a')});
-    const session1 = kit.sessions.make({id: kit.blockId, schema, session: 1});
-    const session2 = kit.sessions.make({id: kit.blockId, schema, session: 2});
+    const {session: session1} = kit.sessions.make({id: kit.blockId, schema, session: 1});
+    const {session: session2} = kit.sessions.make({id: kit.blockId, schema, session: 2});
     await session1.sync();
     await session2.sync();
     expect(session1.log.patches.size()).toBe(0);
@@ -121,8 +121,8 @@ describe('sync', () => {
   test('sessions converge to the same view', async () => {
     const kit = await setup();
     const schema = s.obj({a: s.con('a')});
-    const session1 = kit.sessions.make({id: kit.blockId, schema, session: 1});
-    const session2 = kit.sessions.make({id: kit.blockId, schema, session: 2});
+    const {session: session1} = kit.sessions.make({id: kit.blockId, schema, session: 1});
+    const {session: session2} = kit.sessions.make({id: kit.blockId, schema, session: 2});
     await session1.sync();
     await session2.sync();
     expect(session1.log.patches.size()).toBe(0);
@@ -131,12 +131,12 @@ describe('sync', () => {
     session1.model.api.obj([]).set({c: 'c'});
     await tick(5);
     session1.model.api.obj([]).set({d: 'd'});
-    const session3 = kit.sessions.make({id: kit.blockId, schema, session: 3});
+    const {session: session3} = kit.sessions.make({id: kit.blockId, schema, session: 3});
     await tick(5);
     session1.model.api.obj([]).set({e: 'e'});
     await tick(5);
     session1.model.api.obj([]).set({f: 'f'});
-    const session4 = kit.sessions.make({id: kit.blockId, schema, session: 4});
+    const {session: session4} = kit.sessions.make({id: kit.blockId, schema, session: 4});
     await session1.sync();
     await until(async () => {
       try {

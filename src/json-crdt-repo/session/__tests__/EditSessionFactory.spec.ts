@@ -23,7 +23,7 @@ describe('.make()', () => {
   describe('no schema', () => {
     test('can synchronously create an editing session', async () => {
       const kit = await setup();
-      const session = kit.sessions.make({id: kit.blockId});
+      const {session} = kit.sessions.make({id: kit.blockId});
       expect(session.model.view()).toBe(undefined);
       await session.dispose();
       await kit.stop();
@@ -32,7 +32,7 @@ describe('.make()', () => {
     test('persists the block asynchronously, by default', async () => {
       const kit = await setup();
       kit.local.stop();
-      const session = kit.sessions.make({id: kit.blockId});
+      const {session} = kit.sessions.make({id: kit.blockId});
       expect(session.model.view()).toBe(undefined);
       await untilExists(kit.local, kit.blockId);
       const read = await readLocal(kit.local, kit.blockId);
@@ -45,7 +45,7 @@ describe('.make()', () => {
 
     test('can save a new session', async () => {
       const kit = await setup();
-      const session = kit.sessions.make({id: kit.blockId});
+      const {session} = kit.sessions.make({id: kit.blockId});
       expect(session.model.view()).toBe(undefined);
       await session.sync();
       await untilExists(kit.local, kit.blockId);
@@ -57,7 +57,7 @@ describe('.make()', () => {
 
     test('can save a session with edits', async () => {
       const kit = await setup();
-      const session = kit.sessions.make({id: kit.blockId});
+      const {session} = kit.sessions.make({id: kit.blockId});
       expect(session.model.view()).toBe(undefined);
       await session.sync();
       session.model.api.root({foo: 'bar'});
@@ -83,7 +83,7 @@ describe('.make()', () => {
         expect(get.model.view()).toEqual({foo: 'bar'});
 
         // Synchronously make a session in current tab.
-        const session = await kit.sessions.make({id});
+        const {session} = await kit.sessions.make({id});
         expect(session.model.view()).toBe(undefined);
         await until(() => session.model?.view()?.foo === 'bar');
         expect(session.model.view()).toEqual({foo: 'bar'});
@@ -105,7 +105,7 @@ describe('.make()', () => {
         await local2.local.sync({id, patches: [patch]});
 
         // Synchronously make a session in current tab.
-        const session = await kit.sessions.make({id});
+        const {session} = await kit.sessions.make({id});
         expect(session.model.view()).toBe(undefined);
         session.model.api.root({a: 'b'});
         expect(session.model.view()).toEqual({a: 'b'});
@@ -134,7 +134,7 @@ describe('.make()', () => {
       await kit.remote.client.call('block.get', {id: id.join('/')});
 
       // Synchronously make a session.
-      const session = await kit.sessions.make({id});
+      const {session} = await kit.sessions.make({id});
       expect(session.model.view()).toBe(undefined);
       await until(() => session.model.view()?.foo === 'bar');
       expect(session.model.view()).toEqual({foo: 'bar'});
@@ -148,7 +148,7 @@ describe('.make()', () => {
     test('can save/sync a session with schema', async () => {
       const kit = await setup();
       const schema = s.obj({xyz: s.con(123)});
-      const session = kit.sessions.make({id: kit.blockId, schema});
+      const {session} = kit.sessions.make({id: kit.blockId, schema});
       expect(session.model.view()).toEqual({xyz: 123});
       await session.sync();
       const {model} = await kit.local.sync({id: kit.blockId});
@@ -186,7 +186,7 @@ describe('.load()', () => {
 
   test('can load block which exists locally', async () => {
     const kit = await setup();
-    const session = kit.sessions.make({id: kit.blockId});
+    const {session} = kit.sessions.make({id: kit.blockId});
     expect(session.model.view()).toBe(undefined);
     session.model.api.root({foo: 'bar'});
     await session.sync();
@@ -199,7 +199,7 @@ describe('.load()', () => {
 
   test('can update block, which exists locally', async () => {
     const kit = await setup();
-    const session = kit.sessions.make({id: kit.blockId});
+    const {session} = kit.sessions.make({id: kit.blockId});
     expect(session.model.view()).toBe(undefined);
     session.model.api.root({foo: 'bar'});
     await session.sync();
@@ -314,7 +314,7 @@ describe('.load()', () => {
     // Load session with the same ID.
     const schema = s.obj({xyz: s.con(123)});
     const [, error] = await of(kit.sessions.load({id, remote: {throwIf: 'exists'}, make: {schema}}));
-    expect((error as any)!.message).toBe('CONFLICT');
+    expect((error as any)!.message).toBe('EXISTS');
     await kit.stop();
   });
 

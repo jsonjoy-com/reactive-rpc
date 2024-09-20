@@ -7,10 +7,11 @@ import {BehaviorSubject} from 'rxjs';
 
 type TwoSessionsSetup = (schema?: undefined | NodeBuilder) => Promise<[EditSession, EditSession, () => Promise<void>]>;
 
+// TODO: check if these are actually remote sessions
 const setupTwoRemoteSessions: TwoSessionsSetup = async (schema?: undefined | NodeBuilder) => {
   const kit = await setup0();
   const id = kit.blockId;
-  const session1 = kit.sessions.make({id, schema, session: 1});
+  const {session: session1} = kit.sessions.make({id, schema, session: 1});
   await until(async () => {
     try {
       await kit.getModelFromRemote(id.join('/'));
@@ -31,7 +32,7 @@ const setupTwoRemoteSessions: TwoSessionsSetup = async (schema?: undefined | Nod
 const setupTwoLocalSessions: TwoSessionsSetup = async (schema?: undefined | NodeBuilder) => {
   const kit = await setup0({local: {connected$: new BehaviorSubject(false)}});
   const id = kit.blockId;
-  const session1 = kit.sessions.make({id, schema, session: 1});
+  const {session: session1} = kit.sessions.make({id, schema, session: 1});
   await until(async () => {
     try {
       await kit.local.get({id});
@@ -58,7 +59,7 @@ const setupTwoLocalSessions: TwoSessionsSetup = async (schema?: undefined | Node
 const setupTwoSameTabSessions: TwoSessionsSetup = async (schema?: undefined | NodeBuilder) => {
   const kit = await setup0({local: {connected$: new BehaviorSubject(false)}});
   const id = kit.blockId;
-  const session1 = kit.sessions.make({id, schema, session: 1});
+  const {session: session1} = kit.sessions.make({id, schema, session: 1});
   await until(async () => {
     try {
       await kit.local.get({id});

@@ -16,7 +16,7 @@ export class EditSessionFactory {
    * with a given ID already exists, it asynchronously synchronizes the local
    * and remote state.
    */
-  public make(opts: EditSessionMakeOpts): EditSession {
+  public make(opts: EditSessionMakeOpts): {session: EditSession, sync?: Promise<void>} {
     const {id, schema, pull = true} = opts;
     const factoryOpts = this.opts;
     const model = Model.create(void 0, factoryOpts.sid);
@@ -26,11 +26,12 @@ export class EditSessionFactory {
       sessionModel.setSchema(schema);
       sessionModel.api.flush();
     }
+    let sync: Promise<void> | undefined;
     if (pull && !session.log.patches.size()) {
-      session.sync().catch(() => {});
+      sync = session.sync().then(() => {}).catch(() => {});
     }
     session.log.end.api.autoFlush();
-    return session;
+    return {session, sync};
   }
 
   /**
@@ -67,7 +68,7 @@ export class EditSessionFactory {
             } else throw error;
           }
         }
-        if (opts.make) return this.make({session: opts.session, ...opts.make, id});
+        if (opts.make) return this.make({session: opts.session, ...opts.make, id}).session;
       }
       throw error;
     }

@@ -38,6 +38,7 @@ export class EditSession {
   }
 
   public dispose(): void {
+    if (this._stopped) return;
     this._stopped = true;
     this._stop$.next();
   }
@@ -114,6 +115,12 @@ export class EditSession {
     });
   }
 
+  public async del(): Promise<void> {
+    this.clear();
+    this.dispose();
+    await this.repo.del(this.id);
+  }
+
   /**
    * Load latest state from the local repo.
    */
@@ -132,7 +139,6 @@ export class EditSession {
     this.start = model.clone();
     const log = this.log;
     const end = log.end;
-    // TODO: Remove this condition, make flush always safe to call.
     if (end.api.builder.patch.ops.length) end.api.flush();
     end.reset(model);
     log.patches.forEach((patch) => end.applyPatch(patch.v));
@@ -142,7 +148,6 @@ export class EditSession {
     if (patches.length === 0) return;
     const log = this.log;
     const end = log.end;
-    // TODO: Remove this condition, make flush always safe to call.
     if (end.api.builder.patch.ops.length) end.api.flush();
     if (log.patches.size() === 0) {
       this.merge(patches);
