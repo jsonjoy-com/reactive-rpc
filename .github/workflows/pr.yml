@@ -37,7 +37,6 @@ jobs:
           cache: yarn
       - run: yarn install --frozen-lockfile
       - run: yarn build
-      - run: yarn build:demo-server
       - run: yarn lint
       - run: yarn prettier:check
       - run: yarn typedoc
