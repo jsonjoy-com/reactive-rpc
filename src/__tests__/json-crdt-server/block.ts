@@ -35,7 +35,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
               blob: expect.any(Uint8Array),
             },
             tip: [],
-          }
+          },
         });
         const model2 = Model.fromBinary(response2.block.snapshot.blob);
         expect(model2.view()).toBe(undefined);
@@ -84,7 +84,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
               ts: expect.any(Number),
             },
             tip: [],
-          }
+          },
         });
         const model2 = Model.fromBinary(res.block.snapshot.blob);
         expect(model2.view()).toStrictEqual({
@@ -100,7 +100,9 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         const {call, stop} = await setup();
         const id = getId();
         await call('block.new', {id});
-        const {block: {snapshot}} = await call('block.get', {id});
+        const {
+          block: {snapshot},
+        } = await call('block.get', {id});
         expect(snapshot.id).toBe(id);
         const res1 = await call('block.del', {id});
         expect(res1.success).toBe(true);
@@ -378,9 +380,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
             {
               seq: 0,
               ts: expect.any(Number),
-              patches: [
-                {blob: patch1.toBinary()}
-              ],
+              patches: [{blob: patch1.toBinary()}],
             },
           ],
         });
@@ -719,7 +719,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
               ts: expect.any(Number),
             },
             tip: [],
-          }
+          },
         });
         const model2 = Model.fromBinary(get2.block.snapshot.blob);
         expect(model2.view()).toBe(undefined);
@@ -777,7 +777,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
               ts: expect.any(Number),
             },
             tip: [],
-          }
+          },
         });
         await stop();
       });

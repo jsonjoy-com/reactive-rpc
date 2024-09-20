@@ -16,9 +16,7 @@ describe('.create()', () => {
     const blob = patch.toBinary();
     const id = genId();
     await remote.create(id, {
-      patches: [
-        {blob},
-      ]
+      patches: [{blob}],
     });
     const {data} = await caller.call('block.get', {id}, {});
     const model2 = Model.fromBinary(data.block.snapshot.blob);
@@ -100,7 +98,7 @@ describe('.update()', () => {
       batch: {
         seq: expect.any(Number),
         ts: expect.any(Number),
-      }
+      },
     });
     const read2 = await remote.read(id);
     const model2 = Model.fromBinary(read2.block.snapshot.blob);
@@ -151,7 +149,7 @@ describe('.scanFwd()', () => {
           ts: expect.any(Number),
           patches: [{}],
         },
-      ]
+      ],
     });
     expect(scan1.batches[0].patches[0].blob).toEqual(blob2);
   });
@@ -185,8 +183,8 @@ describe('.scanBwd()', () => {
               blob: expect.any(Uint8Array),
             },
           ],
-        }
-      ]
+        },
+      ],
     });
     expect(scan1.batches[0].patches[0].blob).toEqual(blob1);
   });
@@ -216,7 +214,7 @@ describe('.scanBwd()', () => {
               blob: expect.any(Uint8Array),
             },
           ],
-        }
+        },
       ],
       snapshot: {
         seq: expect.any(Number),
@@ -273,14 +271,19 @@ describe('.listen()', () => {
     const blob2 = patch2.toBinary();
     await remote.update(id, {patches: [{blob: blob2}]});
     await until(() => events.length === 1);
-    expect(events[0]).toMatchObject(['upd', {batch: {
-      seq: 1,
-      ts: expect.any(Number),
-      patches: [
-        {
-          blob: expect.any(Uint8Array),
-        }
-      ],
-    }}]);
+    expect(events[0]).toMatchObject([
+      'upd',
+      {
+        batch: {
+          seq: 1,
+          ts: expect.any(Number),
+          patches: [
+            {
+              blob: expect.any(Uint8Array),
+            },
+          ],
+        },
+      },
+    ]);
   });
 });

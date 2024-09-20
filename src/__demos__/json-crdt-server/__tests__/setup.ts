@@ -40,7 +40,7 @@ export const setupLevelMemory = async () => {
 };
 
 export const setupLevelClassic = async () => {
-  const kv = new ClassicLevel<string, Uint8Array>('./db', { valueEncoding: 'view' })
+  const kv = new ClassicLevel<string, Uint8Array>('./db', {valueEncoding: 'view'});
   await kv.open();
   const store = new LevelStore(<any>kv);
   return setup(store, async () => kv.close());

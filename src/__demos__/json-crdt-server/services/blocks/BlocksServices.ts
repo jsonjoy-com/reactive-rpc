@@ -50,7 +50,7 @@ export class BlocksServices {
     protected readonly store: Store = new MemoryStore(),
     protected readonly opts: BlocksServicesOpts = {
       historyPerBlock: 10000,
-      historyCompactionDecision: (seq, pushSize) => ((pushSize > 250) || !(seq % 100)),
+      historyCompactionDecision: (seq, pushSize) => pushSize > 250 || !(seq % 100),
     },
   ) {
     this.spaceReclaimDecision = opts.spaceReclaimDecision ?? storageSpaceReclaimDecision(fs.promises);
@@ -167,9 +167,14 @@ export class BlocksServices {
     return {batches};
   }
 
-  public async pull(id: string, lastKnownSeq: number, create: boolean = false): Promise<{batches: StoreBatch[], snapshot?: StoreSnapshot}> {
+  public async pull(
+    id: string,
+    lastKnownSeq: number,
+    create: boolean = false,
+  ): Promise<{batches: StoreBatch[]; snapshot?: StoreSnapshot}> {
     const {store} = this;
-    if (typeof lastKnownSeq !== 'number' || lastKnownSeq !== Math.round(lastKnownSeq) || lastKnownSeq < -1) throw RpcError.validation('INVALID_SEQ');
+    if (typeof lastKnownSeq !== 'number' || lastKnownSeq !== Math.round(lastKnownSeq) || lastKnownSeq < -1)
+      throw RpcError.validation('INVALID_SEQ');
     const seq = await store.seq(id);
     if (seq === undefined) {
       if (create) {
@@ -214,7 +219,7 @@ export class BlocksServices {
     };
     const res = await store.push(newSnapshot, batch);
     const opts = this.opts;
-    if ((seq > opts.historyPerBlock) && store.compact && opts.historyCompactionDecision(seq, blobSize)) {
+    if (seq > opts.historyPerBlock && store.compact && opts.historyCompactionDecision(seq, blobSize)) {
       go(() => this.compact(id, seq - opts.historyPerBlock));
     }
     this.__emitUpd(id, res.batch);
@@ -231,8 +236,7 @@ export class BlocksServices {
     await store.compact!(id, to, async (blob, iterator) => {
       const model = Model.fromBinary(blob);
       for await (const batch of iterator)
-        for (const patch of batch.patches)
-          model.applyPatch(Patch.fromBinary(patch.blob));
+        for (const patch of batch.patches) model.applyPatch(Patch.fromBinary(patch.blob));
       return model.toBinary();
     });
   }

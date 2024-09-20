@@ -7,9 +7,7 @@ import {until} from 'thingies';
 const get = async (kit: Awaited<ReturnType<typeof setup>>, id = kit.blockId): Promise<Model> => {
   const {block} = await kit.remote.client.call('block.get', {id: id.join('/')});
   const model = Model.load(block.snapshot.blob);
-  for (const batch of block.tip)
-    for (const patch of batch.patches)
-      model.applyPatch(Patch.fromBinary(patch.blob));
+  for (const batch of block.tip) for (const patch of batch.patches) model.applyPatch(Patch.fromBinary(patch.blob));
   return model;
 };
 
@@ -23,10 +21,12 @@ describe('.pull()', () => {
       await kit.remote.client.call('block.new', {
         id: kit.blockId.join('/'),
         batch: {
-          patches: [{
-            blob: patches[0].toBinary(),
-          }],
-        }
+          patches: [
+            {
+              blob: patches[0].toBinary(),
+            },
+          ],
+        },
       });
       await kit.local.pull(kit.blockId);
       const get = await kit.local.get({id: kit.blockId});
@@ -42,10 +42,12 @@ describe('.pull()', () => {
       await kit.remote.client.call('block.new', {
         id: kit.blockId.join('/'),
         batch: {
-          patches: [{
-            blob: patches[0].toBinary(),
-          }],
-        }
+          patches: [
+            {
+              blob: patches[0].toBinary(),
+            },
+          ],
+        },
       });
       const events$ = new ReplaySubject<LocalRepoResetEvent>(1);
       let cnt = 0;
@@ -77,18 +79,22 @@ describe('.pull()', () => {
       await kit.remote.client.call('block.upd', {
         id: kit.blockId.join('/'),
         batch: {
-          patches: [{
-            blob: model2.api.flush().toBinary(),
-          }],
+          patches: [
+            {
+              blob: model2.api.flush().toBinary(),
+            },
+          ],
         },
       });
       model2.api.obj([]).set({x: 1});
       await kit.remote.client.call('block.upd', {
         id: kit.blockId.join('/'),
         batch: {
-          patches: [{
-            blob: model2.api.flush().toBinary(),
-          }],
+          patches: [
+            {
+              blob: model2.api.flush().toBinary(),
+            },
+          ],
         },
       });
       const get1 = await local.get({id: kit.blockId});
@@ -125,18 +131,22 @@ describe('.pull()', () => {
       await kit.remote.client.call('block.upd', {
         id: kit.blockId.join('/'),
         batch: {
-          patches: [{
-            blob: model2.api.flush().toBinary(),
-          }],
+          patches: [
+            {
+              blob: model2.api.flush().toBinary(),
+            },
+          ],
         },
       });
       model2.api.obj([]).set({x: 1});
       await kit.remote.client.call('block.upd', {
         id: kit.blockId.join('/'),
         batch: {
-          patches: [{
-            blob: model2.api.flush().toBinary(),
-          }],
+          patches: [
+            {
+              blob: model2.api.flush().toBinary(),
+            },
+          ],
         },
       });
       try {
@@ -172,18 +182,22 @@ describe('.pull()', () => {
       await kit.remote.client.call('block.upd', {
         id: kit.blockId.join('/'),
         batch: {
-          patches: [{
-            blob: model2.api.flush().toBinary(),
-          }],
+          patches: [
+            {
+              blob: model2.api.flush().toBinary(),
+            },
+          ],
         },
       });
       model2.api.obj([]).set({x: 1});
       await kit.remote.client.call('block.upd', {
         id: kit.blockId.join('/'),
         batch: {
-          patches: [{
-            blob: model2.api.flush().toBinary(),
-          }],
+          patches: [
+            {
+              blob: model2.api.flush().toBinary(),
+            },
+          ],
         },
       });
       try {
@@ -216,9 +230,11 @@ describe('.pull()', () => {
       await kit.remote.client.call('block.upd', {
         id: kit.blockId.join('/'),
         batch: {
-          patches: [{
-            blob: model2.api.flush().toBinary(),
-          }],
+          patches: [
+            {
+              blob: model2.api.flush().toBinary(),
+            },
+          ],
         },
       });
       const setX = async (x: number) => {
@@ -226,9 +242,11 @@ describe('.pull()', () => {
         await kit.remote.client.call('block.upd', {
           id: kit.blockId.join('/'),
           batch: {
-            patches: [{
-              blob: model2.api.flush().toBinary(),
-            }],
+            patches: [
+              {
+                blob: model2.api.flush().toBinary(),
+              },
+            ],
           },
         });
       };

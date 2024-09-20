@@ -47,7 +47,7 @@ export interface LocalRepo {
 
   /**
    * Emits an event every time a block is updated.
-   * 
+   *
    * @param id Unique ID of the block.
    */
   change$(id: BlockId): Observable<LocalRepoEvent>;
@@ -198,11 +198,7 @@ export interface LocalRepoGetIfResponse {
  * the local client or by a remote client. It contains various types of changes
  * that can be applied to the local editing session.
  */
-export type LocalRepoEvent =
-  | LocalRepoMergeEvent
-  | LocalRepoRebaseEvent
-  | LocalRepoResetEvent
-  | LocalRepoDeleteEvent;
+export type LocalRepoEvent = LocalRepoMergeEvent | LocalRepoRebaseEvent | LocalRepoResetEvent | LocalRepoDeleteEvent;
 
 export interface LocalRepoMergeEvent {
   /**
@@ -222,7 +218,7 @@ export interface LocalRepoRebaseEvent {
    * local editing session, for example, another tab. This is because the tabs
    * reuse the same session ID, hence, for the timestamps to be unique, the
    * timestamps of the in-progress editing session are "rebased".
-   * 
+   *
    * In practice, this should almost never happen, as by the time the user
    * switches tabs, the changes are already synchronized.
    */

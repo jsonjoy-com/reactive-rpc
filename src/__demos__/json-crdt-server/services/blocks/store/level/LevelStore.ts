@@ -60,7 +60,10 @@ export class LevelStore implements types.Store {
     }
   }
 
-  public async getSnapshot(id: string, seq: number): Promise<{snapshot: types.StoreSnapshot, batches: types.StoreBatch[]}> {
+  public async getSnapshot(
+    id: string,
+    seq: number,
+  ): Promise<{snapshot: types.StoreSnapshot; batches: types.StoreBatch[]}> {
     const {kv, codec} = this;
     const {decoder} = codec;
     const key = this.startKey(id);
@@ -186,9 +189,9 @@ export class LevelStore implements types.Store {
       const start = decoder.decode(await kv.get(key)) as types.StoreSnapshot;
       if (start.seq >= to) return;
       const gt = this.batchKey(id, start.seq);
-      const lte = this.batchKey(id, to)
+      const lte = this.batchKey(id, to);
       const ops: BinStrLevelOperation[] = [];
-      async function *iterator() {
+      async function* iterator() {
         for await (const [key, blob] of kv.iterator({gt, lte})) {
           ops.push({type: 'del', key});
           yield decoder.decode(blob) as types.StoreBatch;
@@ -226,7 +229,7 @@ export class LevelStore implements types.Store {
           gte: base,
           lte: base + '~',
         }),
-        kv.del(touchKey)
+        kv.del(touchKey),
       ]);
       return true;
     });

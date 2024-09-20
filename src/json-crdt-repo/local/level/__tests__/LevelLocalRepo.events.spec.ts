@@ -19,11 +19,14 @@ describe('events', () => {
     });
     (bus1 as any).pub({foo: 'bar', bin: new Uint8Array([1, 2, 3])});
     await until(() => msgs.length === 2);
-    expect(msgs).toEqual([{foo: 'bar', bin: new Uint8Array([1, 2, 3])}, {foo: 'bar', bin: new Uint8Array([1, 2, 3])}]);
+    expect(msgs).toEqual([
+      {foo: 'bar', bin: new Uint8Array([1, 2, 3])},
+      {foo: 'bar', bin: new Uint8Array([1, 2, 3])},
+    ]);
     await bus1.end();
     await bus2.end();
   });
-  
+
   test('emits "rebase" event (in same tab)', async () => {
     const kit = await setup({local: {connected$: new BehaviorSubject(false)}});
     const model = Model.create(s.obj({foo: s.con(1)}), kit.sid);

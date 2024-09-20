@@ -18,7 +18,7 @@ export const setup = async (
   const locks = new Locks();
   const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
   const id = genId();
-  const col = ['collection', 'sub-collection']
+  const col = ['collection', 'sub-collection'];
   const kv = new MemoryLevel<string, Uint8Array>({
     keyEncoding: 'utf8',
     valueEncoding: 'view',
@@ -75,8 +75,7 @@ export const setup = async (
     const res = await remote.client.call('block.get', {id});
     const model = Model.fromBinary(res.block.snapshot.blob);
     for (const batch of res.block.tip)
-      for (const patch of batch.patches)
-        model.applyPatch(Patch.fromBinary(patch.blob));
+      for (const patch of batch.patches) model.applyPatch(Patch.fromBinary(patch.blob));
     return model;
   };
   log.end.api.root({foo: 'bar'});

@@ -95,7 +95,11 @@ export interface RemoteHistory<
    * @param patches A list of patches to apply to the block.
    * @param seq The cursor of the last known model state of the block.
    */
-  update(id: string, batch: Pick<Batch, 'patches'>, seq: number): Promise<{
+  update(
+    id: string,
+    batch: Pick<Batch, 'patches'>,
+    seq: number,
+  ): Promise<{
     batch: Omit<Batch, 'patches'>;
     pull?: {
       batches: Batch[];
@@ -200,7 +204,7 @@ export interface RemotePatch {
 
 export type RemoteEvent<Cursor = unknown> = RemoteNewEvent | RemoteDelEvent | RemoteUpdEvent<Cursor>;
 export type RemoteNewEvent = ['new'];
-export type RemoteDelEvent = ['del']
+export type RemoteDelEvent = ['del'];
 export type RemoteUpdEvent<Cursor = unknown> = ['upd', {batch: RemoteBatch<Cursor>}];
 
 export type ServerCursor = number;

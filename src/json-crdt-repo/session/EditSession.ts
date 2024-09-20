@@ -5,7 +5,15 @@ import {createRace} from 'thingies/lib/createRace';
 import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
 import {Subject} from 'rxjs';
 import {first, takeUntil} from 'rxjs/operators';
-import type {BlockId, LocalRepo, LocalRepoDeleteEvent, LocalRepoEvent, LocalRepoMergeEvent, LocalRepoRebaseEvent, LocalRepoResetEvent} from '../local/types';
+import type {
+  BlockId,
+  LocalRepo,
+  LocalRepoDeleteEvent,
+  LocalRepoEvent,
+  LocalRepoMergeEvent,
+  LocalRepoRebaseEvent,
+  LocalRepoResetEvent,
+} from '../local/types';
 
 export class EditSession {
   public log: Log;
@@ -32,9 +40,7 @@ export class EditSession {
     this._stop$.pipe(first()).subscribe(() => {
       flushUnsubscribe();
     });
-    this.repo.change$(this.id)
-      .pipe(takeUntil(this._stop$))
-      .subscribe(this.onEvent);
+    this.repo.change$(this.id).pipe(takeUntil(this._stop$)).subscribe(this.onEvent);
   }
 
   public dispose(): void {

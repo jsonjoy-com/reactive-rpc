@@ -53,15 +53,19 @@ test('can acquire locks sequentially, with wait', async () => {
 
 test('can acquire locks sequentially, with wait and failures', async () => {
   const {mutex, list, log} = setup();
-  await of(mutex.acquire('key', async () => {
-    await tick(2);
-    log(1);
-    throw new Error('fail');
-  }));
-  await of(mutex.acquire('key', async () => {
-    log(2);
-    throw new Error('fail');
-  }));
+  await of(
+    mutex.acquire('key', async () => {
+      await tick(2);
+      log(1);
+      throw new Error('fail');
+    }),
+  );
+  await of(
+    mutex.acquire('key', async () => {
+      log(2);
+      throw new Error('fail');
+    }),
+  );
   await mutex.acquire('key', async () => {
     await tick(2);
     log(3);

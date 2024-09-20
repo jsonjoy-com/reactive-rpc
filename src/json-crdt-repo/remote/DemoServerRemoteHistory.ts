@@ -1,7 +1,15 @@
 import {CallerToMethods, TypedRpcClient} from '../../common';
 import {shareByKey} from '../../util/rx/shareByKey';
 import type {JsonJoyDemoRpcCaller} from '../../__demos__/json-crdt-server';
-import type {ServerBlock, ServerSnapshot, ServerPatch, ServerCursor, ServerHistory, ServerBatch, ServerEvent} from './types';
+import type {
+  ServerBlock,
+  ServerSnapshot,
+  ServerPatch,
+  ServerCursor,
+  ServerHistory,
+  ServerBatch,
+  ServerEvent,
+} from './types';
 
 export type DemoServerClient = TypedRpcClient<CallerToMethods<JsonJoyDemoRpcCaller>>;
 
@@ -19,7 +27,11 @@ export class DemoServerRemoteHistory implements ServerHistory {
     return await this.client.call('block.get', {id});
   }
 
-  public async pull(id: string, seq: Cursor = -1, create: boolean = false): Promise<{
+  public async pull(
+    id: string,
+    seq: Cursor = -1,
+    create: boolean = false,
+  ): Promise<{
     batches: DemoServerBatch[];
     snapshot?: DemoServerSnapshot;
   }> {
@@ -45,7 +57,11 @@ export class DemoServerRemoteHistory implements ServerHistory {
     };
   }
 
-  public async update(id: string, batch: Pick<DemoServerBatch, 'patches'>, seq?: number): Promise<{
+  public async update(
+    id: string,
+    batch: Pick<DemoServerBatch, 'patches'>,
+    seq?: number,
+  ): Promise<{
     batch: Omit<DemoServerBatch, 'patches'>;
     pull?: {
       batches: DemoServerBatch[];
@@ -61,7 +77,7 @@ export class DemoServerRemoteHistory implements ServerHistory {
     return {
       batch: res.batch,
       pull: res.pull,
-    }
+    };
   }
 
   public async delete(id: string): Promise<void> {
@@ -78,7 +94,11 @@ export class DemoServerRemoteHistory implements ServerHistory {
     return res;
   }
 
-  public async scanBwd(id: string, seq: Cursor, snapshot?: boolean): Promise<{batches: DemoServerBatch[]; snapshot?: DemoServerSnapshot}> {
+  public async scanBwd(
+    id: string,
+    seq: Cursor,
+    snapshot?: boolean,
+  ): Promise<{batches: DemoServerBatch[]; snapshot?: DemoServerSnapshot}> {
     if (seq <= 0) throw new Error('INV_SEQ');
     const startSeq = Math.max(0, seq - 100);
     const limit = seq - startSeq;

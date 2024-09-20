@@ -18,7 +18,7 @@ export class Testbed {
 
   constructor(
     public readonly remote: ReturnType<typeof remoteSetup> = remoteSetup(),
-    public genId: (() => string) = (() => Date.now().toString(36) + Math.random().toString(36).slice(2)),
+    public genId: () => string = () => Date.now().toString(36) + Math.random().toString(36).slice(2),
   ) {}
 
   public createBrowser(): BrowserTestbed {
@@ -40,7 +40,7 @@ export class BrowserTestbed {
     this.kv = new MemoryLevel<string, Uint8Array>({
       keyEncoding: 'utf8',
       valueEncoding: 'view',
-    }) as unknown as BinStrLevel
+    }) as unknown as BinStrLevel;
   }
 
   public createTab(): BrowserTabTestbed {
@@ -52,9 +52,7 @@ export class BrowserTabTestbed {
   public readonly pubsubBusName: string;
   public readonly pubsub: LevelLocalRepoPubSub;
 
-  constructor (
-    public readonly browser: BrowserTestbed,
-  ) {
+  constructor(public readonly browser: BrowserTestbed) {
     this.pubsubBusName = 'pubsub-bus-' + this.browser.id;
     this.pubsub = createPubsub(this.pubsubBusName) as LevelLocalRepoPubSub;
   }
@@ -83,7 +81,7 @@ export class LocalRepoTestbed {
   public readonly col: string[] = ['collection', 'sub-collection'];
   public readonly blockId: string[] = [...this.col, this.tab.browser.id];
 
-  constructor (
+  constructor(
     public readonly tab: BrowserTabTestbed,
     public readonly repo: LevelLocalRepo,
   ) {

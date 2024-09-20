@@ -1,5 +1,12 @@
 import {ResolveType} from 'json-joy/lib/json-type';
-import {BlockBatchPartialRef, BlockBatchPartialReturnRef, BlockBatchRef, BlockCurRef, BlockIdRef, BlockSnapshotRef} from '../schema';
+import {
+  BlockBatchPartialRef,
+  BlockBatchPartialReturnRef,
+  BlockBatchRef,
+  BlockCurRef,
+  BlockIdRef,
+  BlockSnapshotRef,
+} from '../schema';
 import type {RouteDeps, Router, RouterBase} from '../../types';
 
 export const upd =
@@ -20,7 +27,8 @@ export const upd =
       }),
       t.propOpt('seq', BlockCurRef).options({
         title: 'Sequence Number',
-        description: 'The last client known sequence number. The server will return history starting from this sequence number.',
+        description:
+          'The last client known sequence number. The server will return history starting from this sequence number.',
       }),
     );
 
@@ -29,16 +37,20 @@ export const upd =
         title: 'Committed Batch Parts',
         description: 'Parts of committed batch which were generated on the server.',
       }),
-      t.propOpt('pull', t.Object(
-        t.prop('batches', t.Array(BlockBatchRef)).options({
-          title: 'Batches',
-          description: 'The list of batches that happened after the given sequence number.',
-        }),
-        t.propOpt('snapshot', BlockSnapshotRef).options({
-          title: 'Snapshot',
-          description: 'The snapshot of the block, to which the batches can be applied to get the current state of the block.',
-        }),
-      )),
+      t.propOpt(
+        'pull',
+        t.Object(
+          t.prop('batches', t.Array(BlockBatchRef)).options({
+            title: 'Batches',
+            description: 'The list of batches that happened after the given sequence number.',
+          }),
+          t.propOpt('snapshot', BlockSnapshotRef).options({
+            title: 'Snapshot',
+            description:
+              'The snapshot of the block, to which the batches can be applied to get the current state of the block.',
+          }),
+        ),
+      ),
     );
 
     const Func = t.Function(Request, Response).options({
@@ -61,7 +73,7 @@ export const upd =
       if (typeof seq === 'number') {
         const diff = res.batch.seq - seq;
         if (diff <= 1) {
-          pull = { batches: [] };
+          pull = {batches: []};
         } else {
           const needsSnapshot = diff > 100;
           let min: number, max: number, limit: number;
@@ -74,7 +86,7 @@ export const upd =
             max = res.batch.seq - 1;
             limit = max - min + 1;
           }
-          pull = await blocks.scan(id, needsSnapshot, min, limit) as Pull;
+          pull = (await blocks.scan(id, needsSnapshot, min, limit)) as Pull;
         }
       }
       if (pull) response.pull = pull;

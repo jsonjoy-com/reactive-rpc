@@ -10,22 +10,47 @@ import {once} from 'thingies/lib/once';
 import {timeout} from 'thingies/lib/timeout';
 import {pubsub} from '../../pubsub';
 import type {ServerBatch, ServerHistory, ServerPatch} from '../../remote/types';
-import type {BlockId, LocalRepo, LocalRepoEvent, LocalRepoDeleteEvent, LocalRepoMergeEvent, LocalRepoRebaseEvent, LocalRepoResetEvent, LocalRepoSyncRequest, LocalRepoSyncResponse, LocalRepoGetResponse, LocalRepoGetRequest, LocalRepoCreateResponse, LocalRepoCreateRequest, LocalRepoGetIfResponse, LocalRepoGetIfRequest, LocalRepoPullResponse} from '../types';
-import type {BinStrLevel, BinStrLevelOperation, BlockMeta, LocalBatch, SyncResult, LevelLocalRepoPubSub, LevelLocalRepoCursor} from './types';
+import type {
+  BlockId,
+  LocalRepo,
+  LocalRepoEvent,
+  LocalRepoDeleteEvent,
+  LocalRepoMergeEvent,
+  LocalRepoRebaseEvent,
+  LocalRepoResetEvent,
+  LocalRepoSyncRequest,
+  LocalRepoSyncResponse,
+  LocalRepoGetResponse,
+  LocalRepoGetRequest,
+  LocalRepoCreateResponse,
+  LocalRepoCreateRequest,
+  LocalRepoGetIfResponse,
+  LocalRepoGetIfRequest,
+  LocalRepoPullResponse,
+} from '../types';
+import type {
+  BinStrLevel,
+  BinStrLevelOperation,
+  BlockMeta,
+  LocalBatch,
+  SyncResult,
+  LevelLocalRepoPubSub,
+  LevelLocalRepoCursor,
+} from './types';
 import type {CrudLocalRepoCipher} from './types';
 import type {Locks} from 'thingies/lib/Locks';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
 
 /**
  * @todo
- * 
+ *
  * 1. Implement pull loop, when WebSocket subscription cannot be established.
  */
 
 const enum Defaults {
   /**
    * The root of the block repository.
-   * 
+   *
    * ```
    * b!<collection>!<id>!
    * ```
@@ -34,7 +59,7 @@ const enum Defaults {
 
   /**
    * The root of the key-space where items are marked as "dirty" and need sync.
-   * 
+   *
    * ```
    * s!<collection>!<id>
    * ```
@@ -43,7 +68,7 @@ const enum Defaults {
 
   /**
    * The metadata of the block.
-   * 
+   *
    * ```
    * b!<collection>!<id>!k!x
    * ```
@@ -52,7 +77,7 @@ const enum Defaults {
 
   /**
    * The state of the latest known server-side model.
-   * 
+   *
    * ```
    * b!<collection>!<id>!k!m
    * ```
@@ -61,7 +86,7 @@ const enum Defaults {
 
   /**
    * List of frontier patches.
-   * 
+   *
    * ```
    * b!<collection>!<id>!f!<time>
    * ```
@@ -70,7 +95,7 @@ const enum Defaults {
 
   /**
    * List of batches verified by the server.
-   * 
+   *
    * ```
    * b!<collection>!<id>!h!<seq>
    * ```
@@ -79,7 +104,7 @@ const enum Defaults {
 
   /**
    * List of snapshots.
-   * 
+   *
    * ```
    * b!<collection>!<id>!s!<seq>
    * ```
@@ -109,7 +134,7 @@ export interface LevelLocalRepoOpts {
    * Optional content encryption/decryption API.
    */
   readonly cipher?: CrudLocalRepoCipher;
-  
+
   /**
    * Cross-tab locking API.
    */
@@ -252,19 +277,25 @@ export class LevelLocalRepo implements LocalRepo {
   }
 
   protected _modelWrOp(keyBase: string, model: Uint8Array): Promise<BinStrLevelOperation> {
-    return this.encode(model, true).then((value) => ({
-      type: 'put',
-      key: keyBase + Defaults.Model,
-      value,
-    } as BinStrLevelOperation));
+    return this.encode(model, true).then(
+      (value) =>
+        ({
+          type: 'put',
+          key: keyBase + Defaults.Model,
+          value,
+        }) as BinStrLevelOperation,
+    );
   }
 
   protected _metaWrOp(keyBase: string, meta?: BlockMeta): Promise<BinStrLevelOperation> {
-    return this.encode(meta, false).then((value) => ({
-      type: 'put',
-      key: keyBase + Defaults.Metadata,
-      value,
-    } as BinStrLevelOperation));
+    return this.encode(meta, false).then(
+      (value) =>
+        ({
+          type: 'put',
+          key: keyBase + Defaults.Metadata,
+          value,
+        }) as BinStrLevelOperation,
+    );
   }
 
   protected async _modelWrOps(keyBase: string, model: Uint8Array, meta?: BlockMeta): Promise<BinStrLevelOperation[]> {
@@ -278,7 +309,7 @@ export class LevelLocalRepo implements LocalRepo {
     await this.kv.batch(ops);
   }
 
-  protected async load(id: BlockId): Promise<{model: Model, cursor: number}> {
+  protected async load(id: BlockId): Promise<{model: Model; cursor: number}> {
     const blockId = id.join('/');
     const res = await this.opts.rpc.read(blockId);
     const block = res.block;
@@ -286,9 +317,7 @@ export class LevelLocalRepo implements LocalRepo {
     const seq = snapshot.seq;
     const sid = this.sid;
     const model = Model.load(snapshot.blob, sid);
-    for (const batch of block.tip)
-      for (const patch of batch.patches)
-        model.applyPatch(Patch.fromBinary(patch.blob));
+    for (const batch of block.tip) for (const patch of batch.patches) model.applyPatch(Patch.fromBinary(patch.blob));
     const keyBase = await this.blockKeyBase(id);
     const metaKey = keyBase + Defaults.Metadata;
     const meta: BlockMeta = {
@@ -296,10 +325,7 @@ export class LevelLocalRepo implements LocalRepo {
       seq,
     };
     const modelBlob = model.toBinary();
-    const [metaBlob, modelTupleBlob] = await Promise.all([
-      this.encode(meta, false),
-      this.encode(modelBlob, true),
-    ]);
+    const [metaBlob, modelTupleBlob] = await Promise.all([this.encode(meta, false), this.encode(modelBlob, true)]);
     const ops: BinStrLevelOperation[] = [
       {
         type: 'put',
@@ -332,7 +358,7 @@ export class LevelLocalRepo implements LocalRepo {
   public async readModel0(keyBase: string): Promise<Uint8Array> {
     const modelKey = keyBase + Defaults.Model;
     const blob = await this.kv.get(modelKey);
-    const decoded = await this.decode(blob, true) as Uint8Array;
+    const decoded = (await this.decode(blob, true)) as Uint8Array;
     return decoded;
   }
 
@@ -343,7 +369,7 @@ export class LevelLocalRepo implements LocalRepo {
       return model;
     } catch (error) {
       if (!!error && typeof error === 'object' && (error as any).code === 'LEVEL_NOT_FOUND')
-        throw new Error('NOT_FOUND')
+        throw new Error('NOT_FOUND');
       throw error;
     }
   }
@@ -444,10 +470,7 @@ export class LevelLocalRepo implements LocalRepo {
         if (this._stopped) throw new Error('STOPPED');
       };
       return await timeout(TIMEOUT, async () => {
-        const read = await Promise.all([
-          this.readModel(keyBase),
-          this.readMeta(keyBase),
-        ]);
+        const read = await Promise.all([this.readModel(keyBase), this.readMeta(keyBase)]);
         assertTimeout();
         let model = read[0];
         const meta = read[1];
@@ -606,7 +629,7 @@ export class LevelLocalRepo implements LocalRepo {
         ops.push(op);
       }
     }
-    ops.push(...await this._modelWrOps(keyBase, model.toBinary(), meta));
+    ops.push(...(await this._modelWrOps(keyBase, model.toBinary(), meta)));
     await this.lockBlock(keyBase, async () => {
       const exists = await this._exists(keyBase);
       if (exists) throw new Error('EXISTS');
@@ -628,8 +651,7 @@ export class LevelLocalRepo implements LocalRepo {
       if (!model) throw new Error('NOT_FOUND');
       return {model, cursor};
     } catch (error) {
-      if (remote && error instanceof Error && error.message === 'NOT_FOUND')
-        return await this.load(id);
+      if (remote && error instanceof Error && error.message === 'NOT_FOUND') return await this.load(id);
       throw error;
     }
   }
@@ -706,12 +728,8 @@ export class LevelLocalRepo implements LocalRepo {
     // TODO: Check that remote state is in sync, too.
     let needsReset = false;
     const didPush = await this.lockBlock(keyBase, async () => {
-      const [tip, meta] = await Promise.all([
-        this.readFrontierTip(keyBase),
-        this.readMeta(keyBase),
-      ]);
-      if (meta.seq > -1 && (typeof req.cursor !== 'number' || (req.cursor < meta.seq)))
-        needsReset = true;
+      const [tip, meta] = await Promise.all([this.readFrontierTip(keyBase), this.readMeta(keyBase)]);
+      if (meta.seq > -1 && (typeof req.cursor !== 'number' || req.cursor < meta.seq)) needsReset = true;
       let nextTick = meta.time + 1;
       cursor = meta.seq;
       if (tip) {
@@ -741,7 +759,7 @@ export class LevelLocalRepo implements LocalRepo {
         const patchKey = this.frontierKey(keyBase, time);
         const uint8 = rebased.toBinary();
         writtenPatches.push(uint8);
-        const op: BinStrLevelOperation = {type: 'put', key: patchKey,value: uint8};
+        const op: BinStrLevelOperation = {type: 'put', key: patchKey, value: uint8};
         ops.push(op);
       }
       if (ops.length) {
@@ -771,7 +789,11 @@ export class LevelLocalRepo implements LocalRepo {
   }
 
   protected async readLocal0(keyBase: string): Promise<[model: Model, cursor: LevelLocalRepoCursor]> {
-    const [model, meta, frontier] = await Promise.all([this.readModel(keyBase), this.readMeta(keyBase), this.readFrontier0(keyBase)]);
+    const [model, meta, frontier] = await Promise.all([
+      this.readModel(keyBase),
+      this.readMeta(keyBase),
+      this.readFrontier0(keyBase),
+    ]);
     model.applyBatch(frontier);
     const cursor: LevelLocalRepoCursor = meta.seq;
     return [model, cursor];
@@ -842,7 +864,7 @@ export class LevelLocalRepo implements LocalRepo {
     }
   }
 
-  protected async pullNew(id: BlockId, keyBase: string): Promise<{model: Model, meta: BlockMeta}> {
+  protected async pullNew(id: BlockId, keyBase: string): Promise<{model: Model; meta: BlockMeta}> {
     const blockId = id.join('/');
     const {block} = await this.opts.rpc.read(blockId);
     const pubsub = this.pubsub;
@@ -854,8 +876,7 @@ export class LevelLocalRepo implements LocalRepo {
       for (const batch of block.tip) {
         if (batch.seq <= seq) continue;
         seq = batch.seq;
-        for (const patch of batch.patches)
-          model.applyPatch(Patch.fromBinary(patch.blob));
+        for (const patch of batch.patches) model.applyPatch(Patch.fromBinary(patch.blob));
       }
       const meta: BlockMeta = {
         time: 0,
@@ -868,27 +889,23 @@ export class LevelLocalRepo implements LocalRepo {
     });
   }
 
-  protected async pullExisting(id: BlockId, keyBase: string): Promise<{model: Model, meta: BlockMeta}> {
+  protected async pullExisting(id: BlockId, keyBase: string): Promise<{model: Model; meta: BlockMeta}> {
     // TODO: try catching up using batches, if not possible, reset
     // TODO: load batches to catch up with remote
     const blockId = id.join('/');
     const {seq} = await this.readMeta(keyBase);
     const pull = await this.opts.rpc.pull(blockId, seq);
-    const nextSeq = pull.batches.length ? pull.batches[pull.batches.length - 1].seq : pull.snapshot?.seq ?? seq;
+    const nextSeq = pull.batches.length ? pull.batches[pull.batches.length - 1].seq : (pull.snapshot?.seq ?? seq);
     const pubsub = this.pubsub;
     return this.lockBlock(keyBase, async () => {
-      const [model, meta] = await Promise.all([
-        this.readModel(keyBase),
-        this.readMeta(keyBase),
-      ]);
+      const [model, meta] = await Promise.all([this.readModel(keyBase), this.readMeta(keyBase)]);
       const seq2 = meta.seq;
       if (seq2 !== seq) throw new Error('CONCURRENCY');
       if (pull.snapshot) {
         if (nextSeq > seq2) {
           const model = Model.load(pull.snapshot.blob, this.sid);
           for (const batch of pull.batches)
-            for (const patch of batch.patches)
-              model.applyPatch(Patch.fromBinary(patch.blob));
+            for (const patch of batch.patches) model.applyPatch(Patch.fromBinary(patch.blob));
           const modelBlob = model.toBinary();
           meta.seq = nextSeq;
           await this._wrModel(keyBase, modelBlob, meta);
@@ -963,15 +980,23 @@ export class LevelLocalRepo implements LocalRepo {
     const blockId = id.join('/');
     let sub = this._subs[blockId];
     if (sub) return sub;
-    const source = defer(() => this.opts.rpc.listen(blockId).pipe(
-      switchMap(async ({event}) => {
-        switch (event[0]) {
-          case 'new': await this.pull(id); break;
-          case 'upd': await this._onUpd(id, event[1].batch); break;
-          case 'del': await this.del(id); break;
-        }
-      }),
-    ));
+    const source = defer(() =>
+      this.opts.rpc.listen(blockId).pipe(
+        switchMap(async ({event}) => {
+          switch (event[0]) {
+            case 'new':
+              await this.pull(id);
+              break;
+            case 'upd':
+              await this._onUpd(id, event[1].batch);
+              break;
+            case 'del':
+              await this.del(id);
+              break;
+          }
+        }),
+      ),
+    );
     sub = source.pipe(
       catchError((error) => source),
       finalize<void>(() => {
@@ -1003,11 +1028,8 @@ export class LevelLocalRepo implements LocalRepo {
       throw error;
     }
     await this.lockBlock(keyBase, async () => {
-      const [model, meta] = await Promise.all([
-        this.readModel(keyBase),
-        this.readMeta(keyBase),
-      ]);
-      if (meta.seq + 1 !== batch.seq) throw new Error('CONFLICT');  
+      const [model, meta] = await Promise.all([this.readModel(keyBase), this.readMeta(keyBase)]);
+      if (meta.seq + 1 !== batch.seq) throw new Error('CONFLICT');
       const patches: Uint8Array[] = [];
       for (const serverPatch of batch.patches) {
         const patch = Patch.fromBinary(serverPatch.blob);

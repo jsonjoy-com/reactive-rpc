@@ -82,23 +82,25 @@ export const BlockBatchRef = t.Ref<typeof BlockBatch>('BlockBatch');
 
 // ------------------------------------------------------------------- Snapshot
 
-export const BlockSnapshotReturn = t.Object(
-  t.prop('id', BlockIdRef).options({
-    title: 'Block ID',
-    description: 'The ID of the block.',
-  }),
-  t.prop('seq', BlockCurRef).options({
-    title: 'Snapshot Cursor',
-    description: 'The cursor of the snapshot, representing the position in the history.',
-  }),
-  t.prop('ts', t.num.options({format: 'u'})).options({
-    title: 'Snapshot Creation Time',
-    description: 'The time when the snapshot was created, in milliseconds since the Unix epoch.',
-  }),
-).options({
-  title: 'Block Snapshot Return',
-  description: "Partial snapshot returned on creation, doesn't include the blob.",
-});
+export const BlockSnapshotReturn = t
+  .Object(
+    t.prop('id', BlockIdRef).options({
+      title: 'Block ID',
+      description: 'The ID of the block.',
+    }),
+    t.prop('seq', BlockCurRef).options({
+      title: 'Snapshot Cursor',
+      description: 'The cursor of the snapshot, representing the position in the history.',
+    }),
+    t.prop('ts', t.num.options({format: 'u'})).options({
+      title: 'Snapshot Creation Time',
+      description: 'The time when the snapshot was created, in milliseconds since the Unix epoch.',
+    }),
+  )
+  .options({
+    title: 'Block Snapshot Return',
+    description: "Partial snapshot returned on creation, doesn't include the blob.",
+  });
 export const BlockSnapshotReturnRef = t.Ref<typeof BlockSnapshotReturn>('BlockSnapshotReturn');
 
 // prettier-ignore

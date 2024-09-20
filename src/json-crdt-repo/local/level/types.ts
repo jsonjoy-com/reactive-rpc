@@ -10,7 +10,7 @@ export interface BlockMeta {
   /**
    * The latest logical time that was successfully synced with the remote. This
    * is the patch start time, plus the patch span `patch.id.time + patch.span()`.
-   * 
+   *
    * Empty block starts from 0. The smallest time is 1.
    */
   time: number;

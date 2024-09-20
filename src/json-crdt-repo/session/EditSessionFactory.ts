@@ -16,7 +16,7 @@ export class EditSessionFactory {
    * with a given ID already exists, it asynchronously synchronizes the local
    * and remote state.
    */
-  public make(opts: EditSessionMakeOpts): {session: EditSession, sync?: Promise<void>} {
+  public make(opts: EditSessionMakeOpts): {session: EditSession; sync?: Promise<void>} {
     const {id, schema, pull = true} = opts;
     const factoryOpts = this.opts;
     const model = Model.create(void 0, factoryOpts.sid);
@@ -28,7 +28,10 @@ export class EditSessionFactory {
     }
     let sync: Promise<void> | undefined;
     if (pull && !session.log.patches.size()) {
-      sync = session.sync().then(() => {}).catch(() => {});
+      sync = session
+        .sync()
+        .then(() => {})
+        .catch(() => {});
     }
     session.log.end.api.autoFlush();
     return {session, sync};
@@ -37,7 +40,7 @@ export class EditSessionFactory {
   /**
    * Load block from the local repo. Creates a new editing session
    * asynchronously from an existing local block.
-   * 
+   *
    * It is also possible to block on remote state check in case the block does
    * not exist locally, or to pull the latest state from the remote.
    */
@@ -55,7 +58,9 @@ export class EditSessionFactory {
         if (remote) {
           const timeoutMs = remote.timeout;
           try {
-            const {model, cursor} = await (typeof timeoutMs === 'number' ? timeout(timeoutMs, repo.pull(id)) : repo.pull(id));
+            const {model, cursor} = await (typeof timeoutMs === 'number'
+              ? timeout(timeoutMs, repo.pull(id))
+              : repo.pull(id));
             if (remote.throwIf === 'exists') throw new Error('EXISTS');
             const session = new EditSession(repo, id, model, cursor, opts.session);
             session.log.end.api.autoFlush();
@@ -124,7 +129,7 @@ export interface EditSessionLoadOpts {
     /**
      * Time in milliseconds to wait for the remote to respond. If the remote
      * does not respond in time, the call will proceed with the local state.
-     * 
+     *
      * If upsert `make` option is not provided, the call will throw a "TIMEOUT"
      * error.
      */

@@ -5,7 +5,7 @@ import {MemoryStore} from './blocks/store/MemoryStore';
 import {Store} from './blocks/store/types';
 
 export interface ServicesOpts {
-  store?: Store,
+  store?: Store;
   blocks?: BlocksServicesOpts;
 }
 
@@ -14,12 +14,7 @@ export class Services {
   public readonly presence: PresenceService;
   public readonly blocks: BlocksServices;
 
-  constructor(
-    {
-      store = new MemoryStore(),
-      blocks,
-    }: ServicesOpts = {}
-  ) {
+  constructor({store = new MemoryStore(), blocks}: ServicesOpts = {}) {
     this.pubsub = new PubsubService();
     this.presence = new PresenceService();
     this.blocks = new BlocksServices(this, store, blocks);

@@ -121,7 +121,7 @@ export interface Store {
    * @returns Snapshot and a list of batches to apply to the snapshot to get
    *     to the state at the given sequence number.
    */
-  getSnapshot(id: string, seq: number): Promise<{snapshot: StoreSnapshot, batches: StoreBatch[]}>;
+  getSnapshot(id: string, seq: number): Promise<{snapshot: StoreSnapshot; batches: StoreBatch[]}>;
 
   /**
    * Retrieve the existence of a block.
@@ -192,4 +192,7 @@ export interface StoreGetResult {
   block: StoreBlock;
 }
 
-export type Advance = (start: StoreSnapshot['blob'], batches: AsyncIterable<StoreBatch>) => Promise<StoreSnapshot['blob']>;
+export type Advance = (
+  start: StoreSnapshot['blob'],
+  batches: AsyncIterable<StoreBatch>,
+) => Promise<StoreSnapshot['blob']>;

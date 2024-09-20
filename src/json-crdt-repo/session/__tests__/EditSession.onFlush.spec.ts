@@ -18,14 +18,14 @@ describe('onFlush', () => {
     session1.model.api.obj([]).set({a: '3', b: '3', c: '3'});
     await until(() => {
       try {
-        expect(session2.model.view()).toEqual({ id: 'asdf', a: '3', b: '3', c: '3' });
+        expect(session2.model.view()).toEqual({id: 'asdf', a: '3', b: '3', c: '3'});
         return true;
       } catch {
         return false;
       }
     });
-    expect(session1.model.view()).toEqual({ id: 'asdf', a: '3', b: '3', c: '3' });
-    expect(session2.model.view()).toEqual({ id: 'asdf', a: '3', b: '3', c: '3' });
+    expect(session1.model.view()).toEqual({id: 'asdf', a: '3', b: '3', c: '3'});
+    expect(session2.model.view()).toEqual({id: 'asdf', a: '3', b: '3', c: '3'});
     await session1.dispose();
     await session2.dispose();
     await kit.stop();

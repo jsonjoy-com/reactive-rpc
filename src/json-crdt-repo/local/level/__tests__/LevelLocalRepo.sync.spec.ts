@@ -376,7 +376,7 @@ describe('.sync()', () => {
         await kit.remote.client.call('block.new', {
           id: kit.blockId.join('/'),
           batch: {
-            patches: patches0.map(p => ({blob: p.toBinary()})),
+            patches: patches0.map((p) => ({blob: p.toBinary()})),
           },
         });
         const model1 = await kit.getModelFromRemote();
@@ -407,7 +407,7 @@ describe('.sync()', () => {
         await kit.remote.client.call('block.new', {
           id: kit.blockId.join('/'),
           batch: {
-            patches: patches0.map(p => ({blob: p.toBinary()})),
+            patches: patches0.map((p) => ({blob: p.toBinary()})),
           },
         });
         expect(model0.view()).toEqual({a: 'b', x: 1});
@@ -421,7 +421,7 @@ describe('.sync()', () => {
           patches: patches2,
         });
         let events: LocalRepoEvent[] = [];
-        const subscription = kit.local.change$(kit.blockId).subscribe(e => {
+        const subscription = kit.local.change$(kit.blockId).subscribe((e) => {
           events.push(e);
         });
         expect(res2.model!).toBe(undefined);
@@ -501,9 +501,11 @@ describe('.sync()', () => {
       });
 
       test('test merge on create with multiple patches', async () => {
-        const kit = await setup({local: {
-          connected$: new BehaviorSubject(false),
-        }});
+        const kit = await setup({
+          local: {
+            connected$: new BehaviorSubject(false),
+          },
+        });
         const schema = s.obj({});
         const model = Model.create(schema, kit.sid);
         model.api.autoFlush();
@@ -517,7 +519,7 @@ describe('.sync()', () => {
           x: 1,
         });
         await tick(1);
-        const patches1 = [...log1.patches.entries()].map(e => e.v);
+        const patches1 = [...log1.patches.entries()].map((e) => e.v);
         await kit.local.sync({
           id: kit.blockId,
           patches: patches1,
@@ -536,7 +538,7 @@ describe('.sync()', () => {
           y: 2,
         });
         await tick(1);
-        const patches2 = [...log2.patches.entries()].map(e => e.v);
+        const patches2 = [...log2.patches.entries()].map((e) => e.v);
         await kit.local.sync({
           id: kit.blockId,
           patches: patches2,
@@ -564,7 +566,7 @@ describe('.sync()', () => {
       });
     });
   });
-  
+
   describe('update', () => {
     test('can write updates', async () => {
       const kit = await setup();
@@ -757,14 +759,16 @@ describe('.sync()', () => {
       });
       const model1 = await kit.getModelFromRemote();
       model1.api.root({foo: 'bar'});
-      expect(model1.view()).toEqual({foo: 'bar'}); 
+      expect(model1.view()).toEqual({foo: 'bar'});
       const res = await kit.remote.client.call('block.upd', {
         id: kit.blockId.join('/'),
         batch: {
-          patches: [{
-            blob: model1.api.flush()!.toBinary(),
-          }],
-        }
+          patches: [
+            {
+              blob: model1.api.flush()!.toBinary(),
+            },
+          ],
+        },
       });
       const model2 = (await kit.getModelFromRemote()).fork();
       expect(model2.view()).toEqual({foo: 'bar'});
@@ -775,10 +779,12 @@ describe('.sync()', () => {
       await kit.remote.client.call('block.upd', {
         id: kit.blockId.join('/'),
         batch: {
-          patches: [{
-            blob: model1.api.flush()!.toBinary(),
-          }],
-        }
+          patches: [
+            {
+              blob: model1.api.flush()!.toBinary(),
+            },
+          ],
+        },
       });
       const model3 = await kit.getModelFromRemote();
       expect(model3.view()).toEqual({foo: 'bar', x: 1});
@@ -798,13 +804,13 @@ describe('.sync()', () => {
 
     test.todo('can push an update when remote already advanced by multiple patches');
     test.todo('can push an update when local and remote have already advanced by different patches');
-    
+
     describe('can push empty patch to re-sync with local', () => {
       test.todo('no changes if in-sync');
       test.todo('receives patches to catch up with local');
     });
   });
-  
+
   describe('read', () => {
     test('can read own block (same tab)', async () => {
       const kit = await setup();

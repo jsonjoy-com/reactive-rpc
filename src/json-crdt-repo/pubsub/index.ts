@@ -20,7 +20,7 @@ export class PubSubBC<Message> extends PubSubM<Message> {
 
   constructor(public readonly bus: string) {
     super();
-    const ch = this.ch = new BroadcastChannel(bus);
+    const ch = (this.ch = new BroadcastChannel(bus));
     ch.onmessage = (e) => this.bus$.next(e.data as Message);
   }
 
@@ -47,4 +47,4 @@ const memoryCache: Record<string, PubSubM<unknown>> = {};
 export const pubsub = <Events>(bus: string): PubSub<Events> =>
   typeof BroadcastChannel !== 'undefined'
     ? new PubSubBC<Events>(bus)
-    : (<any>memoryCache[bus]) || ((<any>memoryCache[bus]) = new PubSubM<Events>());
+    : <any>memoryCache[bus] || ((<any>memoryCache[bus]) = new PubSubM<Events>());

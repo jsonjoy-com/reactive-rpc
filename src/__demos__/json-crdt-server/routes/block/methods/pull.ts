@@ -25,7 +25,7 @@ export const pull =
         description: 'Whether to create a new block if it does not exist.',
       }),
     );
-    
+
     // prettier-ignore
     const Response = t.Object(
       t.prop('batches', t.Array(BlockBatchRef)).options({

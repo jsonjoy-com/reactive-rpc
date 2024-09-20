@@ -8,7 +8,7 @@ export class MemoryBlock {
   constructor(
     public readonly start: types.StoreSnapshot,
     public readonly data: types.StoreBlock,
-    public readonly history: types.StoreBatch[]
+    public readonly history: types.StoreBatch[],
   ) {}
 }
 
@@ -22,7 +22,10 @@ export class MemoryStore implements types.Store {
     return {block: block.data};
   }
 
-  public async getSnapshot(id: string, seq: number): Promise<{snapshot: types.StoreSnapshot, batches: types.StoreBatch[]}> {
+  public async getSnapshot(
+    id: string,
+    seq: number,
+  ): Promise<{snapshot: types.StoreSnapshot; batches: types.StoreBatch[]}> {
     await tick;
     const block = this.blocks.get(id);
     if (!block) throw RpcError.notFound();
@@ -113,7 +116,7 @@ export class MemoryStore implements types.Store {
     const batches = block.history;
     const length = batches.length;
     let i = 0;
-    async function * iterator() {
+    async function* iterator() {
       for (; i < length; i++) {
         const batch = batches[i];
         const seq = batch.seq;
@@ -168,11 +171,12 @@ export class MemoryStore implements types.Store {
   public async removeAccessedBefore(ts: number, limit = 10): Promise<void> {
     await tick;
     let cnt = 0;
-    for (const [id, block] of this.blocks) if (block.data.uts < ts) {
-      this.removeSync(id);
-      cnt++;
-      if (cnt >= limit) return;
-    }
+    for (const [id, block] of this.blocks)
+      if (block.data.uts < ts) {
+        this.removeSync(id);
+        cnt++;
+        if (cnt >= limit) return;
+      }
   }
 
   public async removeOldest(x: number): Promise<void> {
