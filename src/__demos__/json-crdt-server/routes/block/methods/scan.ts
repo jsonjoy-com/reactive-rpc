@@ -1,4 +1,4 @@
-import {BlockIdRef, BlockCurRef, BlockPatchRef} from '../schema';
+import {BlockIdRef, BlockCurRef, BlockBatchRef, BlockSnapshotRef} from '../schema';
 import type {RouteDeps, Router, RouterBase} from '../../types';
 
 export const scan =
@@ -9,23 +9,40 @@ export const scan =
         title: 'Block ID',
         description: 'The ID of the block.',
       }),
-      t.propOpt('cur', BlockCurRef).options({
+      t.propOpt('seq', BlockCurRef).options({
         title: 'Starting Sequence Number',
         description: 'The sequence number to start from. Defaults to the latest sequence number.',
       }),
-      t.propOpt('limit', t.num.options({format: 'u32'})).options({
-        title: 'Number of Patches',
-        description:
-          'The minimum number of patches to return. Defaults to 10. ' +
-          'When positive, returns the patches ahead of the starting sequence number. ' +
-          'When negative, returns the patches behind the starting sequence number.',
+      t
+        .propOpt(
+          'limit',
+          t.num.options({
+            format: 'u16',
+            gte: 0,
+            lte: 1000,
+          }),
+        )
+        .options({
+          title: 'Number of Patches',
+          description:
+            'The minimum number of patches to return. Defaults to 10. ' +
+            'When positive, returns the patches ahead of the starting sequence number. ' +
+            'When negative, returns the patches behind the starting sequence number.',
+        }),
+      t.propOpt('snapshot', t.bool).options({
+        title: 'Include Start Snapshot',
+        description: 'If true, includes the snapshot of state at the start of the sequence.',
       }),
     );
 
     const Response = t.Object(
-      t.prop('patches', t.Array(BlockPatchRef)).options({
-        title: 'Patches',
-        description: 'The list of patches.',
+      t.prop('batches', t.Array(BlockBatchRef)).options({
+        title: 'Batches',
+        description: 'List of batches in given sequence range.',
+      }),
+      t.propOpt('snapshot', BlockSnapshotRef).options({
+        title: 'Start Snapshot',
+        description: 'The state of the block right before the first batch in the result.',
       }),
     );
 
@@ -35,13 +52,7 @@ export const scan =
       description: 'Returns a list of specified change patches for a block.',
     });
 
-    return r.prop('block.scan', Func, async ({id, cur, limit = 10}) => {
-      const {patches} = await services.blocks.scan(id, cur, limit);
-      return {
-        patches: patches.map((p) => ({
-          blob: p.blob,
-          ts: p.created,
-        })),
-      };
+    return r.prop('block.scan', Func, async ({id, seq, limit = 10, snapshot}) => {
+      return await services.blocks.scan(id, !!snapshot, seq, limit);
     });
   };

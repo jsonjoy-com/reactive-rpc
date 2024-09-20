@@ -1,5 +1,5 @@
 import {firstValueFrom, from, Observable, Subject} from 'rxjs';
-import {catchError, finalize, first, map, mergeWith, share, switchMap, take, tap} from 'rxjs/operators';
+import {catchError, finalize, first, map, mergeWith, share, switchMap, take, takeUntil, tap} from 'rxjs/operators';
 import {RpcError, RpcErrorCodes, RpcErrorValue} from './error';
 import {RpcValue} from '../../messages/Value';
 import {StaticRpcMethod} from '../methods/StaticRpcMethod';
@@ -123,6 +123,7 @@ export class RpcCaller<Ctx = unknown> {
   public createCall(name: string, ctx: Ctx): Call {
     const req$ = new Subject<unknown>();
     const reqUnsubscribe$ = new Subject<null>();
+    const stop$ = new Subject<null>();
     try {
       // This throws when Reactive-RPC method does not exist.
       const method = this.getMethodStrict(name);
@@ -145,7 +146,7 @@ export class RpcCaller<Ctx = unknown> {
           }),
         );
 
-        return {req$, reqUnsubscribe$, res$: $resWithErrorsFormatted};
+        return {req$, reqUnsubscribe$, stop$, res$: $resWithErrorsFormatted.pipe(takeUntil(stop$))};
       }
 
       // Here we are sure the call will be streaming.
@@ -212,13 +213,13 @@ export class RpcCaller<Ctx = unknown> {
         }),
       );
 
-      return {req$, reqUnsubscribe$, res$: $resWithErrorsFormatted};
+      return {req$, reqUnsubscribe$, stop$, res$: $resWithErrorsFormatted.pipe(takeUntil(stop$))};
     } catch (error) {
       const errorFormatted = RpcError.valueFrom(error);
       req$.error(errorFormatted);
       const res$ = new Subject<RpcValue>();
       res$.error(errorFormatted);
-      return {req$, reqUnsubscribe$, res$};
+      return {req$, reqUnsubscribe$, stop$, res$: res$.pipe(takeUntil(stop$))};
     }
   }
 

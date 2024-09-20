@@ -59,7 +59,7 @@ const setup1: ApiTestSetup = () => {
   const client = setup().client;
   const call = client.call.bind(client);
   const call$ = client.call$.bind(client);
-  const stop = client.stop.bind(client);
+  const stop = async () => void client.stop.bind(client);
   return {
     call,
     call$,
@@ -71,7 +71,7 @@ const setup2: ApiTestSetup = () => {
   const client = setup().server;
   const call = client.call.bind(client);
   const call$ = client.call$.bind(client);
-  const stop = client.stop.bind(client);
+  const stop = async () => void client.stop.bind(client);
   return {
     call,
     call$,

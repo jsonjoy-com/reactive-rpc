@@ -4,7 +4,7 @@ import type {ResolveType} from 'json-joy/lib/json-type';
 export const BlockId = t.str.options({
   title: 'Block ID',
   min: 6,
-  max: 40,
+  max: 256,
 });
 export const BlockIdRef = t.Ref<typeof BlockId>('BlockId');
 
@@ -14,6 +14,13 @@ export const BlockCur = t.num.options({
   format: 'i32',
 });
 export const BlockCurRef = t.Ref<typeof BlockCur>('BlockCur');
+
+export const BlockBatchSeq = t.num.options({
+  title: 'Batch Sequence Number',
+  gte: 0,
+  format: 'u32',
+});
+export const BlockBatchSeqRef = t.Ref<typeof BlockBatchSeq>('BlockBatchSeq');
 
 // ---------------------------------------------------------------------- Patch
 
@@ -42,15 +49,46 @@ export const BlockPatchPartialReturnRef = t.Ref<typeof BlockPatchPartialReturn>(
 export const BlockPatch = BlockPatchPartial.extend(BlockPatchPartialReturn);
 export const BlockPatchRef = t.Ref<typeof BlockPatch>('BlockPatch');
 
+// ---------------------------------------------------------------------- Batch
+
+// prettier-ignore
+export const BlockBatchPartial = t.Object(
+  t.prop('patches', t.Array(BlockPatchPartialRef)),
+  t.propOpt('cts', t.num.options({
+    format: 'u',
+    title: 'Batch Creation Time',
+    description: 'The time when the batch was created, in milliseconds since the Unix epoch.',
+  })),
+);
+export const BlockBatchPartialRef = t.Ref<typeof BlockBatchPartial>('BlockBatchPartial');
+
+// prettier-ignore
+export const BlockBatchPartialReturn = t.Object(
+  t.prop('seq', t.num.options({format: 'u'})).options({
+    title: 'Batch Sequence Number',
+    description: 'The sequence number of the batch, representing the position in the history.',
+  }),
+  t.prop('ts', t.num.options({format: 'u'})).options({
+    title: 'Batch Creation Time',
+    description: 'The time when the batch was created, in milliseconds since the Unix epoch.' +
+      '\n\n' + 
+      'This time is set by the server when the batch was received and stored on the server.',
+  }),
+);
+export const BlockBatchPartialReturnRef = t.Ref<typeof BlockBatchPartialReturn>('BlockBatchPartialReturn');
+
+export const BlockBatch = BlockBatchPartial.extend(BlockBatchPartialReturn);
+export const BlockBatchRef = t.Ref<typeof BlockBatch>('BlockBatch');
+
 // ------------------------------------------------------------------- Snapshot
 
-export const BlockSnapshot = t
+export const BlockSnapshotReturn = t
   .Object(
-    t.prop('blob', t.bin).options({
-      title: 'Snapshot Blob',
-      description: 'A serialized JSON CRDT model.',
+    t.prop('id', BlockIdRef).options({
+      title: 'Block ID',
+      description: 'The ID of the block.',
     }),
-    t.prop('cur', BlockCurRef).options({
+    t.prop('seq', BlockCurRef).options({
       title: 'Snapshot Cursor',
       description: 'The cursor of the snapshot, representing the position in the history.',
     }),
@@ -60,9 +98,21 @@ export const BlockSnapshot = t
     }),
   )
   .options({
-    title: 'Block Snapshot',
-    description: "A snapshot of the block's state at a certain point in time.",
+    title: 'Block Snapshot Return',
+    description: "Partial snapshot returned on creation, doesn't include the blob.",
   });
+export const BlockSnapshotReturnRef = t.Ref<typeof BlockSnapshotReturn>('BlockSnapshotReturn');
+
+// prettier-ignore
+export const BlockSnapshot = BlockSnapshotReturn.extend(t.Object(
+  t.prop('blob', t.bin).options({
+    title: 'Snapshot Blob',
+    description: 'A serialized JSON CRDT model.',
+  }),
+)).options({
+  title: 'Block Snapshot',
+  description: "A snapshot of the block's state at a certain point in time.",
+});
 export const BlockSnapshotRef = t.Ref<typeof BlockSnapshot>('BlockSnapshot');
 
 export const NewBlockSnapshotResponse = BlockSnapshot.omit('blob');
@@ -74,15 +124,22 @@ export const NewBlockSnapshotResponseRef = t.Ref<typeof NewBlockSnapshotResponse
 export const BlockNew = t.Object(
   t.prop('id', t.Ref<typeof BlockId>('BlockId')),
   t.prop('ts', t.num.options({format: 'u'})),
+  t.prop('uts', t.num.options({format: 'u'})),
 );
 export const BlockNewRef = t.Ref<typeof BlockNew>('BlockNew');
 
-export const Block = BlockNew.extend(
-  t.Object(t.prop('snapshot', BlockSnapshotRef), t.prop('tip', t.Array(BlockPatchRef))),
-);
+// prettier-ignore
+export const Block = BlockNew.extend(t.Object(
+  t.prop('snapshot', BlockSnapshotRef),
+  t.prop('tip', t.Array(BlockBatchRef)),
+));
 export const BlockRef = t.Ref<typeof Block>('Block');
 
 // --------------------------------------------------------------------- Events
+
+export const BlockCreateEvent = t
+  .Tuple(t.Const(<const>'new').options({title: 'Event Type'}))
+  .options({title: 'Creation Event'});
 
 export const BlockDeleteEvent = t
   .Tuple(t.Const(<const>'del').options({title: 'Event Type'}))
@@ -93,7 +150,7 @@ export const BlockUpdateEvent = t
     t.Const(<const>'upd').options({title: 'Event Type'}),
     t
       .Object(
-        t.prop('patches', t.Array(BlockPatchRef)).options({
+        t.prop('batch', BlockBatchRef).options({
           title: 'Latest Patches',
           description: 'Patches that have been applied to the block.',
         }),
@@ -102,12 +159,13 @@ export const BlockUpdateEvent = t
   )
   .options({title: 'Update Event'});
 
-export const BlockEvent = t.Or(BlockUpdateEvent, BlockDeleteEvent).options({
+export const BlockEvent = t.Or(BlockCreateEvent, BlockUpdateEvent, BlockDeleteEvent).options({
   title: 'Block Event',
   description: 'A collection of possible events that can happen to a block.',
 });
 export const BlockEventRef = t.Ref<typeof BlockEvent>('BlockEvent');
 
 export type TBlockDeleteEvent = ResolveType<typeof BlockDeleteEvent>;
+export type TBlockCreateEvent = ResolveType<typeof BlockCreateEvent>;
 export type TBlockUpdateEvent = ResolveType<typeof BlockUpdateEvent>;
 export type TBlockEvent = ResolveType<typeof BlockEvent>;

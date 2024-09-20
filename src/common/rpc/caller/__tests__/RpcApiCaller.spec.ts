@@ -115,7 +115,7 @@ describe('smoke tests', () => {
     const client = {
       call$,
       call: (name: any, request: any) => Rx.firstValueFrom(call$(name, request)),
-      stop: () => {},
+      stop: async () => {},
     };
     return {
       ...client,

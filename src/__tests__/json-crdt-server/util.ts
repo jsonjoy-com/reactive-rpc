@@ -48,7 +48,7 @@ export const runUtilTests = (_setup: ApiTestSetup, params: {staticOnly?: true} =
             },
             blocks: {
               blocks: expect.any(Number),
-              patches: expect.any(Number),
+              batches: expect.any(Number),
             },
           },
         });

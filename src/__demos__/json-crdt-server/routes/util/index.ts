@@ -31,7 +31,7 @@ export const info =
         t.Object(
           t.prop('pubsub', t.Object(t.prop('channels', t.num), t.prop('observers', t.num))),
           t.prop('presence', t.Object(t.prop('rooms', t.num), t.prop('entries', t.num), t.prop('observers', t.num))),
-          t.prop('blocks', t.Object(t.prop('blocks', t.num), t.prop('patches', t.num))),
+          t.prop('blocks', t.Object(t.prop('blocks', t.num), t.prop('batches', t.num))),
         ),
       ),
     );

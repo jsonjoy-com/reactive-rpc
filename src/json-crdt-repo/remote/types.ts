@@ -31,15 +31,27 @@ import type {Observable} from 'rxjs';
  */
 export interface RemoteHistory<
   Cursor = unknown,
-  B extends RemoteBlock<Cursor> = RemoteBlock<Cursor>,
-  S extends RemoteBlockSnapshot<Cursor> = RemoteBlockSnapshot<Cursor>,
-  P extends RemoteBlockPatch = RemoteBlockPatch,
+  Block extends RemoteBlock<Cursor> = RemoteBlock<Cursor>,
+  Snapshot extends RemoteSnapshot<Cursor> = RemoteSnapshot<Cursor>,
+  Batch extends RemoteBatch<Cursor> = RemoteBatch<Cursor>,
 > {
   /**
    * Load the latest snapshot of the block, and any unmerged "tip" of patches
    * it might have.
    */
-  read(id: string): Promise<{block: B}>;
+  read(id: string): Promise<{block: Block}>;
+
+  /**
+   * Catch up with the latest changes of the block. Returns the batch list
+   * necessary to apply to the block to get the latest state. Or, might return
+   * the latest snapshot of the block, if the history is too long. The batch
+   * list might be non-empty, even if the snapshot is returned, in case the
+   * snapshot is not up-to-date.
+   *
+   * @param id ID of the block.
+   * @param seq The cursor of the last known model state of the block.
+   */
+  pull(id: string, seq: Cursor, create?: boolean): Promise<{batches: Batch[]; snapshot?: Snapshot}>;
 
   /**
    * Load block history going forward from the given cursor. This method is
@@ -47,9 +59,9 @@ export interface RemoteHistory<
    * by other clients.
    *
    * @param id ID of the block.
-   * @param cursor The cursor to start scanning from.
+   * @param seq The cursor to start scanning from.
    */
-  scanFwd(id: string, cursor: Cursor): Promise<{patches: P[]}>;
+  scanFwd(id: string, seq: Cursor): Promise<{batches: Batch[]}>;
 
   /**
    * Load past history of the block going backwards from the given cursor.
@@ -57,23 +69,22 @@ export interface RemoteHistory<
    * block in the past, to show the user the history of changes.
    *
    * @param id ID of the block.
-   * @param cursor The cursor until which to scan.
+   * @param seq The cursor until which to scan.
    */
-  scanBwd(id: string, cursor: Cursor): Promise<{patches: P[]; snapshot?: S}>;
+  scanBwd(id: string, seq: Cursor): Promise<{batches: Batch[]; snapshot?: Snapshot}>;
 
   /**
-   * Create a new block with the given patches.
+   * Create a new block with the given set of edits.
    *
    * @param id A unique ID for the block.
    * @param patches A list of patches, which constitute the initial state of the block.
    */
   create(
     id: string,
-    patches: Pick<P, 'blob'>[],
+    batch?: Pick<Batch, 'patches'>,
   ): Promise<{
-    block: Omit<B, 'snapshot' | 'tip'>;
-    snapshot: Omit<S, 'blob'>;
-    patches: Omit<P, 'blob'>[];
+    snapshot: Omit<Snapshot, 'blob'>;
+    batch: Omit<Batch, 'patches'>;
   }>;
 
   /**
@@ -82,8 +93,19 @@ export interface RemoteHistory<
    * @param id ID of the block.
    * @param cursor The cursor of the last known model state of the block.
    * @param patches A list of patches to apply to the block.
+   * @param seq The cursor of the last known model state of the block.
    */
-  update(id: string, patches: Pick<P, 'blob'>[]): Promise<{patches: Omit<P, 'blob'>[]}>;
+  update(
+    id: string,
+    batch: Pick<Batch, 'patches'>,
+    seq: number,
+  ): Promise<{
+    batch: Omit<Batch, 'patches'>;
+    pull?: {
+      batches: Batch[];
+      snapshot?: Snapshot;
+    };
+  }>;
 
   /**
    * Delete the block. If not implemented, means that the protocol does not
@@ -99,7 +121,7 @@ export interface RemoteHistory<
    *
    * @param callback
    */
-  listen(id: string, cursor: Cursor): Observable<{patches: P[]}>;
+  listen(id: string): Observable<{event: RemoteEvent<Cursor>}>;
 }
 
 /**
@@ -120,47 +142,78 @@ export interface RemoteBlock<Cursor> {
   /**
    * The latest snapshot of the block.
    */
-  snapshot: RemoteBlockSnapshot<Cursor>;
+  snapshot: RemoteSnapshot<Cursor>;
 
   /**
-   * The latest patches that have been stored, but not yet applied to the the
+   * The latest batches that have been stored, but not yet applied to the the
    * latest snapshot. The client should apply these patches to the snapshot
    * to get the latest state of the block.
    */
-  tip: RemoteBlockPatch[];
+  tip: RemoteBatch<Cursor>[];
 }
 
 /**
  * A snapshot of the block's state at a certain point in time.
  */
-export interface RemoteBlockSnapshot<Cursor> {
-  /**
-   * The content of the snapshot.
-   */
-  blob: Uint8Array;
-
+export interface RemoteSnapshot<Cursor = unknown> {
   /**
    * The cursor of the snapshot, representing the position in the history.
    */
-  cur: Cursor;
+  seq: Cursor;
 
   /**
    * Unix timestamp when the snapshot was created.
    */
   ts?: number;
+
+  /**
+   * The content of the snapshot. Model encoded in `binary` format.
+   */
+  blob: Uint8Array;
+}
+
+/**
+ * A batch of patches that have been applied to the block.
+ */
+export interface RemoteBatch<Cursor = unknown> {
+  /**
+   * The cursor of the batch, representing the position in the remote history.
+   */
+  seq: Cursor;
+
+  /**
+   * Unix timestamp when the batch was created.
+   */
+  ts: number;
+
+  /**
+   * The patches that have been applied to the block.
+   */
+  patches: RemotePatch[];
 }
 
 /**
  * A patch is a change to the block's state.
  */
-export interface RemoteBlockPatch {
+export interface RemotePatch {
   /**
-   * The content of the patch.
+   * The content of the patch. Patch objects encoded in `binary` format.
    */
   blob: Uint8Array;
-
-  /**
-   * Unix timestamp when the patch was created.
-   */
-  ts?: number;
 }
+
+export type RemoteEvent<Cursor = unknown> = RemoteNewEvent | RemoteDelEvent | RemoteUpdEvent<Cursor>;
+export type RemoteNewEvent = ['new'];
+export type RemoteDelEvent = ['del'];
+export type RemoteUpdEvent<Cursor = unknown> = ['upd', {batch: RemoteBatch<Cursor>}];
+
+export type ServerCursor = number;
+export type ServerHistory = RemoteHistory<ServerCursor, ServerBlock, ServerSnapshot, ServerBatch>;
+export type ServerBlock = RemoteBlock<ServerCursor>;
+export type ServerSnapshot = RemoteSnapshot<ServerCursor>;
+export type ServerBatch = RemoteBatch<ServerCursor>;
+export type ServerPatch = RemotePatch;
+export type ServerEvent = RemoteEvent<ServerCursor>;
+export type ServerNewEvent = RemoteNewEvent;
+export type ServerDelEvent = RemoteDelEvent;
+export type ServerUpdEvent = RemoteUpdEvent<ServerCursor>;

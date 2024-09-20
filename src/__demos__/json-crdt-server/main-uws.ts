@@ -15,3 +15,6 @@ const app = new RpcApp<MyCtx>({
   port: +(process.env.PORT || 9999),
 });
 app.startWithDefaults();
+
+// tslint:disable-next-line:no-console
+console.log(app + '');

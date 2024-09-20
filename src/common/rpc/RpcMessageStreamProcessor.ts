@@ -1,8 +1,8 @@
 import * as msg from '../messages';
-import {subscribeCompleteObserver} from '../util/subscribeCompleteObserver';
 import {TimedQueue} from '../util/TimedQueue';
 import {RpcErrorCodes, RpcError} from './caller/error';
 import {RpcValue} from '../messages/Value';
+import {subscribeCompleteObserver} from '../util/subscribeCompleteObserver';
 import type {RpcCaller} from './caller/RpcCaller';
 import type {Call, RpcApiMap} from './caller/types';
 
@@ -127,8 +127,16 @@ export class RpcMessageStreamProcessor<Ctx = unknown> {
   };
 
   public stop(reason: RpcErrorCodes = RpcErrorCodes.STOP) {
-    this.send = (() => {}) as any;
-    for (const call of this.activeStreamCalls.values()) call.req$.error(RpcError.valueFromCode(reason));
+    this.send = <any>(() => {});
+    for (const call of this.activeStreamCalls.values()) {
+      try {
+        call.req$.error(RpcError.valueFromCode(reason));
+        call.stop$.next(null);
+      } catch (error) {
+        // tslint:disable-next-line no-console
+        console.error('STOPPING_ERROR', error);
+      }
+    }
     this.activeStreamCalls.clear();
   }
 
@@ -144,8 +152,18 @@ export class RpcMessageStreamProcessor<Ctx = unknown> {
   private createStreamCall(id: number, name: string, ctx: Ctx): Call<unknown, unknown> {
     const call = this.caller.createCall(name, ctx);
     this.activeStreamCalls.set(id, call);
+    // call.res$.subscribe({
+    //   next: (value: RpcValue) => this.sendDataMessage(id, value),
+    //   error: (error: unknown) => this.onStreamError(id, error as RpcValue),
+    //   complete: () => {
+    //     this.activeStreamCalls.delete(id);
+    //     this.sendCompleteMessage(id, undefined);
+    //   },
+    // });
     subscribeCompleteObserver<RpcValue>(call.res$, {
-      next: (value: RpcValue) => this.sendDataMessage(id, value),
+      next: (value: RpcValue) => {
+        this.sendDataMessage(id, value);
+      },
       error: (error: unknown) => this.onStreamError(id, error as RpcValue),
       complete: (value: RpcValue | undefined) => {
         this.activeStreamCalls.delete(id);

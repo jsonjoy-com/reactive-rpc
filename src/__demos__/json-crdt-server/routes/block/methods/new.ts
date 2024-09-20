@@ -1,10 +1,4 @@
-import {
-  BlockIdRef,
-  BlockPatchPartialRef,
-  BlockPatchPartialReturnRef,
-  BlockNewRef,
-  NewBlockSnapshotResponseRef,
-} from '../schema';
+import {BlockIdRef, BlockBatchPartialRef, BlockSnapshotReturnRef} from '../schema';
 import type {RouteDeps, Router, RouterBase} from '../../types';
 
 export const new_ =
@@ -16,26 +10,20 @@ export const new_ =
         description:
           'The ID of the new block. Must be a unique ID, if the block already exists it will return an error.',
       }),
-      t.prop('patches', t.Array(BlockPatchPartialRef)).options({
-        title: 'Patches',
-        description: 'The patches to apply to the document.',
+      t.propOpt('batch', BlockBatchPartialRef).options({
+        title: 'Batch',
+        description: 'A collection of patches to apply to the new block.',
       }),
     );
 
-    const Response = t
-      .Object(
-        t.prop('block', BlockNewRef),
-        t.prop('snapshot', NewBlockSnapshotResponseRef),
-        t.prop('patches', t.Array(BlockPatchPartialReturnRef)).options({
-          title: 'Patches',
-          description: 'The list of patches to apply to the newly created block.',
-        }),
-      )
-      .options({
-        title: 'New block creation response',
-        description:
-          'The response object for the new block creation, contains server generated metadata without blobs supplied by the client.',
-      });
+    // prettier-ignore
+    const Response = t.Object(
+      t.prop('snapshot', BlockSnapshotReturnRef),
+    ).options({
+      title: 'New block creation response',
+      description:
+        'The response object for the new block creation, contains server generated metadata without blobs supplied by the client.',
+    });
 
     const Func = t.Function(Request, Response).options({
       title: 'Create Block',
@@ -44,20 +32,15 @@ export const new_ =
         'Creates a new block out of supplied patches. A block starts empty with an `undefined` state, and patches are applied to it.',
     });
 
-    return r.prop('block.new', Func, async ({id, patches}) => {
-      const res = await services.blocks.create(id, patches);
+    return r.prop('block.new', Func, async ({id, batch}) => {
+      const {block} = await services.blocks.create(id, batch);
+      const snapshot = block.snapshot;
       return {
-        block: {
-          id: res.snapshot.id,
-          ts: res.snapshot.created,
-        },
         snapshot: {
-          cur: res.snapshot.seq,
-          ts: res.snapshot.created,
+          id,
+          seq: snapshot.seq,
+          ts: snapshot.ts,
         },
-        patches: res.patches.map((patch) => ({
-          ts: patch.created,
-        })),
       };
     });
   };
