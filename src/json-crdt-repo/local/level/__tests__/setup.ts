@@ -8,6 +8,8 @@ import {MemoryLevel} from 'memory-level';
 import {BinStrLevel, LevelLocalRepoPubSub} from '../types';
 import {pubsub as createPubsub} from '../../../pubsub';
 
+/* tslint:disable:no-console */
+
 export const setup = async (
   opts: {
     remote?: ReturnType<typeof remoteSetup>;

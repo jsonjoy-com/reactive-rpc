@@ -420,7 +420,7 @@ describe('.sync()', () => {
           id: kit.blockId,
           patches: patches2,
         });
-        let events: LocalRepoEvent[] = [];
+        const events: LocalRepoEvent[] = [];
         const subscription = kit.local.change$(kit.blockId).subscribe((e) => {
           events.push(e);
         });

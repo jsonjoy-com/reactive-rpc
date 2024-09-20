@@ -222,7 +222,7 @@ export class EditSession {
             break;
           }
         } catch (error) {
-          // eslint-disable-next-line no-console
+          // tslint:disable-next-line no-console
           console.error('Failed to apply event', event, error);
         }
       }

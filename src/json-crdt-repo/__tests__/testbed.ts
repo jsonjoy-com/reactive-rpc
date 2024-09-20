@@ -7,6 +7,8 @@ import {pubsub as createPubsub} from '../pubsub';
 import {BinStrLevel, LevelLocalRepoPubSub} from '../local/level/types';
 import {EditSessionFactory} from '../session/EditSessionFactory';
 
+/* tslint:disable:no-console */
+
 export class Testbed {
   public static readonly create = () => {
     return new Testbed();

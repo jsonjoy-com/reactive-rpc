@@ -30,11 +30,13 @@ export class Mutex {
     } finally {
       const queue = this.queue;
       const entries = queue.get(key);
-      if (!(entries instanceof Array)) return;
-      if (!entries.length) return void queue.delete(key);
-      const next = entries.shift();
-      if (!(next instanceof Entry)) return;
-      this.run(key, next).catch(() => {});
+      if (entries instanceof Array) {
+        if (!entries.length) queue.delete(key);
+        else {
+          const next = entries.shift();
+          if (next instanceof Entry) this.run(key, next).catch(() => {});
+        }
+      }
     }
   }
 }
