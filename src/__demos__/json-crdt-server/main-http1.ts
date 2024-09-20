@@ -18,4 +18,5 @@ const main = async () => {
   console.log(server + '');
 };
 
+// tslint:disable-next-line no-console
 main().catch(console.error);
