@@ -8,7 +8,6 @@ import type {MyCtx} from './services/types';
 
 export type JsonJoyDemoRpcCaller = ReturnType<typeof createCaller>['caller'];
 
-
 const main = async () => {
   const services = await createServices();
   const app = new RpcApp<MyCtx>({

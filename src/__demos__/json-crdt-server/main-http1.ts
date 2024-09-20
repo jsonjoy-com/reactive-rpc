@@ -13,9 +13,9 @@ const main = async () => {
     caller: createCaller(services).caller,
     logger: console,
   });
-  
+
   // tslint:disable-next-line:no-console
-  console.log(server + '');  
+  console.log(server + '');
 };
 
 main().catch(console.error);
