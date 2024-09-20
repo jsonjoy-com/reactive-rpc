@@ -19,7 +19,7 @@ export const setupRpcPersistentClient = (codec: RpcCodec) => {
   client.start();
   const call = client.call.bind(client);
   const call$ = client.call$.bind(client);
-  const stop = async () => void client.stop.bind(client);
+  const stop = async () => void client.stop();
   return {client, call, call$, stop};
 };
 
@@ -34,7 +34,7 @@ export const setupFetchRpcClient = (codec: RpcCodec) => {
   });
   const call = client.call.bind(client);
   const call$ = client.call$.bind(client);
-  const stop = async () => void client.stop.bind(client);
+  const stop = async () => void client.stop();
   return {client, call, call$, stop};
 };
 
@@ -68,6 +68,6 @@ export const setupStreamingRpcClient = (codec: RpcCodec) => {
   });
   const call = client.call.bind(client);
   const call$ = client.call$.bind(client);
-  const stop = async () => void client.stop.bind(client);
+  const stop = async () => void client.stop();
   return {client, call, call$, stop};
 };

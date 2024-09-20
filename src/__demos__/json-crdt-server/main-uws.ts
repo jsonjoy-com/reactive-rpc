@@ -3,18 +3,23 @@
 
 import {App} from 'uWebSockets.js';
 import {RpcApp} from '../../server/uws/RpcApp';
-import {createCaller} from './routes';
-import {Services} from './services/Services';
+import {createCaller, createServices} from './routes';
 import type {MyCtx} from './services/types';
 
 export type JsonJoyDemoRpcCaller = ReturnType<typeof createCaller>['caller'];
 
-const app = new RpcApp<MyCtx>({
-  uws: App({}),
-  caller: createCaller(new Services()).caller,
-  port: +(process.env.PORT || 9999),
-});
-app.startWithDefaults();
+const main = async () => {
+  const services = await createServices();
+  const app = new RpcApp<MyCtx>({
+    uws: App({}),
+    caller: createCaller(services).caller,
+    port: +(process.env.PORT || 9999),
+  });
+  app.startWithDefaults();
 
-// tslint:disable-next-line:no-console
-console.log(app + '');
+  // tslint:disable-next-line:no-console
+  console.log(app + '');
+};
+
+// tslint:disable-next-line no-console
+main().catch(console.error);
