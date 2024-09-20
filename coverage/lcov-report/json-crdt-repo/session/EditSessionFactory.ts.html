@@ -3,15 +3,15 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for json-crdt-repo/local/server-crud/ServerCrudLocalHistory.ts</title>
+    <title>Code coverage report for json-crdt-repo/session/EditSessionFactory.ts</title>
     <meta charset="utf-8" />
-    <link rel="stylesheet" href="../../../prettify.css" />
-    <link rel="stylesheet" href="../../../base.css" />
-    <link rel="shortcut icon" type="image/x-icon" href="../../../favicon.png" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style type='text/css'>
         .coverage-summary .sorter {
-            background-image: url(../../../sort-arrow-sprite.png);
+            background-image: url(../../sort-arrow-sprite.png);
         }
     </style>
 </head>
@@ -19,34 +19,34 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../../../index.html">All files</a> / <a href="index.html">json-crdt-repo/local/server-crud</a> ServerCrudLocalHistory.ts</h1>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">json-crdt-repo/session</a> EditSessionFactory.ts</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">86.2% </span>
+                <span class="strong">95.55% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>25/29</span>
+                <span class='fraction'>43/45</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">85.71% </span>
+                <span class="strong">91.3% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>6/7</span>
+                <span class='fraction'>21/23</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">73.33% </span>
+                <span class="strong">80% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>11/15</span>
+                <span class='fraction'>4/5</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">84% </span>
+                <span class="strong">97.56% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>21/25</span>
+                <span class='fraction'>40/41</span>
             </div>
         
             
@@ -174,9 +174,77 @@
 <a name='L109'></a><a href='#L109'>109</a>
 <a name='L110'></a><a href='#L110'>110</a>
 <a name='L111'></a><a href='#L111'>111</a>
-<a name='L112'></a><a href='#L112'>112</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a>
+<a name='L122'></a><a href='#L122'>122</a>
+<a name='L123'></a><a href='#L123'>123</a>
+<a name='L124'></a><a href='#L124'>124</a>
+<a name='L125'></a><a href='#L125'>125</a>
+<a name='L126'></a><a href='#L126'>126</a>
+<a name='L127'></a><a href='#L127'>127</a>
+<a name='L128'></a><a href='#L128'>128</a>
+<a name='L129'></a><a href='#L129'>129</a>
+<a name='L130'></a><a href='#L130'>130</a>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a>
+<a name='L133'></a><a href='#L133'>133</a>
+<a name='L134'></a><a href='#L134'>134</a>
+<a name='L135'></a><a href='#L135'>135</a>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a>
+<a name='L140'></a><a href='#L140'>140</a>
+<a name='L141'></a><a href='#L141'>141</a>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">70x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">62x</span>
+<span class="cline-any cline-yes">62x</span>
+<span class="cline-any cline-yes">62x</span>
+<span class="cline-any cline-yes">62x</span>
+<span class="cline-any cline-yes">62x</span>
+<span class="cline-any cline-yes">34x</span>
+<span class="cline-any cline-yes">34x</span>
+<span class="cline-any cline-yes">34x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">62x</span>
+<span class="cline-any cline-yes">28x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">62x</span>
+<span class="cline-any cline-yes">62x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -185,51 +253,39 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">20x</span>
-<span class="cline-any cline-yes">20x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">20x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">20x</span>
-<span class="cline-any cline-yes">15x</span>
-<span class="cline-any cline-yes">15x</span>
-<span class="cline-any cline-yes">15x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">15x</span>
-<span class="cline-any cline-yes">15x</span>
+<span class="cline-any cline-yes">42x</span>
+<span class="cline-any cline-yes">42x</span>
+<span class="cline-any cline-yes">42x</span>
+<span class="cline-any cline-yes">42x</span>
+<span class="cline-any cline-yes">28x</span>
+<span class="cline-any cline-yes">28x</span>
+<span class="cline-any cline-yes">28x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">14x</span>
+<span class="cline-any cline-yes">14x</span>
+<span class="cline-any cline-yes">14x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">15x</span>
-<span class="cline-any cline-yes">15x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">15x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -243,25 +299,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -272,7 +309,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">15x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -281,120 +317,186 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">15x</span>
-<span class="cline-any cline-yes">15x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import {ServerCrudLocalHistoryCore, ServerCrudLocalHistoryCoreOpts} from './ServerCrudLocalHistoryCore';
-import {ServerCrudLocalHistorySync, ServerCrudLocalHistorySyncOpts} from './ServerCrudLocalHistorySync';
-import {genId} from './util';
-import type {Patch} from 'json-joy/lib/json-crdt-patch';
-import type {Log} from 'json-joy/lib/json-crdt/log/Log';
-import type {LocalHistory} from '../types';
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import {Model, NodeBuilder} from 'json-joy/lib/json-crdt';
+import {BlockId, LocalRepo} from '../local/types';
+import {EditSession} from './EditSession';
+import {timeout} from 'thingies/lib/timeout';
 &nbsp;
-export interface ServerCrudLocalHistoryOpts extends ServerCrudLocalHistoryCoreOpts {
-  sync?: ServerCrudLocalHistorySyncOpts;
+export interface EditSessionFactoryOpts {
+  readonly sid: number;
+  readonly repo: LocalRepo;
 }
 &nbsp;
-export class ServerCrudLocalHistory implements LocalHistory {
-  protected readonly core: ServerCrudLocalHistoryCore;
-  public readonly sync: ServerCrudLocalHistorySync;
+export class EditSessionFactory {
+  constructor(protected readonly opts: EditSessionFactoryOpts) {}
 &nbsp;
-  constructor(opts: ServerCrudLocalHistoryOpts) {
-    this.core = new ServerCrudLocalHistoryCore(opts);
-    this.sync = new ServerCrudLocalHistorySync(opts.sync ?? {}, this.core);
+  /**
+   * Creates a new editing session synchronously (immediately). If the block
+   * with a given ID already exists, it asynchronously synchronizes the local
+   * and remote state.
+   */
+  public make(opts: EditSessionMakeOpts): {session: EditSession; sync?: Promise&lt;void&gt;} {
+    const {id, schema, pull = true} = opts;
+    const factoryOpts = this.opts;
+    const model = Model.create(void 0, factoryOpts.sid);
+    const session = new EditSession(factoryOpts.repo, id, model, undefined, opts.session);
+    if (schema) {
+      const sessionModel = session.model;
+      sessionModel.setSchema(schema);
+      sessionModel.api.flush();
+    }
+    let sync: Promise&lt;void&gt; | undefined;
+    if (pull &amp;&amp; !session.log.patches.size()) {
+      sync = session
+        .sync()
+        .then(() =&gt; {})
+        .catch(<span class="fstat-no" title="function not covered" >() =</span>&gt; {});
+    }
+    session.log.end.api.autoFlush();
+    return {session, sync};
   }
 &nbsp;
-  public async create(
-    collection: string[],
-    log: Log&lt;any&gt;,
-    id: string = <span class="branch-0 cbranch-no" title="branch not covered" >genId(),</span>
-  ): Promise&lt;{id: string; remote: Promise&lt;void&gt;}&gt; {
-    if (log.end.clock.time &lt;= 1) throw new Error('EMPTY_LOG');
-    const blob = this.encode(log);
-    await this.lockForWrite({collection, id}, async () =&gt; {
-      await this.core.create(collection, id, blob);
-    });
-    const remote = (async () =&gt; {
-      await this.sync.markDirty(collection, id);
-      // TODO: use pushNewBlock instead?
-      const success = await this.sync.sync(collection, id);
-      if (!success) throw new Error('NOT_SYNCED');
-    })();
-    remote.catch(() =&gt; {});
-    return {
-      id,
-      remote,
-    };
+  /**
+   * Load block from the local repo. Creates a new editing session
+   * asynchronously from an existing local block.
+   *
+   * It is also possible to block on remote state check in case the block does
+   * not exist locally, or to pull the latest state from the remote.
+   */
+  public async load(opts: EditSessionLoadOpts): Promise&lt;EditSession&gt; {
+    const id = opts.id;
+    const repo = this.opts.repo;
+    try {
+      const {model, cursor} = await repo.get({id});
+      const session = new EditSession(repo, id, model, cursor, opts.session);
+      session.log.end.api.autoFlush();
+      return session;
+    } catch (error) {
+      if (error instanceof Error &amp;&amp; error.message === 'NOT_FOUND') {
+        const remote = opts.remote;
+        if (remote) {
+          const timeoutMs = remote.timeout;
+          try {
+            const {model, cursor} = await (typeof timeoutMs === 'number'
+              ? timeout(timeoutMs, repo.pull(id))
+              : repo.pull(id));
+            if (remote.throwIf === 'exists') throw new Error('EXISTS');
+            const session = new EditSession(repo, id, model, cursor, opts.session);
+            session.log.end.api.autoFlush();
+            return session;
+          } catch (error) {
+            if (error instanceof Error &amp;&amp; error.message === 'TIMEOUT') {
+              if (!opts.make) throw error;
+            } else <span class="missing-if-branch" title="if path not taken" >I</span>if (error instanceof Error &amp;&amp; error.message === 'NOT_FOUND') {
+<span class="cstat-no" title="statement not covered" >              <span class="missing-if-branch" title="if path not taken" >I</span>if (remote.throwIf === 'missing') <span class="cstat-no" title="statement not covered" >throw error;</span></span>
+            } else throw error;
+          }
+        }
+        if (opts.make) return this.make({session: opts.session, ...opts.make, id}).session;
+      }
+      throw error;
+    }
   }
+}
 &nbsp;
-  protected encode(log: Log): Uint8Array {
-    // TODO: Add browser-native compression. Wrap the blob into `[]` TLV tuple.
-    // TODO: Encrypt with user's public key.
-    return this.core.encoder.encode(log, {
-      format: 'seq.cbor',
-      model: 'binary',
-      history: 'binary',
-      noView: true,
-    });
-  }
+/**
+ * Constructs a new editing session synchronously.
+ */
+export interface EditSessionMakeOpts {
+  /** Block ID. */
+  id: BlockId;
 &nbsp;
-  public async <span class="fstat-no" title="function not covered" >update(</span>collection: string[], id: string, patches: Patch[]): Promise&lt;void&gt; {
-<span class="cstat-no" title="statement not covered" >    throw new Error('Method not implemented.');</span>
-    // const deps = this.core;
-    // await this.lockBlock({collection, id}, async () =&gt; {
-    //   const crudCollection = this.crudCollection(collection, id);
-    //   const blob = await deps.crud.get(crudCollection, DATA_FILE_NAME);
-    //   const decoded = deps.decoder.decode(blob, {format: 'seq.cbor', history: true});
-    //   const log = decoded.history!;
-    //   log.end.applyBatch(patches);
-    //   const blob2 = this.encode(log);
-    //   await deps.crud.put(crudCollection, DATA_FILE_NAME, blob2, {throwIf: 'missing'});
-    // });
-  }
+  /** Thew new block schema, if any. */
+  schema?: NodeBuilder;
 &nbsp;
-  public async <span class="fstat-no" title="function not covered" >delete(</span>collection: string[], id: string): Promise&lt;void&gt; {
-<span class="cstat-no" title="statement not covered" >    throw new Error('Method not implemented.');</span>
-    // const deps = this.core;
-    // await this.lockBlock({collection, id}, async () =&gt; {
-    //   await deps.crud.drop(collection, true);
-    // });
-  }
+  /**
+   * Weather to asynchronously pull for any existing local block state, if a
+   * block with the same ID already exists. Defaults to `true`.
+   */
+  pull?: boolean;
 &nbsp;
-  public async <span class="fstat-no" title="function not covered" >read(</span>collection: string[], id: string): Promise&lt;{log: Log; cursor: string}&gt; {
-<span class="cstat-no" title="statement not covered" >    throw new Error('Method not implemented.');</span>
-    // const blob = await this.core.read(collection, id);
-    // const {frontier} = this.core.decoder.decode(blob, {format: 'seq.cbor', frontier: true});
-    // return {
-    //   log: frontier!,
-    //   cursor: '1',
-    // };
-  }
+  /**
+   * Internal unique session ID.
+   */
+  session?: number;
+}
 &nbsp;
-  public async <span class="fstat-no" title="function not covered" >readHistory(</span>collection: string[], id: string, cursor: string): Promise&lt;{log: Log; cursor: string}&gt; {
-<span class="cstat-no" title="statement not covered" >    throw new Error('Method not implemented.');</span>
-    // const core = this.core;
-    // const blob = await core.read(collection, id);
-    // const {history} = core.decoder.decode(blob, {format: 'seq.cbor', history: true});
-    // return {
-    //   log: history!,
-    //   cursor: '',
-    // };
-  }
+/**
+ * Constructs and editing session asynchronously from an existing block. In
+ * case the block does not exist, it is possible to create one or throw an
+ * error.
+ */
+export interface EditSessionLoadOpts {
+  /** Block ID. */
+  id: BlockId;
 &nbsp;
-  protected async lockForWrite(
-    {
-      collection,
-      id,
-    }: {
-      collection: string[];
-      id: string;
-    },
-    fn: () =&gt; Promise&lt;void&gt;,
-  ): Promise&lt;void&gt; {
-    const key = ['write', collection, id].join('/');
-    await this.core.locks.lock(key, 300, 300)(fn);
-  }
+  /**
+   * If specified, will create a new block, if one does not already exist. Will
+   * use these `make` options and provide them to the `make()` call.
+   */
+  make?: Omit&lt;EditSessionMakeOpts, 'id'&gt;;
+&nbsp;
+  /** Thew new block schema, if any. */
+  schema?: NodeBuilder;
+&nbsp;
+  /**
+   * Internal unique session ID.
+   */
+  session?: number;
+&nbsp;
+  remote?: {
+    /**
+     * Time in milliseconds to wait for the remote to respond. If the remote
+     * does not respond in time, the call will proceed with the local state.
+     *
+     * If upsert `make` option is not provided, the call will throw a "TIMEOUT"
+     * error.
+     */
+    timeout?: number;
+&nbsp;
+    /**
+     * Defaults to an empty string. Otherwise, if "missing", will throw a
+     * "NOT_FOUND" error if the block does not exist remotely. If "exists", will
+     * a "CONFLICT" error if the block exists remotely.
+     */
+    throwIf?: '' | 'missing' | 'exists';
+  };
 }
 &nbsp;</pre></td></tr></table></pre>
 
@@ -403,16 +505,16 @@ export class ServerCrudLocalHistory implements LocalHistory {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2024-07-23T23:31:28.635Z
+                at 2024-09-20T15:21:59.143Z
             </div>
-        <script src="../../../prettify.js"></script>
+        <script src="../../prettify.js"></script>
         <script>
             window.onload = function () {
                 prettyPrint();
             };
         </script>
-        <script src="../../../sorter.js"></script>
-        <script src="../../../block-navigation.js"></script>
+        <script src="../../sorter.js"></script>
+        <script src="../../block-navigation.js"></script>
     </body>
 </html>
     
