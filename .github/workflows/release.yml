@@ -28,6 +28,7 @@ jobs:
       - run: PORT=10002 yarn test:e2e --server http1 --suite json-crdt-server
       - run: PORT=10003 yarn test:e2e --server uws --suite json-crdt-server
       - run: yarn build
+      - run: yarn build:demo-server
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@v4
         env:
