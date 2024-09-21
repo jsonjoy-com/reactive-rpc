@@ -56,7 +56,7 @@
     "demo:e2e:json-crdt-server:http1": "ts-node src/__demos__/json-crdt-server/main-http1.ts",
     "demo:e2e:json-crdt-server:uws": "ts-node src/__demos__/json-crdt-server/main-uws.ts",
     "start:json-crdt-server:http1": "NODE_ENV=production PORT=80 JSON_CRDT_STORE=level pm2 start lib/__demos__/json-crdt-server/main-http1.js",
-    "start": "NODE_ENV=production PORT=80 JSON_CRDT_STORE=level pm2 start lib/__demos__/json-crdt-server/main-http1.js",
+    "start": "NODE_ENV=production PORT=80 JSON_CRDT_STORE=level pm2 start lib/__demos__/json-crdt-server/main-http1.js --exp-backoff-restart-delay=100",
     "coverage": "yarn test --collectCoverage",
     "typedoc": "typedoc",
     "build:pages": "rimraf gh-pages && mkdir -p gh-pages && cp -r typedocs/* gh-pages && cp -r coverage gh-pages/coverage",
