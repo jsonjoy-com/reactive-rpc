@@ -288,4 +288,8 @@ export class LevelStore implements types.Store {
       } catch {}
     }
   }
+
+  public async stop() {
+    await this.kv.close();
+  }
 }

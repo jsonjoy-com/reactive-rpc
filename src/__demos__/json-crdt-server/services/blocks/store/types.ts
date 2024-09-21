@@ -176,6 +176,8 @@ export interface Store {
    * @returns Number of blocks and batches.
    */
   stats(): {blocks: number; batches: number};
+
+  stop?(): Promise<void>;
 }
 
 export interface StoreCreateResult {

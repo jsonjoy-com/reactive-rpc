@@ -44,7 +44,6 @@ export const createServices = async () => {
     const kv = new ClassicLevel<string, Uint8Array>(path, {valueEncoding: 'view'});
     await kv.open();
     store = new LevelStore(<any>kv);
-    await kv.close();
   }
   const services = new Services({store});
   return services;

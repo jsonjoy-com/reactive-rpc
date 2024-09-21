@@ -254,4 +254,8 @@ export class BlocksServices {
     if (blocksToDelete <= 0) return;
     await this.store.removeOldest(blocksToDelete);
   }
+
+  public async stop() {
+    await this.store.stop?.();
+  }
 }

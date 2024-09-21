@@ -19,4 +19,8 @@ export class Services {
     this.presence = new PresenceService();
     this.blocks = new BlocksServices(this, store, blocks);
   }
+
+  async stop() {
+    await this.blocks.stop();
+  }
 }
