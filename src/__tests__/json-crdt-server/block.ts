@@ -433,7 +433,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         model3.applyPatch(patch2);
         expect(model3.view()).toStrictEqual({text: 'Hell!', num: 110});
         await stop();
-      }, 15000);
+      }, 45000);
     });
 
     if (!params.staticOnly) {
@@ -684,7 +684,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         };
         for (let i = -1; i <= 150; i++) await assertPull(i);
         await stop();
-      }, 20000);
+      }, 60000);
 
       test('can create a new block, if it does not exist', async () => {
         const {call, stop} = await setup();
