@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for __tests__/e2e/clients.ts</title>
+    <title>Code coverage report for __tests__/e2e/demo-client.ts</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../../prettify.css" />
     <link rel="stylesheet" href="../../base.css" />
@@ -19,20 +19,20 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../../index.html">All files</a> / <a href="index.html">__tests__/e2e</a> clients.ts</h1>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">__tests__/e2e</a> demo-client.ts</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">18.86% </span>
+                <span class="strong">19.6% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>10/53</span>
+                <span class='fraction'>10/51</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/6</span>
+                <span class='fraction'>0/2</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">15.9% </span>
+                <span class="strong">16.66% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>7/44</span>
+                <span class='fraction'>7/42</span>
             </div>
         
             
@@ -135,20 +135,14 @@
 <a name='L70'></a><a href='#L70'>70</a>
 <a name='L71'></a><a href='#L71'>71</a>
 <a name='L72'></a><a href='#L72'>72</a>
-<a name='L73'></a><a href='#L73'>73</a>
-<a name='L74'></a><a href='#L74'>74</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">2x</span>
+<a name='L73'></a><a href='#L73'>73</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -156,13 +150,17 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -176,7 +174,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -211,13 +209,13 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import WebSocket from 'ws';
 import {RpcCodec} from '../../common/codec/RpcCodec';
-import {RpcPersistentClient, WebSocketChannel} from '../../common';
+import {RpcPersistentClient, StreamingRpcClient, WebSocketChannel} from '../../common';
 import {FetchRpcClient} from '../../common/rpc/client/FetchRpcClient';
-import {StreamingRpcClient} from '../../common';
 &nbsp;
-export const setupRpcPersistentClient = <span class="fstat-no" title="function not covered" >(c</span>odec: RpcCodec) =&gt; {
-  const port = <span class="cstat-no" title="statement not covered" >+(process.env.PORT || 9999);</span>
-  const url = <span class="cstat-no" title="statement not covered" >`ws://localhost:${port}/rpc`;</span>
+const address = '3.92.169.31';
+&nbsp;
+export const setupDemoServerPersistentClient = <span class="fstat-no" title="function not covered" >(c</span>odec: RpcCodec) =&gt; {
+  const url = <span class="cstat-no" title="statement not covered" >`ws://${address}/rpc`;</span>
   const client = <span class="cstat-no" title="statement not covered" >new RpcPersistentClient({</span>
     codec,
     channel: {
@@ -234,9 +232,8 @@ export const setupRpcPersistentClient = <span class="fstat-no" title="function n
 <span class="cstat-no" title="statement not covered" >  return {client, call, call$, stop};</span>
 };
 &nbsp;
-export const setupFetchRpcClient = <span class="fstat-no" title="function not covered" >(c</span>odec: RpcCodec) =&gt; {
-  const port = <span class="cstat-no" title="statement not covered" >+(process.env.PORT || 9999);</span>
-  const url = <span class="cstat-no" title="statement not covered" >`http://localhost:${port}/rpc`;</span>
+export const setupDemoServerFetchClient = <span class="fstat-no" title="function not covered" >(c</span>odec: RpcCodec) =&gt; {
+  const url = <span class="cstat-no" title="statement not covered" >`http://${address}/rpc`;</span>
   const client = <span class="cstat-no" title="statement not covered" >new FetchRpcClient({</span>
     url,
     msgCodec: codec.msg,
@@ -249,13 +246,13 @@ export const setupFetchRpcClient = <span class="fstat-no" title="function not co
 <span class="cstat-no" title="statement not covered" >  return {client, call, call$, stop};</span>
 };
 &nbsp;
-export const setupStreamingRpcClient = <span class="fstat-no" title="function not covered" >(c</span>odec: RpcCodec) =&gt; {
+export const setupDemoServerStreamingClient = <span class="fstat-no" title="function not covered" >(c</span>odec: RpcCodec) =&gt; {
   const protocolSpecifier = <span class="cstat-no" title="statement not covered" >codec.specifier();</span>
   const contentType = <span class="cstat-no" title="statement not covered" >'application/x.' + protocolSpecifier;</span>
   const client = <span class="cstat-no" title="statement not covered" >new StreamingRpcClient({</span>
     send: <span class="fstat-no" title="function not covered" >async (m</span>essages) =&gt;<span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" > {</span></span>
       const port = <span class="cstat-no" title="statement not covered" >+(process.env.PORT || 9999);</span>
-      const url = <span class="cstat-no" title="statement not covered" >`http://localhost:${port}/rpc`;</span>
+      const url = <span class="cstat-no" title="statement not covered" >`http://${address}/rpc`;</span>
 <span class="cstat-no" title="statement not covered" >      codec.req.encoder.writer.reset();</span>
 <span class="cstat-no" title="statement not covered" >      codec.msg.encodeBatch(codec.req, messages);</span>
       const body = <span class="cstat-no" title="statement not covered" >codec.req.encoder.writer.flush();</span>
