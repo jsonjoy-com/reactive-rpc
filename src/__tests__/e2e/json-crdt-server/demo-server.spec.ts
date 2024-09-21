@@ -4,7 +4,11 @@ import {runPubsubTests} from '../../json-crdt-server/pubsub';
 import {runPresenceTests} from '../../json-crdt-server/presence';
 import {runBlockTests} from '../../json-crdt-server/block';
 import {cborCodec} from '../codecs';
-import {setupDemoServerPersistentClient, setupDemoServerFetchClient, setupDemoServerStreamingClient} from '../demo-client';
+import {
+  setupDemoServerPersistentClient,
+  setupDemoServerFetchClient,
+  setupDemoServerStreamingClient,
+} from '../demo-client';
 
 if (process.env.TEST_E2E) {
   describe('RpcPersistentClient', () => {
@@ -17,7 +21,7 @@ if (process.env.TEST_E2E) {
       runBlockTests(setup);
     });
   });
-  
+
   // describe('FetchRpcClient', () => {
   //   const codec = cborCodec();
   //   const setup: ApiTestSetup = async () => setupDemoServerFetchClient(codec);
