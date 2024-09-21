@@ -10,7 +10,7 @@ import {
   setupDemoServerStreamingClient,
 } from '../demo-client';
 
-if (process.env.TEST_E2E) {
+if (process.env.TEST_E2E && process.env.TEST_E2E_DEMO_SERVER) {
   describe('RpcPersistentClient', () => {
     const codec = cborCodec();
     const setup: ApiTestSetup = async () => setupDemoServerPersistentClient(codec);
