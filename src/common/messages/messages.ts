@@ -1,6 +1,6 @@
-import {MsgPackEncoder} from '@jsonjoy.com/json-pack/lib/msgpack';
-import {CborEncoder} from '@jsonjoy.com/json-pack/lib/cbor/CborEncoder';
-import {JsonEncoder} from '@jsonjoy.com/json-pack/lib/json/JsonEncoder';
+import {MsgPackEncoder} from '@jsonjoy.com/json-pack/lib/msgpack'; // TODO: Should not statically import codecs
+import {CborEncoder} from '@jsonjoy.com/json-pack/lib/cbor/CborEncoder'; // TODO: Should not statically import codecs
+import {JsonEncoder} from '@jsonjoy.com/json-pack/lib/json/JsonEncoder'; // TODO: Should not statically import codecs
 import {BinaryMessageType} from '../codec/binary/constants';
 import {CompactMessageType} from '../codec/compact/constants';
 import {validateId, validateMethod} from '../rpc/validation';

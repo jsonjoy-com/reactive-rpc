@@ -38,6 +38,7 @@ export class BrowserTestbed {
     public readonly sid: number = 12345678,
   ) {
     this.id = this.global.genId();
+    // TODO: Namespace locks to a specific repo.
     this.locks = new Locks();
     this.kv = new MemoryLevel<string, Uint8Array>({
       keyEncoding: 'utf8',
