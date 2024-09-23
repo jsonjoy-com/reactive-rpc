@@ -128,3 +128,5 @@ out.bin
 
 /gh-pages/
 /db/
+
+*storybook.log
