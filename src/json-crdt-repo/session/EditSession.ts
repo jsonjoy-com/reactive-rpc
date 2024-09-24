@@ -114,10 +114,8 @@ export class EditSession {
 
   public syncLog(): void {
     if (!this.log.patches.size()) return;
-    this._syncRace(() => {
-      this.sync().then((error) => {
-        this.onsyncerror?.(error);
-      });
+    this.sync().then((error) => {
+      this.onsyncerror?.(error);
     });
   }
 
