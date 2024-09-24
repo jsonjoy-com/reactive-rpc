@@ -1009,36 +1009,43 @@ export class LevelLocalRepo implements LocalRepo {
   }
 
   protected async _onUpd(id: BlockId, batch: ServerBatch): Promise<void> {
-    const keyBase = await this.blockKeyBase(id);
-    const firstPatch = batch.patches[0];
-    if (!firstPatch) return;
-    const firstPatchSid = Patch.fromBinary(firstPatch.blob).getId()?.sid;
-    if (firstPatchSid === this.sid) return;
     try {
-      const meta = await this.readMeta(keyBase);
-      if (meta.seq + 1 !== batch.seq) {
-        await this.pull(id);
-        return;
+      const keyBase = await this.blockKeyBase(id);
+      const firstPatch = batch.patches[0];
+      if (!firstPatch) return;
+      const firstPatchSid = Patch.fromBinary(firstPatch.blob).getId()?.sid;
+      if (firstPatchSid === this.sid) return;
+      try {
+        const meta = await this.readMeta(keyBase);
+        const alreadySynced = meta.seq >= batch.seq;
+        if (alreadySynced) return;
+        const needsPull = meta.seq + 1 < batch.seq;
+        if (needsPull) {
+          await this.pull(id);
+          return;
+        }
+      } catch (error) {
+        if (!!error && typeof error === 'object' && (error as any).code === 'LEVEL_NOT_FOUND') {
+          await this.pullNew(id, keyBase);
+          return;
+        }
+        throw error;
       }
+      await this.lockBlock(keyBase, async () => {
+        const [model, meta] = await Promise.all([this.readModel(keyBase), this.readMeta(keyBase)]);
+        if (meta.seq + 1 !== batch.seq) throw new Error('CONFLICT');
+        const patches: Uint8Array[] = [];
+        for (const serverPatch of batch.patches) {
+          const patch = Patch.fromBinary(serverPatch.blob);
+          model.applyPatch(patch);
+          patches.push(serverPatch.blob);
+        }
+        meta.seq = batch.seq;
+        await this._wrModel(keyBase, model.toBinary(), meta);
+        this.pubsub.pub({type: 'merge', id, patches, seq: meta.seq});
+      });
     } catch (error) {
-      if (!!error && typeof error === 'object' && (error as any).code === 'LEVEL_NOT_FOUND') {
-        await this.pullNew(id, keyBase);
-        return;
-      }
-      throw error;
+      this.opts.onSyncError?.(error);
     }
-    await this.lockBlock(keyBase, async () => {
-      const [model, meta] = await Promise.all([this.readModel(keyBase), this.readMeta(keyBase)]);
-      if (meta.seq + 1 !== batch.seq) throw new Error('CONFLICT');
-      const patches: Uint8Array[] = [];
-      for (const serverPatch of batch.patches) {
-        const patch = Patch.fromBinary(serverPatch.blob);
-        model.applyPatch(patch);
-        patches.push(serverPatch.blob);
-      }
-      meta.seq = batch.seq;
-      await this._wrModel(keyBase, model.toBinary(), meta);
-      this.pubsub.pub({type: 'merge', id, patches, seq: meta.seq});
-    });
   }
 }
