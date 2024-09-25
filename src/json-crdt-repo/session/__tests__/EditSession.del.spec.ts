@@ -1,8 +1,8 @@
 import {s} from 'json-joy/lib/json-crdt';
 import {setup} from './setup';
+import {EditSessionFactory} from '../EditSessionFactory';
 import {until} from 'thingies/lib/until';
 import {of} from 'thingies';
-import {EditSessionFactory} from '../EditSessionFactory';
 import {BehaviorSubject} from 'rxjs';
 import {Testbed} from '../../__tests__/testbed';
 

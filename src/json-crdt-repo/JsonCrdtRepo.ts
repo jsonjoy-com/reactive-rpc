@@ -18,6 +18,7 @@ export interface JsonCrdtRepoOpts {
 export class JsonCrdtRepo {
   public readonly sessions: EditSessionFactory;
   public readonly opts: JsonCrdtRepoOpts;
+  public readonly remote: DemoServerRemoteHistory;
 
   constructor(opts: Partial<JsonCrdtRepoOpts>) {
     this.opts = {
@@ -26,7 +27,7 @@ export class JsonCrdtRepo {
       ...opts,
     };
     const client = createBinaryWsRpcClient(this.opts.wsUrl) as DemoServerClient;
-    const remote = new DemoServerRemoteHistory(client);
+    this.remote = new DemoServerRemoteHistory(client);
     const kv: BinStrLevel = new BrowserLevel(this.opts.name, {
       keyEncoding: 'utf8',
       valueEncoding: 'view',
@@ -39,7 +40,7 @@ export class JsonCrdtRepo {
       kv,
       locks,
       sid,
-      rpc: remote,
+      rpc: this.remote,
       pubsub,
       connected$,
     });

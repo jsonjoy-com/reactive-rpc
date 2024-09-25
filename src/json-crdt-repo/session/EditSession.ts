@@ -34,11 +34,21 @@ export class EditSession {
     protected readonly session: number = Math.floor(Math.random() * 0x7fffffff),
   ) {
     this.log = new Log(() => this.start.clone());
-    const flushUnsubscribe = this.log.end.api.onFlush.listen((a) => {
+    const api = this.log.end.api;
+    const flushUnsubscribe = api.onFlush.listen((a) => {
       this.syncLog();
+    });
+    const patchUnsubscribe = api.onPatch.listen((patch) => {
+      const id = patch.getId();
+      if (!id) return;
+      const clock = this.model.clock;
+      if (id.sid === clock.sid && clock.time >= id.time) {
+        this.syncLog();
+      }
     });
     this._stop$.pipe(first()).subscribe(() => {
       flushUnsubscribe();
+      patchUnsubscribe();
     });
     this.repo.change$(this.id).pipe(takeUntil(this._stop$)).subscribe(this.onEvent);
   }
@@ -114,8 +124,10 @@ export class EditSession {
 
   public syncLog(): void {
     if (!this.log.patches.size()) return;
-    this.sync().then((error) => {
-      this.onsyncerror?.(error);
+    this._syncRace(() => {
+      this.sync().then((error) => {
+        this.onsyncerror?.(error);
+      });
     });
   }
 
