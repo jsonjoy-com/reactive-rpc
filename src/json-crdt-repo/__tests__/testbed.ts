@@ -6,6 +6,7 @@ import {MemoryLevel} from 'memory-level';
 import {pubsub as createPubsub} from '../pubsub';
 import {BinStrLevel, LevelLocalRepoPubSub} from '../local/level/types';
 import {EditSessionFactory} from '../session/EditSessionFactory';
+import {Model, Patch} from 'json-joy/lib/json-crdt';
 
 /* tslint:disable:no-console */
 
@@ -26,6 +27,15 @@ export class Testbed {
   public createBrowser(): BrowserTestbed {
     return new BrowserTestbed(this);
   }
+
+  public readonly getModelFromRemote = async (id: string | string[]): Promise<Model> => {
+    if (Array.isArray(id)) id = id.join('/');
+    const res = await this.remote.client.call('block.get', {id});
+    const model = Model.fromBinary(res.block.snapshot.blob);
+    for (const batch of res.block.tip)
+      for (const patch of batch.patches) model.applyPatch(Patch.fromBinary(patch.blob));
+    return model;
+  };
 }
 
 export class BrowserTestbed {
@@ -93,6 +103,10 @@ export class LocalRepoTestbed {
       repo,
     });
   }
+
+  public readonly getModelFromRemote = async (id: string | string[]): Promise<Model> => {
+    return await this.tab.browser.global.getModelFromRemote(id);
+  };
 
   public readonly stop = async () => {
     await this.repo.stop();
