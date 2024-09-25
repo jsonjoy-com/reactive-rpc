@@ -1,5 +1,5 @@
 import {Log} from 'json-joy/lib/json-crdt/log/Log';
-import {Model, Patch} from 'json-joy/lib/json-crdt';
+import {JsonNode, Model, Patch} from 'json-joy/lib/json-crdt';
 import {concurrency} from 'thingies/lib/concurrencyDecorator';
 import {createRace} from 'thingies/lib/createRace';
 import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
@@ -15,30 +15,40 @@ import type {
   LocalRepoResetEvent,
 } from '../local/types';
 
-export class EditSession {
-  public log: Log;
+export class EditSession<N extends JsonNode = JsonNode<any>> {
+  public log: Log<N>;
   protected _stopped = false;
   protected _stop$ = new Subject<void>();
   public onsyncerror?: (error: Error | unknown) => void;
   private _syncRace = createRace();
 
-  public get model(): Model {
+  public get model(): Model<N> {
     return this.log.end;
   }
 
   constructor(
     public readonly repo: LocalRepo,
     public readonly id: BlockId,
-    protected start: Model,
+    protected start: Model<N>,
     public cursor: undefined | unknown = undefined,
     protected readonly session: number = Math.floor(Math.random() * 0x7fffffff),
   ) {
-    this.log = new Log(() => this.start.clone());
-    const flushUnsubscribe = this.log.end.api.onFlush.listen((a) => {
+    this.log = new Log<N>(() => this.start.clone());
+    const api = this.log.end.api;
+    const flushUnsubscribe = api.onFlush.listen((a) => {
       this.syncLog();
+    });
+    const patchUnsubscribe = api.onPatch.listen((patch) => {
+      const id = patch.getId();
+      if (!id) return;
+      const clock = this.model.clock;
+      if (id.sid === clock.sid && clock.time >= id.time) {
+        this.syncLog();
+      }
     });
     this._stop$.pipe(first()).subscribe(() => {
       flushUnsubscribe();
+      patchUnsubscribe();
     });
     this.repo.change$(this.id).pipe(takeUntil(this._stop$)).subscribe(this.onEvent);
   }
@@ -52,9 +62,9 @@ export class EditSession {
   protected clear(): void {
     const {start, log} = this;
     const empty = Model.create(undefined, start.clock.sid);
-    start.reset(empty);
+    start.reset(<any>empty);
     log.patches.clear();
-    log.end.reset(empty);
+    log.end.reset(<any>empty);
   }
 
   private saveInProgress = false;
@@ -89,11 +99,11 @@ export class EditSession {
         if (typeof res.cursor !== undefined) this.cursor = res.cursor;
         if (res.model) {
           this._syncRace(() => {
-            this.reset(res.model!);
+            this.reset(<any>res.model!);
           });
         } else if (res.merge) {
           this._syncRace(() => {
-            this.merge(res.merge!);
+            this.merge(<any>res.merge!);
           });
         }
         return {remote: res.remote};
@@ -101,7 +111,7 @@ export class EditSession {
         const res = await this.repo.getIf({id: this.id, time: this.model.clock.time - 1, cursor: this.cursor});
         if (this._stopped) return null;
         if (res) {
-          this.reset(res.model);
+          this.reset(<any>res.model);
           this.cursor = res.cursor;
         }
         return null;
@@ -132,7 +142,7 @@ export class EditSession {
    */
   public async load(): Promise<void> {
     const {model} = await this.repo.get({id: this.id});
-    if (model.clock.time > this.start.clock.time) this.reset(model);
+    if (model.clock.time > this.start.clock.time) this.reset(<any>model);
   }
 
   public loadSilent(): void {
@@ -141,7 +151,7 @@ export class EditSession {
 
   // ------------------------------------------------------- change integration
 
-  protected reset(model: Model): void {
+  protected reset(model: Model<N>): void {
     this.start = model.clone();
     const log = this.log;
     const end = log.end;
@@ -214,7 +224,7 @@ export class EditSession {
       for (let i = 0; i < length; i++) {
         const event = events[i];
         try {
-          if ((event as LocalRepoResetEvent).reset) this.reset((event as LocalRepoResetEvent).reset);
+          if ((event as LocalRepoResetEvent).reset) this.reset(<any>(event as LocalRepoResetEvent).reset);
           else if ((event as LocalRepoRebaseEvent).rebase) this.rebase((event as LocalRepoRebaseEvent).rebase);
           else if ((event as LocalRepoMergeEvent).merge) this.merge((event as LocalRepoMergeEvent).merge);
           else if ((event as LocalRepoDeleteEvent).del) {

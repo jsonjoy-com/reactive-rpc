@@ -36,6 +36,7 @@ import type {
   SyncResult,
   LevelLocalRepoPubSub,
   LevelLocalRepoCursor,
+  BlockSyncRecord,
 } from './types';
 import type {CrudLocalRepoCipher} from './types';
 import type {Locks} from 'thingies/lib/Locks';
@@ -61,7 +62,7 @@ const enum Defaults {
    * The root of the key-space where items are marked as "dirty" and need sync.
    *
    * ```
-   * s!<collection>!<id>
+   * s!b!<collection>!<id>
    * ```
    */
   SyncRoot = 's',
@@ -193,23 +194,18 @@ export class LevelLocalRepo implements LocalRepo {
     this.connected$ = opts.connected$ ?? new BehaviorSubject(true);
     this.pubsub = opts.pubsub ?? pubsub('level-local-repo');
     this.cipher = opts.cipher;
+    this._conSub = this.connected$.subscribe((connected) => {
+      if (connected && !this._remoteSyncLoopActive) this.runRemoteSyncLoop();
+    });
   }
 
   private _conSub: Subscription | undefined = undefined;
   private _stopped = false;
 
   @once
-  public start(): void {
-    this._conSub = this.connected$.subscribe((connected) => {
-      if (connected) {
-        this.syncAll().catch(() => {});
-      } else {
-      }
-    });
-  }
-
-  @once
   public stop(): void {
+    this._remoteSyncLoopActive = false;
+    clearTimeout(this._remoteSyncDelayTimer as any);
     this._stopped = true;
     this._conSub?.unsubscribe();
   }
@@ -268,6 +264,10 @@ export class LevelLocalRepo implements LocalRepo {
   public snapshotKey(blockKeyBase: string, seq: number): string {
     const seqFormatted = seq.toString(36).padStart(8, '0');
     return this.snapshotKeyBase(blockKeyBase) + seqFormatted;
+  }
+
+  protected syncKey(keyBase: string): string {
+    return Defaults.SyncRoot + '!' + keyBase;
   }
 
   protected async _exists(keyBase: string): Promise<boolean> {
@@ -351,7 +351,7 @@ export class LevelLocalRepo implements LocalRepo {
   protected async readMeta(keyBase: string): Promise<BlockMeta> {
     const metaKey = keyBase + Defaults.Metadata;
     const blob = await this.kv.get(metaKey);
-    const meta = this.codec.decoder.decode(blob) as BlockMeta;
+    const meta = (await this.decode(blob, false)) as BlockMeta;
     return meta;
   }
 
@@ -396,7 +396,8 @@ export class LevelLocalRepo implements LocalRepo {
   public async readFrontierTip(keyBase: string): Promise<Patch | undefined> {
     const frontierBase = this.frontierKeyBase(keyBase);
     const lte = frontierBase + `~`;
-    for await (const blob of this.kv.values({lte, limit: 1, reverse: true})) return Patch.fromBinary(blob);
+    for await (const blob of this.kv.values({lte, limit: 1, reverse: true}))
+      return Patch.fromBinary(await this.decrypt(blob, false));
     return;
   }
 
@@ -404,22 +405,33 @@ export class LevelLocalRepo implements LocalRepo {
     return await this.locks.lock(keyBase, 500, 500)<T>(fn);
   }
 
-  // ---------------------------------------------------------- Synchronization
+  protected async lockBlockForSync<T>(keyBase: string, fn: () => Promise<T>): Promise<T> {
+    const key = 's!' + keyBase;
+    return await this.locks.lock(key, 2000, 3000)<T>(fn);
+  }
 
-  protected async markDirty(id: BlockId): Promise<void> {
-    const key = Defaults.SyncRoot + '!' + id.join('!');
-    const blob = this.codec.encoder.encode(Date.now());
+  protected isBlockLockedForSync(keyBase: string): boolean {
+    const key = 's!' + keyBase;
+    return this.locks.isLocked(key);
+  }
+
+  // --------------------------------------------------- Remote synchronization
+
+  protected async markDirty(keyBase: string, id: BlockId): Promise<void> {
+    const key = this.syncKey(keyBase);
+    const record: BlockSyncRecord = [id, Date.now()];
+    const blob = await this.encode(record, false);
     await this.kv.put(key, blob);
   }
 
-  protected async markDirtyAndSync(id: BlockId): Promise<boolean> {
+  protected async markDirtyAndSync(keyBase: string, id: BlockId): Promise<boolean> {
     if (this._stopped) return false;
-    this.markDirty(id).catch((error) => {
+    this.markDirty(keyBase, id).catch((error) => {
       if (this._stopped) return;
       this.opts.onSyncError?.(error);
     });
     try {
-      return await this.push(id, true);
+      return await this.push(keyBase, id, true);
     } catch (error) {
       if (typeof error === 'object' && error && (error as any).message === 'Not Found') return false;
       else if (error instanceof Error && error.message === 'DISCONNECTED') return false;
@@ -436,15 +448,13 @@ export class LevelLocalRepo implements LocalRepo {
    * @param id Block ID.
    * @param pull Whether to pull if there are no patches to push.
    */
-  protected async push(id: BlockId, doPull: boolean = false): Promise<boolean> {
+  protected async push(keyBase: string, id: BlockId, doPull: boolean = false): Promise<boolean> {
     if (this._stopped) return false;
     if (!this.connected$.getValue()) throw new Error('DISCONNECTED');
-    const keyBase = await this.blockKeyBase(id);
     const remote = this.opts.rpc;
     const remoteId = id.join('/');
     const patches: ServerPatch[] = [];
-    const syncMarkerKey = Defaults.SyncRoot + '!' + id.join('!');
-    const ops: BinStrLevelOperation[] = [{type: 'del', key: syncMarkerKey}];
+    const ops: BinStrLevelOperation[] = [{type: 'del', key: this.syncKey(keyBase)}];
     for await (const [key, blob] of this.readFrontierBlobs0(keyBase)) {
       ops.push({type: 'del', key});
       patches.push({blob});
@@ -548,61 +558,64 @@ export class LevelLocalRepo implements LocalRepo {
     });
   }
 
-  public async isDirty(collection: string[], id: string): Promise<boolean> {
-    throw new Error('not implemented');
-    // const dir = ['sync', 'dirty', ...collection];
-    // try {
-    //   await this.core.crud.info(dir, id);
-    //   return true;
-    // } catch (error) {
-    //   if (error instanceof DOMException && error.name === 'ResourceNotFound') return false;
-    //   throw error;
-    // }
+  /**
+   * Iterates over all blocks marked as dirty.
+   */
+  protected async *listDirty(): AsyncIterableIterator<BlockSyncRecord> {
+    const gt: string = Defaults.SyncRoot;
+    const lt: string = Defaults.SyncRoot + '~';
+    for await (const blob of this.kv.values({gt, lt})) yield (await this.decode(blob, false)) as BlockSyncRecord;
   }
 
-  protected async *listDirty(collection: string[] = ['sync', 'dirty']): AsyncIterableIterator<BlockId> {
-    throw new Error('not implemented');
-    // for await (const entry of this.core.crud.scan(collection)) {
-    //   if (entry.type === 'collection') yield* this.listDirty([...collection, entry.id]);
-    //   else yield {collection, id: entry.id};
-    // }
+  public async remoteSyncAll(): Promise<SyncResult[]> {
+    const resultList: SyncResult[] = [];
+    for await (const record of this.listDirty()) {
+      if (this._stopped) return resultList;
+      if (!this._remoteSyncLoopActive) return resultList;
+      if (!this.connected$.getValue()) return resultList;
+      const [id] = record;
+      const keyBase = await this.blockKeyBase(id);
+      const isLocked = this.isBlockLockedForSync(keyBase);
+      if (isLocked) continue;
+      await this.lockBlockForSync(keyBase, async () => {
+        let error: unknown;
+        let success: boolean = false;
+        try {
+          success = await this.push(keyBase, id, true);
+        } catch (err) {
+          error = err;
+        }
+        const result: SyncResult = [id, success, error];
+        resultList.push(result);
+      });
+    }
+    return resultList;
   }
 
-  protected async *syncDirty(): AsyncIterableIterator<SyncResult> {
-    // for await (const block of this.listDirty()) {
-    //   const {
-    //     collection: [_sync, _dirty, ...collection],
-    //     id,
-    //   } = block;
-    //   try {
-    //     const success = await this.sync(collection, id);
-    //     yield [block, success];
-    //   } catch (error) {
-    //     yield [block, false, error];
-    //   }
-    // }
-  }
+  protected _remoteSyncLoopActive: boolean = false;
+  protected _remoteSyncDelayTimer: unknown;
 
-  public async syncAll(): Promise<SyncResult[]> {
-    throw new Error('not implemented');
-    // const locks = this.locks;
-    // if (locks.isLocked('sync')) return [];
-    // const list: SyncResultList = [];
-    // const duration = 30000;
-    // const start = Date.now();
-    // return await locks.lock(
-    //   'sync',
-    //   duration,
-    //   3000,
-    // )(async () => {
-    //   for await (const result of this.syncDirty()) {
-    //     if (!this.core.connected$.getValue()) return [];
-    //     list.push(result);
-    //     const now = Date.now();
-    //     if (now - start + 100 > duration) break;
-    //   }
-    //   return list;
-    // });
+  protected runRemoteSyncLoop(): void {
+    this._remoteSyncLoopActive = true;
+    if (!this.connected$.getValue()) {
+      this._remoteSyncLoopActive = false;
+      return;
+    }
+    this.remoteSyncAll()
+      .catch((error) => {
+        this.opts.onSyncError?.(error);
+      })
+      .finally(() => {
+        if (!this._remoteSyncLoopActive) return;
+        if (!this.connected$.getValue()) {
+          this._remoteSyncLoopActive = false;
+          return;
+        }
+        this._remoteSyncDelayTimer = setTimeout(() => {
+          if (!this._remoteSyncLoopActive) return;
+          this.runRemoteSyncLoop();
+        }, 2000);
+      });
   }
 
   /** ----------------------------------------------------- {@link LocalRepo} */
@@ -624,7 +637,7 @@ export class LevelLocalRepo implements LocalRepo {
         const op: BinStrLevelOperation = {
           type: 'put',
           key: patchKey,
-          value: patch.toBinary(),
+          value: await this.encrypt(patch.toBinary(), false),
         };
         ops.push(op);
       }
@@ -635,7 +648,7 @@ export class LevelLocalRepo implements LocalRepo {
       if (exists) throw new Error('EXISTS');
       await this.kv.batch(ops);
     });
-    const remote = this.markDirtyAndSync(id)
+    const remote = this.markDirtyAndSync(keyBase, id)
       .then(() => {})
       .catch((error) => {
         if (this._stopped) return;
@@ -757,7 +770,7 @@ export class LevelLocalRepo implements LocalRepo {
         const id = rebased.getId()!;
         const time = id.time;
         const patchKey = this.frontierKey(keyBase, time);
-        const uint8 = rebased.toBinary();
+        const uint8 = await this.encrypt(rebased.toBinary(), false);
         writtenPatches.push(uint8);
         const op: BinStrLevelOperation = {type: 'put', key: patchKey, value: uint8};
         ops.push(op);
@@ -775,7 +788,7 @@ export class LevelLocalRepo implements LocalRepo {
       const merge = await this.readFrontier0(keyBase);
       return {cursor, merge};
     }
-    const remote = this.markDirtyAndSync(id)
+    const remote = this.markDirtyAndSync(keyBase, id)
       .then(() => {})
       .catch((error) => {
         if (this._stopped) return;
@@ -1009,36 +1022,43 @@ export class LevelLocalRepo implements LocalRepo {
   }
 
   protected async _onUpd(id: BlockId, batch: ServerBatch): Promise<void> {
-    const keyBase = await this.blockKeyBase(id);
-    const firstPatch = batch.patches[0];
-    if (!firstPatch) return;
-    const firstPatchSid = Patch.fromBinary(firstPatch.blob).getId()?.sid;
-    if (firstPatchSid === this.sid) return;
     try {
-      const meta = await this.readMeta(keyBase);
-      if (meta.seq + 1 !== batch.seq) {
-        await this.pull(id);
-        return;
+      const keyBase = await this.blockKeyBase(id);
+      const firstPatch = batch.patches[0];
+      if (!firstPatch) return;
+      const firstPatchSid = Patch.fromBinary(firstPatch.blob).getId()?.sid;
+      if (firstPatchSid === this.sid) return;
+      try {
+        const meta = await this.readMeta(keyBase);
+        const alreadySynced = meta.seq >= batch.seq;
+        if (alreadySynced) return;
+        const needsPull = meta.seq + 1 < batch.seq;
+        if (needsPull) {
+          await this.pull(id);
+          return;
+        }
+      } catch (error) {
+        if (!!error && typeof error === 'object' && (error as any).code === 'LEVEL_NOT_FOUND') {
+          await this.pullNew(id, keyBase);
+          return;
+        }
+        throw error;
       }
+      await this.lockBlock(keyBase, async () => {
+        const [model, meta] = await Promise.all([this.readModel(keyBase), this.readMeta(keyBase)]);
+        if (meta.seq + 1 !== batch.seq) throw new Error('CONFLICT');
+        const patches: Uint8Array[] = [];
+        for (const serverPatch of batch.patches) {
+          const patch = Patch.fromBinary(serverPatch.blob);
+          model.applyPatch(patch);
+          patches.push(serverPatch.blob);
+        }
+        meta.seq = batch.seq;
+        await this._wrModel(keyBase, model.toBinary(), meta);
+        this.pubsub.pub({type: 'merge', id, patches, seq: meta.seq});
+      });
     } catch (error) {
-      if (!!error && typeof error === 'object' && (error as any).code === 'LEVEL_NOT_FOUND') {
-        await this.pullNew(id, keyBase);
-        return;
-      }
-      throw error;
+      this.opts.onSyncError?.(error);
     }
-    await this.lockBlock(keyBase, async () => {
-      const [model, meta] = await Promise.all([this.readModel(keyBase), this.readMeta(keyBase)]);
-      if (meta.seq + 1 !== batch.seq) throw new Error('CONFLICT');
-      const patches: Uint8Array[] = [];
-      for (const serverPatch of batch.patches) {
-        const patch = Patch.fromBinary(serverPatch.blob);
-        model.applyPatch(patch);
-        patches.push(serverPatch.blob);
-      }
-      meta.seq = batch.seq;
-      await this._wrModel(keyBase, model.toBinary(), meta);
-      this.pubsub.pub({type: 'merge', id, patches, seq: meta.seq});
-    });
   }
 }
