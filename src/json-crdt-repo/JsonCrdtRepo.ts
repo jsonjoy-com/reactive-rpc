@@ -5,9 +5,9 @@ import {EditSessionFactory} from './session/EditSessionFactory';
 import {BinStrLevel, LevelLocalRepoPubSubMessage} from './local/level/types';
 import {PubSubBC} from './pubsub';
 import {Locks} from 'thingies/lib/Locks';
-import {BehaviorSubject} from 'rxjs';
-import {LevelLocalRepo} from './local/level/LevelLocalRepo';
+import {LevelLocalRepo, LevelLocalRepoOpts} from './local/level/LevelLocalRepo';
 import {Model} from 'json-joy/lib/json-crdt';
+import {onLine$} from 'rx-use/lib/onLine$';
 import type {EditSession} from './session/EditSession';
 
 export interface JsonCrdtRepoOpts {
@@ -35,7 +35,7 @@ export class JsonCrdtRepo {
     const pubsub = new PubSubBC<LevelLocalRepoPubSubMessage>(this.opts.name);
     const locks = new Locks();
     const sid: number = this.readSid();
-    const connected$ = new BehaviorSubject(true);
+    const connected$ = onLine$ as LevelLocalRepoOpts['connected$'];
     const repo = new LevelLocalRepo({
       kv,
       locks,
