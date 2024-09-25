@@ -614,7 +614,7 @@ export class LevelLocalRepo implements LocalRepo {
         this._remoteSyncDelayTimer = setTimeout(() => {
           if (!this._remoteSyncLoopActive) return;
           this.runRemoteSyncLoop();
-        }, 1000);
+        }, 2000);
       });
   }
 
