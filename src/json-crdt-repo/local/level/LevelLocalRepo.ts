@@ -351,7 +351,7 @@ export class LevelLocalRepo implements LocalRepo {
   protected async readMeta(keyBase: string): Promise<BlockMeta> {
     const metaKey = keyBase + Defaults.Metadata;
     const blob = await this.kv.get(metaKey);
-    const meta = await this.decode(blob, false) as BlockMeta;
+    const meta = (await this.decode(blob, false)) as BlockMeta;
     return meta;
   }
 
@@ -396,7 +396,8 @@ export class LevelLocalRepo implements LocalRepo {
   public async readFrontierTip(keyBase: string): Promise<Patch | undefined> {
     const frontierBase = this.frontierKeyBase(keyBase);
     const lte = frontierBase + `~`;
-    for await (const blob of this.kv.values({lte, limit: 1, reverse: true})) return Patch.fromBinary(await this.decrypt(blob, false));
+    for await (const blob of this.kv.values({lte, limit: 1, reverse: true}))
+      return Patch.fromBinary(await this.decrypt(blob, false));
     return;
   }
 
@@ -563,8 +564,7 @@ export class LevelLocalRepo implements LocalRepo {
   protected async *listDirty(): AsyncIterableIterator<BlockSyncRecord> {
     const gt: string = Defaults.SyncRoot;
     const lt: string = Defaults.SyncRoot + '~';
-    for await (const blob of this.kv.values({gt, lt}))
-      yield await this.decode(blob, false) as BlockSyncRecord;
+    for await (const blob of this.kv.values({gt, lt})) yield (await this.decode(blob, false)) as BlockSyncRecord;
   }
 
   public async remoteSyncAll(): Promise<SyncResult[]> {

@@ -4,6 +4,8 @@ import {JsonCrdtRepo} from '../../json-crdt-repo/JsonCrdtRepo';
 import {ClickableJsonCrdt} from 'clickable-json';
 import {Model, Patch} from 'json-joy/lib/json-crdt';
 
+/* tslint:disable no-console */
+
 const repo = new JsonCrdtRepo({
   wsUrl: 'wss://demo-iasd8921ondk0.jsonjoy.com/rpc',
 });
@@ -35,15 +37,23 @@ const Demo: React.FC = () => {
     <div style={{padding: 32}}>
       <ClickableJsonCrdt model={model} showRoot />
       <hr />
-      <button onClick={async () => {
-        const {block} = await repo.remote.read(id);
-        const model = Model.fromBinary(block.snapshot.blob);
-        for (const batch of block.tip)
-          for (const patch of batch.patches) model.applyPatch(Patch.fromBinary(patch.blob));
-        setRemote(model);
-      }}>Load remote state</button>
+      <button
+        onClick={async () => {
+          const {block} = await repo.remote.read(id);
+          const model = Model.fromBinary(block.snapshot.blob);
+          for (const batch of block.tip)
+            for (const patch of batch.patches) model.applyPatch(Patch.fromBinary(patch.blob));
+          setRemote(model);
+        }}
+      >
+        Load remote state
+      </button>
       <br />
-      {!!remote && <code style={{fontSize: 8}}><pre>{remote.toString()}</pre></code>}
+      {!!remote && (
+        <code style={{fontSize: 8}}>
+          <pre>{remote.toString()}</pre>
+        </code>
+      )}
     </div>
   );
 };

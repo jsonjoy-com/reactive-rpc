@@ -7,11 +7,11 @@ import {BinaryRpcMessageCodec} from '../common/codec/binary';
 
 /**
  * Constructs a JSON Reactive RPC client.
- * 
+ *
  * ```typescript
  * const client = createJsonWsRpcClient('wss://api.host.com', 'token');
  * ```
- * 
+ *
  * @param url RPC endpoint.
  * @param token Authentication token.
  * @returns An RPC client.
