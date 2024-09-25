@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom/client';
 import {JsonCrdtRepo} from '../../json-crdt-repo/JsonCrdtRepo';
 import {ClickableJsonCrdt} from 'clickable-json';
-import {Model} from 'json-joy/lib/json-crdt';
+import {Model, Patch} from 'json-joy/lib/json-crdt';
 
 const repo = new JsonCrdtRepo({
   wsUrl: 'wss://demo-iasd8921ondk0.jsonjoy.com/rpc',
@@ -12,12 +12,16 @@ const session = repo.make(id);
 
 const model = session.model;
 
+model.api.onPatch.listen((op) => {
+  console.log('onPatch', op + '');
+});
+
 model.api.onLocalChange.listen((op) => {
   console.log('onLocalChange', op);
 });
 
 model.api.onFlush.listen((op) => {
-  console.log('onFlush', op);
+  console.log('onFlush', op + '');
 });
 
 model.api.onTransaction.listen((op) => {
@@ -25,9 +29,21 @@ model.api.onTransaction.listen((op) => {
 });
 
 const Demo: React.FC = () => {
+  const [remote, setRemote] = React.useState<Model | null>(null);
+
   return (
     <div style={{padding: 32}}>
       <ClickableJsonCrdt model={model} showRoot />
+      <hr />
+      <button onClick={async () => {
+        const {block} = await repo.remote.read(id);
+        const model = Model.fromBinary(block.snapshot.blob);
+        for (const batch of block.tip)
+          for (const patch of batch.patches) model.applyPatch(Patch.fromBinary(patch.blob));
+        setRemote(model);
+      }}>Load remote state</button>
+      <br />
+      {!!remote && <code style={{fontSize: 8}}><pre>{remote.toString()}</pre></code>}
     </div>
   );
 };
