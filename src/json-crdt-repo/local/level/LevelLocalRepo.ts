@@ -351,7 +351,7 @@ export class LevelLocalRepo implements LocalRepo {
   protected async readMeta(keyBase: string): Promise<BlockMeta> {
     const metaKey = keyBase + Defaults.Metadata;
     const blob = await this.kv.get(metaKey);
-    const meta = this.codec.decoder.decode(blob) as BlockMeta;
+    const meta = await this.decode(blob, false) as BlockMeta;
     return meta;
   }
 
@@ -396,7 +396,7 @@ export class LevelLocalRepo implements LocalRepo {
   public async readFrontierTip(keyBase: string): Promise<Patch | undefined> {
     const frontierBase = this.frontierKeyBase(keyBase);
     const lte = frontierBase + `~`;
-    for await (const blob of this.kv.values({lte, limit: 1, reverse: true})) return Patch.fromBinary(blob);
+    for await (const blob of this.kv.values({lte, limit: 1, reverse: true})) return Patch.fromBinary(await this.decrypt(blob, false));
     return;
   }
 
@@ -637,7 +637,7 @@ export class LevelLocalRepo implements LocalRepo {
         const op: BinStrLevelOperation = {
           type: 'put',
           key: patchKey,
-          value: patch.toBinary(),
+          value: await this.encrypt(patch.toBinary(), false),
         };
         ops.push(op);
       }
@@ -770,7 +770,7 @@ export class LevelLocalRepo implements LocalRepo {
         const id = rebased.getId()!;
         const time = id.time;
         const patchKey = this.frontierKey(keyBase, time);
-        const uint8 = rebased.toBinary();
+        const uint8 = await this.encrypt(rebased.toBinary(), false);
         writtenPatches.push(uint8);
         const op: BinStrLevelOperation = {type: 'put', key: patchKey, value: uint8};
         ops.push(op);
