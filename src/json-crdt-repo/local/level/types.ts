@@ -39,7 +39,19 @@ export interface CrudLocalRepoCipher {
   decrypt(ciphertext: Uint8Array): Promise<Uint8Array>;
 }
 
-export type SyncResult = [block: BlockId, success: boolean, err?: Error | unknown];
+export type BlockSyncRecord = [
+  /**
+   * Unencrypted block ID.
+   */
+  id: BlockId,
+
+  /**
+   * Time when block was marked as dirty.
+   */
+  ts: number,
+];
+
+export type SyncResult = [block: BlockId, success: boolean, err?: Error | unknown | undefined];
 
 export type LocalBatch = ServerBatch;
 export type LocalSnapshot = ServerSnapshot;
