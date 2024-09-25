@@ -71,7 +71,6 @@ export class BrowserTabTestbed {
       onSyncError: (error) => console.error(error),
       ...opts,
     });
-    repo.start();
     return new LocalRepoTestbed(this, repo);
   }
 

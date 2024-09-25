@@ -46,7 +46,6 @@ export const setup = async (
     return {kv, sid, local, pubsub, stop};
   };
   const {sid, local, pubsub, stop} = createLocal();
-  local.start();
   const createRemote = (localOpts: Partial<LevelLocalRepoOpts> = {}) => {
     const sid = localOpts.sid ?? 123456789;
     const busName = 'test-' + id;

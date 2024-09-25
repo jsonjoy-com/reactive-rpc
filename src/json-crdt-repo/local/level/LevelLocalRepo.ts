@@ -194,17 +194,13 @@ export class LevelLocalRepo implements LocalRepo {
     this.connected$ = opts.connected$ ?? new BehaviorSubject(true);
     this.pubsub = opts.pubsub ?? pubsub('level-local-repo');
     this.cipher = opts.cipher;
+    this._conSub = this.connected$.subscribe((connected) => {
+      if (connected && !this._remoteSyncLoopActive) this.runRemoteSyncLoop();
+    });
   }
 
   private _conSub: Subscription | undefined = undefined;
   private _stopped = false;
-
-  @once
-  public start(): void {
-    this._conSub = this.connected$.subscribe((connected) => {
-      if (!this._remoteSyncLoopActive) this.runRemoteSyncLoop();
-    });
-  }
 
   @once
   public stop(): void {
