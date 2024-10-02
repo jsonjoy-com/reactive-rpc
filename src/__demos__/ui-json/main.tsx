@@ -9,7 +9,7 @@ import {Model, Patch} from 'json-joy/lib/json-crdt';
 const repo = new JsonCrdtRepo({
   wsUrl: 'wss://demo-iasd8921ondk0.jsonjoy.com/rpc',
 });
-const id = 'block-sync-ui-demo-id';
+const id = 'block-sync-ui-demo-json';
 const session = repo.make(id);
 
 const model = session.model;
