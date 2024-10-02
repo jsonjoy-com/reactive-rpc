@@ -1712,10 +1712,10 @@ clean-css@^5.2.2:
   dependencies:
     source-map "~0.6.0"
 
-clickable-json@^1.14.0:
-  version "1.14.0"
-  resolved "https://registry.yarnpkg.com/clickable-json/-/clickable-json-1.14.0.tgz#b1709804afa37eb1e7bba6b8b422de03c3ae0dcf"
-  integrity sha512-sSjuaYtQ4gwVGNklMOqaZ4dvd8vGEC8LwbyMClRl6iZQ6EV9e0XWi2pOashmIiHJ9orzCjjN9s+GYy4FASbzog==
+clickable-json@^1.15.0:
+  version "1.15.0"
+  resolved "https://registry.yarnpkg.com/clickable-json/-/clickable-json-1.15.0.tgz#525949b6fdac018afcc973d1295f823613e34588"
+  integrity sha512-AlJrle8/uR6NkCb7QcX6S+hGT255rPTvqxXx/5WMews8zoDDcJZfc+QNZK6wwUv+1gS1PCH4yjSoC9Fx90XIhA==
   dependencies:
     collaborative-input "^1.6.0"
     flexible-input "^1.0.3"
@@ -1782,12 +1782,26 @@ collaborative-editor@^2.7.0:
   dependencies:
     fast-diff "^1.3.0"
 
+collaborative-editor@^2.8.0:
+  version "2.8.0"
+  resolved "https://registry.yarnpkg.com/collaborative-editor/-/collaborative-editor-2.8.0.tgz#6c227a1626ae135be91bf98bc7d8d605404a6781"
+  integrity sha512-MBS9Zo26OstMps7JqCOpgQ5RvsB9OzvQd+ZV6qv8Vg/q2T6xfPH9PwXaR4L66SytcssfFkk5lGfRNRQpWyaeow==
+  dependencies:
+    fast-diff "^1.3.0"
+
 collaborative-input@^1.6.0:
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/collaborative-input/-/collaborative-input-1.6.0.tgz#55d5f6d259b3c2c071832743d39a274183ccfe56"
   integrity sha512-40XHMnC9nARJEI3tTUpbIX8jswOEAfA831athBDTl3qQo8MpYb1q/XmsFl7W0uhJsw92P6I4mk+QRdK1o9Ye2w==
   dependencies:
     collaborative-editor "^2.7.0"
+
+collaborative-input@^1.6.1:
+  version "1.6.1"
+  resolved "https://registry.yarnpkg.com/collaborative-input/-/collaborative-input-1.6.1.tgz#98572f483b596189cb3040185032d329825c65f8"
+  integrity sha512-sc0YHqnf/G955i5xvDaaCmAtHK2wUSgyxwdZG857ZecI6Vp4PE84slHcczARshmkN/MJ+MarrVinM+TD3jgtPQ==
+  dependencies:
+    collaborative-editor "^2.8.0"
 
 collect-v8-coverage@^1.0.0:
   version "1.0.2"
