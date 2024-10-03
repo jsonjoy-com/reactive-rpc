@@ -10,8 +10,8 @@ const main = async () => {
   const repo = new JsonCrdtRepo({
     wsUrl: 'wss://demo-iasd8921ondk0.jsonjoy.com/rpc',
   });
-  const id = 'block-sync-ui-demo-text';
-  const session = await repo.sessions.load({id: [id], remote: {}});
+  const id = 'block-sync-ui-demo-text-3';
+  const session = await repo.sessions.load({id: [id], make: {}, remote: {timeout: 1000}});
   const model = session.model;
   const view = model.view();
   if (typeof view !== 'string') model.api.root('');

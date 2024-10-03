@@ -742,7 +742,6 @@ export class LevelLocalRepo implements LocalRepo {
     let needsReset = false;
     const didPush = await this.lockBlock(keyBase, async () => {
       const [tip, meta] = await Promise.all([this.readFrontierTip(keyBase), this.readMeta(keyBase)]);
-      if (meta.seq > -1 && (typeof req.cursor !== 'number' || req.cursor < meta.seq)) needsReset = true;
       let nextTick = meta.time + 1;
       cursor = meta.seq;
       if (tip) {
