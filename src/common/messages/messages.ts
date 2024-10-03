@@ -1,6 +1,3 @@
-import {MsgPackEncoder} from '@jsonjoy.com/json-pack/lib/msgpack'; // TODO: Should not statically import codecs
-import {CborEncoder} from '@jsonjoy.com/json-pack/lib/cbor/CborEncoder'; // TODO: Should not statically import codecs
-import {JsonEncoder} from '@jsonjoy.com/json-pack/lib/json/JsonEncoder'; // TODO: Should not statically import codecs
 import {BinaryMessageType} from '../codec/binary/constants';
 import {CompactMessageType} from '../codec/compact/constants';
 import {validateId, validateMethod} from '../rpc/validation';
@@ -77,74 +74,6 @@ const encodeBinaryWithPayload = (
   encodeHeader(writer, typeU16, id, payloadSize, start);
 };
 
-const encodeCompactWithNameAndPayload = (
-  codec: JsonValueCodec,
-  type: CompactMessageType,
-  msg: RequestDataMessage | RequestCompleteMessage | RequestErrorMessage,
-) => {
-  const encoder = codec.encoder;
-  if (encoder instanceof CborEncoder || encoder instanceof MsgPackEncoder) {
-    const value = msg.value;
-    const hasValue = value !== undefined;
-    encoder.writeArrHdr(hasValue ? 4 : 3);
-    encoder.writeUInteger(type);
-    encoder.writeUInteger(msg.id);
-    encoder.writeAsciiStr(msg.method);
-    if (hasValue) {
-      if (value.type) value.type.encoder(codec.format)(value.data, encoder);
-      else encoder.writeAny(value.data);
-    }
-  } else if (encoder instanceof JsonEncoder) {
-    const value = msg.value;
-    encoder.writeStartArr();
-    encoder.writeNumber(type);
-    encoder.writeArrSeparator();
-    encoder.writeNumber(msg.id);
-    encoder.writeArrSeparator();
-    encoder.writeAsciiStr(msg.method);
-    const hasValue = value !== undefined;
-    if (hasValue) {
-      encoder.writeArrSeparator();
-      if (value.type) value.type.encoder(codec.format)(value.data, encoder);
-      else encoder.writeAny(value.data);
-    }
-    encoder.writeEndArr();
-  } else encoder.writeArr(msg.toCompact());
-};
-
-const encodeCompactWithPayload = (
-  codec: JsonValueCodec,
-  type: CompactMessageType,
-  msg: ResponseCompleteMessage | ResponseDataMessage | ResponseErrorMessage,
-) => {
-  const encoder = codec.encoder;
-  if (encoder instanceof CborEncoder || encoder instanceof MsgPackEncoder) {
-    const value = msg.value;
-    const hasValue = value !== undefined;
-    encoder.writeArrHdr(hasValue ? 3 : 2);
-    encoder.writeUInteger(type);
-    encoder.writeUInteger(msg.id);
-    if (hasValue) {
-      if (value.type) {
-        value.type.encoder(codec.format)(value.data, encoder);
-      } else encoder.writeAny(value.data);
-    }
-  } else if (encoder instanceof JsonEncoder) {
-    const value = msg.value;
-    encoder.writeStartArr();
-    encoder.writeNumber(type);
-    encoder.writeArrSeparator();
-    encoder.writeNumber(msg.id);
-    const hasValue = value !== undefined;
-    if (hasValue) {
-      encoder.writeArrSeparator();
-      if (value.type) value.type.encoder(codec.format)(value.data, encoder);
-      else encoder.writeAny(value.data);
-    }
-    encoder.writeEndArr();
-  } else encoder.writeArr(msg.toCompact());
-};
-
 /**
  * @category Message
  */
@@ -162,34 +91,6 @@ export class NotificationMessage<V extends RpcValue<any> = RpcValue> implements 
     return this.value === undefined
       ? [CompactMessageType.Notification, this.method]
       : [CompactMessageType.Notification, this.method, this.value.data];
-  }
-
-  public encodeCompact(codec: JsonValueCodec): void {
-    const encoder = codec.encoder;
-    if (encoder instanceof CborEncoder || encoder instanceof MsgPackEncoder) {
-      const value = this.value;
-      const hasValue = value !== undefined;
-      encoder.writeArrHdr(hasValue ? 3 : 2);
-      encoder.writeUInteger(CompactMessageType.Notification);
-      encoder.writeAsciiStr(this.method);
-      if (hasValue) {
-        if (value.type) value.type.encoder(codec.format)(value.data, encoder);
-        else encoder.writeAny(value.data);
-      }
-    } else if (encoder instanceof JsonEncoder) {
-      const value = this.value;
-      encoder.writeStartArr();
-      encoder.writeNumber(CompactMessageType.Notification);
-      encoder.writeArrSeparator();
-      encoder.writeAsciiStr(this.method);
-      const hasValue = value !== undefined;
-      if (hasValue) {
-        encoder.writeArrSeparator();
-        if (value.type) value.type.encoder(codec.format)(value.data, encoder);
-        else encoder.writeAny(value.data);
-      }
-      encoder.writeEndArr();
-    } else encoder.writeArr(this.toCompact());
   }
 
   public encodeBinary(codec: JsonValueCodec): void {
@@ -230,10 +131,6 @@ export class RequestDataMessage<V extends RpcValue<any> = RpcValue> implements M
       : [CompactMessageType.RequestData, this.id, this.method, this.value.data];
   }
 
-  public encodeCompact(codec: JsonValueCodec): void {
-    encodeCompactWithNameAndPayload(codec, CompactMessageType.RequestData, this);
-  }
-
   public encodeBinary(codec: JsonValueCodec): void {
     encodeBinaryWithNameAndPayload(codec, BinaryMessageType.RequestData << 13, this.id, this.method, this.value);
   }
@@ -260,10 +157,6 @@ export class RequestCompleteMessage<V extends RpcValue<any> = RpcValue> implemen
       : [CompactMessageType.RequestComplete, this.id, this.method, this.value.data];
   }
 
-  public encodeCompact(codec: JsonValueCodec): void {
-    encodeCompactWithNameAndPayload(codec, CompactMessageType.RequestComplete, this);
-  }
-
   public encodeBinary(codec: JsonValueCodec): void {
     encodeBinaryWithNameAndPayload(codec, BinaryMessageType.RequestComplete << 13, this.id, this.method, this.value);
   }
@@ -288,10 +181,6 @@ export class RequestErrorMessage<V extends RpcValue<any> = RpcValue> implements 
     return [CompactMessageType.RequestError, this.id, this.method, this.value.data];
   }
 
-  public encodeCompact(codec: JsonValueCodec): void {
-    encodeCompactWithNameAndPayload(codec, CompactMessageType.RequestError, this);
-  }
-
   public encodeBinary(codec: JsonValueCodec): void {
     encodeBinaryWithNameAndPayload(codec, BinaryMessageType.RequestError << 13, this.id, this.method, this.value);
   }
@@ -309,10 +198,6 @@ export class RequestUnsubscribeMessage implements Message<cmsg.CompactMessage> {
 
   public toCompact(): cmsg.CompactRequestUnsubscribeMessage {
     return [CompactMessageType.RequestUnsubscribe, this.id];
-  }
-
-  public encodeCompact(codec: JsonValueCodec): void {
-    codec.encoder.writeArr(this.toCompact());
   }
 
   public encodeBinary(codec: JsonValueCodec): void {
@@ -339,10 +224,6 @@ export class ResponseCompleteMessage<V extends RpcValue<any> = RpcValue> impleme
       : [CompactMessageType.ResponseComplete, this.id, this.value.data];
   }
 
-  public encodeCompact(codec: JsonValueCodec): void {
-    encodeCompactWithPayload(codec, CompactMessageType.ResponseComplete, this);
-  }
-
   public encodeBinary(codec: JsonValueCodec): void {
     encodeBinaryWithPayload(codec, BinaryMessageType.ResponseComplete << 13, this.id, this.value);
   }
@@ -363,10 +244,6 @@ export class ResponseDataMessage<V extends RpcValue<any> = RpcValue> implements 
 
   public toCompact(): cmsg.CompactResponseDataMessage<V> {
     return [CompactMessageType.ResponseData, this.id, this.value.data];
-  }
-
-  public encodeCompact(codec: JsonValueCodec): void {
-    encodeCompactWithPayload(codec, CompactMessageType.ResponseData, this);
   }
 
   public encodeBinary(codec: JsonValueCodec): void {
@@ -391,10 +268,6 @@ export class ResponseErrorMessage<V extends RpcValue<any> = RpcValue> implements
     return [CompactMessageType.ResponseError, this.id, this.value.data];
   }
 
-  public encodeCompact(codec: JsonValueCodec): void {
-    encodeCompactWithPayload(codec, CompactMessageType.ResponseError, this);
-  }
-
   public encodeBinary(codec: JsonValueCodec): void {
     encodeBinaryWithPayload(codec, BinaryMessageType.ResponseError << 13, this.id, this.value);
   }
@@ -412,10 +285,6 @@ export class ResponseUnsubscribeMessage implements Message<cmsg.CompactMessage> 
 
   public toCompact(): cmsg.CompactResponseUnsubscribeMessage {
     return [CompactMessageType.ResponseUnsubscribe, this.id];
-  }
-
-  public encodeCompact(codec: JsonValueCodec): void {
-    codec.encoder.writeArr(this.toCompact());
   }
 
   public encodeBinary(codec: JsonValueCodec): void {
