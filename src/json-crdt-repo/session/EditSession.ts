@@ -87,7 +87,7 @@ export class EditSession<N extends JsonNode = JsonNode<any>> {
       const length = patches.length;
       // TODO: After async call check that sync state is still valid. New patches, might have been added.
       if (length || this.cursor === undefined) {
-        let time = this.start.clock.time - 1;
+        const time = this.start.clock.time - 1;
         const res = await this.repo.sync({
           id: this.id,
           patches,
