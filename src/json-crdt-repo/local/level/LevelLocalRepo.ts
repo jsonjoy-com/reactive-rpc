@@ -734,12 +734,11 @@ export class LevelLocalRepo implements LocalRepo {
   private async _syncMerge(req: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
     const {id, patches} = req;
     let lastKnownTime: number = 0;
-    const reqTime = req.time
+    const reqTime = req.time;
     if (typeof reqTime === 'number') {
       lastKnownTime = reqTime;
       const firstPatch = patches?.[0];
-      if (firstPatch?.getId()?.sid === SESSION.GLOBAL)
-        lastKnownTime = firstPatch.getId()!.time + firstPatch.span() - 1;
+      if (firstPatch?.getId()?.sid === SESSION.GLOBAL) lastKnownTime = firstPatch.getId()!.time + firstPatch.span() - 1;
     } else if (patches?.length) {
       const firstPatchTime = patches?.[0]?.getId()?.time;
       if (typeof firstPatchTime === 'number') lastKnownTime = firstPatchTime - 1;

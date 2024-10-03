@@ -93,7 +93,7 @@ export class EditSession<N extends JsonNode = JsonNode<any>> {
           patches,
           time,
           cursor: this.cursor,
-          session: this.session
+          session: this.session,
         });
         if (this._stopped) return null;
         // TODO: After sync call succeeds, remove the patches from the log.
@@ -123,7 +123,7 @@ export class EditSession<N extends JsonNode = JsonNode<any>> {
             if (this._stopped) return;
             const get = await this.repo.getIf({
               id: this.id,
-              cursor: this.cursor
+              cursor: this.cursor,
             });
             if (this._stopped) return;
             if (!get) return;
@@ -149,11 +149,13 @@ export class EditSession<N extends JsonNode = JsonNode<any>> {
   public syncLog(): void {
     if (!this.log.patches.size()) return;
     this._syncRace(() => {
-      this.sync().then((error) => {
-        this.onsyncerror?.(error);
-      }).catch(error => {
-        this.onsyncerror?.(error);
-      });
+      this.sync()
+        .then((error) => {
+          this.onsyncerror?.(error);
+        })
+        .catch((error) => {
+          this.onsyncerror?.(error);
+        });
     });
   }
 

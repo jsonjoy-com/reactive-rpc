@@ -16,7 +16,6 @@ const main = async () => {
   const view = model.view();
   if (typeof view !== 'string') model.api.root('');
 
-
   const Demo: React.FC = () => {
     const [remote, setRemote] = React.useState<Model | null>(null);
     const ref = React.useRef<HTMLTextAreaElement | null>(null);

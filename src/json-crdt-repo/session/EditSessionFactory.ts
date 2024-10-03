@@ -61,14 +61,19 @@ export class EditSessionFactory {
             const {model, cursor} = await (typeof timeoutMs === 'number'
               ? timeout(timeoutMs, repo.pull(id))
               : repo.pull(id));
-              if (remote.throwIf === 'exists') throw new Error('EXISTS');
-              const session = new EditSession(repo, id, model, cursor, opts.session);
-              session.log.end.api.autoFlush();
-              return session;
-            } catch (error) {
+            if (remote.throwIf === 'exists') throw new Error('EXISTS');
+            const session = new EditSession(repo, id, model, cursor, opts.session);
+            session.log.end.api.autoFlush();
+            return session;
+          } catch (error) {
             if (!!error && typeof error === 'object' && (error as Record<string, unknown>).message === 'TIMEOUT') {
               if (!opts.make) throw error;
-            } else if (!!error && typeof error === 'object' && ((error as Record<string, unknown>).message === 'NOT_FOUND' || (error as Record<string, unknown>).code === 'NOT_FOUND')) {
+            } else if (
+              !!error &&
+              typeof error === 'object' &&
+              ((error as Record<string, unknown>).message === 'NOT_FOUND' ||
+                (error as Record<string, unknown>).code === 'NOT_FOUND')
+            ) {
               if (remote.throwIf === 'missing') throw error;
             } else throw error;
           }
