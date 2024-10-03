@@ -118,6 +118,38 @@ describe('sync', () => {
     await kit.stop();
   });
 
+  test('sessions created just after the first one, converges in state', async () => {
+    const kit = await setup();
+    const schema = s.obj({a: s.con('a')});
+    const {session: session1} = kit.sessions.make({id: kit.blockId, schema, session: 1});
+    const {session: session2} = kit.sessions.make({id: kit.blockId, schema, session: 2});
+    await session1.sync();
+    await session2.sync();
+    expect(session1.log.patches.size()).toBe(0);
+    session1.model.api.obj([]).set({b: 'b'});
+    session1.model.api.obj([]).set({c: 'c'});
+    await tick(5);
+    session1.model.api.obj([]).set({d: 'd'});
+    const {session: session3} = kit.sessions.make({id: kit.blockId, pull: true, schema, session: 3});
+    await tick(5);
+    session1.model.api.obj([]).set({e: 'e'});
+    await tick(5);
+    session1.model.api.obj([]).set({f: 'f'});
+    await session1.sync();
+    await until(async () => {
+      try {
+        expect(session1.model.view()).toEqual(session3.model.view());
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    await session1.dispose();
+    await session2.dispose();
+    await session3.dispose();
+    await kit.stop();
+  });
+
   test('sessions converge to the same view', async () => {
     const kit = await setup();
     const schema = s.obj({a: s.con('a')});
@@ -141,7 +173,21 @@ describe('sync', () => {
     await until(async () => {
       try {
         expect(session1.model.view()).toEqual(session2.model.view());
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    await until(async () => {
+      try {
         expect(session1.model.view()).toEqual(session3.model.view());
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    await until(async () => {
+      try {
         expect(session1.model.view()).toEqual(session4.model.view());
         return true;
       } catch {
@@ -155,6 +201,7 @@ describe('sync', () => {
     await session1.dispose();
     await session2.dispose();
     await session3.dispose();
+    await session4.dispose();
     await kit.stop();
   });
 });

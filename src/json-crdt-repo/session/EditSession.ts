@@ -87,7 +87,14 @@ export class EditSession<N extends JsonNode = JsonNode<any>> {
       const length = patches.length;
       // TODO: After async call check that sync state is still valid. New patches, might have been added.
       if (length || this.cursor === undefined) {
-        const res = await this.repo.sync({id: this.id, patches, cursor: this.cursor, session: this.session});
+        let time = this.start.clock.time - 1;
+        const res = await this.repo.sync({
+          id: this.id,
+          patches,
+          time,
+          cursor: this.cursor,
+          session: this.session
+        });
         if (this._stopped) return null;
         // TODO: After sync call succeeds, remove the patches from the log.
         if (length) {
@@ -96,16 +103,33 @@ export class EditSession<N extends JsonNode = JsonNode<any>> {
           if (lastId) this.log.advanceTo(lastId);
           this.start.applyBatch(patches);
         }
-        if (typeof res.cursor !== undefined) this.cursor = res.cursor;
+        // "cursor" shall not be returned from .sync() call. The cursor shall update
+        // only when remote model changes are received, during local .sync() write
+        // only the local model is updated.
+        if (typeof res.cursor !== undefined) {
+          this.cursor = res.cursor;
+        }
         if (res.model) {
           this._syncRace(() => {
             this.reset(<any>res.model!);
           });
-        } else if (res.merge) {
+        } else if (res.merge && res.merge) {
           this._syncRace(() => {
             this.merge(<any>res.merge!);
           });
         }
+        // if (res.cursorBehind) {
+        //   setTimeout(async () => {
+        //     if (!this._stopped) return;
+        //     const get = await this.repo.getIf({
+        //       id: this.id,
+        //       cursor: this.cursor
+        //     });
+        //     if (!this._stopped) return;
+        //     if (!get) return;
+        //     this.reset(<any>get.model);
+        //   }, 50);
+        // }
         return {remote: res.remote};
       } else {
         const res = await this.repo.getIf({id: this.id, time: this.model.clock.time - 1, cursor: this.cursor});
@@ -209,6 +233,12 @@ export class EditSession<N extends JsonNode = JsonNode<any>> {
 
   private onEvent = (event: LocalRepoEvent): void => {
     if (this._stopped) return;
+    if ((event as LocalRepoMergeEvent).merge) {
+      const cursor = (event as LocalRepoMergeEvent).cursor;
+      if (cursor !== undefined) {
+        this.cursor = cursor;
+      }
+    }
     if ((event as LocalRepoRebaseEvent).rebase) {
       if ((event as LocalRepoRebaseEvent).session === this.session) return;
     }

@@ -88,6 +88,12 @@ export interface LocalRepoSyncRequest {
   id: BlockId;
 
   /**
+   * Logical clock time of the local operations which the client has caught up
+   * to.
+   */
+  time?: number;
+
+  /**
    * The last known cursor returned in the `.sync()` call response. The cursor
    * should be omitted in the first `.sync()` call, and then set to the value
    * returned in the previous `.sync()` call.
@@ -114,6 +120,13 @@ export interface LocalRepoSyncResponse {
    * call.
    */
   cursor: undefined | unknown;
+
+  /**
+   * Set to true if the client is behind the remote. When true, the client
+   * should call `.getIf()` after a short wait period to check if the remote
+   * is indeed ahead.
+   */
+  cursorBehind?: boolean;
 
   /**
    * Model snapshot that the client should reset its "start" state to. The
