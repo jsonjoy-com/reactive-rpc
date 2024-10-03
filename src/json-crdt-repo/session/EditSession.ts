@@ -151,6 +151,8 @@ export class EditSession<N extends JsonNode = JsonNode<any>> {
     this._syncRace(() => {
       this.sync().then((error) => {
         this.onsyncerror?.(error);
+      }).catch(error => {
+        this.onsyncerror?.(error);
       });
     });
   }
