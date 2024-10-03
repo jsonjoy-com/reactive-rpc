@@ -2,7 +2,8 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-  mode: 'development',
+  // mode: 'development',
+  mode: 'production',
   devtool: 'inline-source-map',
   entry: {
     bundle: __dirname + '/main',
@@ -11,6 +12,7 @@ module.exports = {
     new HtmlWebpackPlugin({
       title: 'Development',
     }),
+    new (require('webpack-bundle-analyzer').BundleAnalyzerPlugin)(),
   ],
   module: {
     rules: [
