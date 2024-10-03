@@ -1,14 +1,13 @@
-import {MsgPackEncoder} from '@jsonjoy.com/json-pack/lib/msgpack';
-import {CborEncoder} from '@jsonjoy.com/json-pack/lib/cbor/CborEncoder';
-import {JsonEncoder} from '@jsonjoy.com/json-pack/lib/json/JsonEncoder';
 import {RpcMessageFormat} from '../constants';
 import {RpcError, RpcErrorCodes} from '../../rpc/caller/error';
 import * as msg from '../../messages';
 import {CompactMessageType} from './constants';
 import {RpcValue} from '../../messages/Value';
+import type {JsonEncoder} from '@jsonjoy.com/json-pack/lib/json/JsonEncoder';
 import type {RpcMessageCodec} from '../types';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
 import type * as types from './types';
+import type {TlvBinaryJsonEncoder} from '@jsonjoy.com/json-pack';
 
 const fromJson = (arr: unknown | unknown[] | types.CompactMessage): msg.ReactiveRpcMessage => {
   if (!(arr instanceof Array)) throw RpcError.fromCode(RpcErrorCodes.BAD_REQUEST);
@@ -57,10 +56,11 @@ const encodeCompactWithNameAndPayload = (
   msg: msg.RequestDataMessage | msg.RequestCompleteMessage | msg.RequestErrorMessage,
 ) => {
   const encoder = codec.encoder;
-  if (encoder instanceof CborEncoder || encoder instanceof MsgPackEncoder) {
+  if (typeof (encoder as any as TlvBinaryJsonEncoder).writeArrHdr === 'function') {
+    const binaryEncoder = encoder as any as TlvBinaryJsonEncoder;
     const value = msg.value;
     const hasValue = value !== undefined;
-    encoder.writeArrHdr(hasValue ? 4 : 3);
+    binaryEncoder.writeArrHdr(hasValue ? 4 : 3);
     encoder.writeUInteger(type);
     encoder.writeUInteger(msg.id);
     encoder.writeAsciiStr(msg.method);
@@ -68,21 +68,22 @@ const encodeCompactWithNameAndPayload = (
       if (value.type) value.type.encoder(codec.format)(value.data, encoder);
       else encoder.writeAny(value.data);
     }
-  } else if (encoder instanceof JsonEncoder) {
+  } else if (typeof (encoder as any as JsonEncoder).writeStartArr === 'function' && typeof (encoder as any as JsonEncoder).writeArrSeparator === 'function') {
+    const jsonEncoder = encoder as any as JsonEncoder;
     const value = msg.value;
-    encoder.writeStartArr();
-    encoder.writeNumber(type);
-    encoder.writeArrSeparator();
-    encoder.writeNumber(msg.id);
-    encoder.writeArrSeparator();
-    encoder.writeAsciiStr(msg.method);
+    jsonEncoder.writeStartArr();
+    jsonEncoder.writeNumber(type);
+    jsonEncoder.writeArrSeparator();
+    jsonEncoder.writeNumber(msg.id);
+    jsonEncoder.writeArrSeparator();
+    jsonEncoder.writeAsciiStr(msg.method);
     const hasValue = value !== undefined;
     if (hasValue) {
-      encoder.writeArrSeparator();
+      jsonEncoder.writeArrSeparator();
       if (value.type) value.type.encoder(codec.format)(value.data, encoder);
-      else encoder.writeAny(value.data);
+      else jsonEncoder.writeAny(value.data);
     }
-    encoder.writeEndArr();
+    jsonEncoder.writeEndArr();
   } else encoder.writeArr(msg.toCompact());
 };
 
@@ -92,10 +93,11 @@ const encodeCompactWithPayload = (
   msg: msg.ResponseCompleteMessage | msg.ResponseDataMessage | msg.ResponseErrorMessage,
 ) => {
   const encoder = codec.encoder;
-  if (encoder instanceof CborEncoder || encoder instanceof MsgPackEncoder) {
+  if (typeof (encoder as any as TlvBinaryJsonEncoder).writeArrHdr === 'function') {
+    const binaryEncoder = encoder as any as TlvBinaryJsonEncoder;
     const value = msg.value;
     const hasValue = value !== undefined;
-    encoder.writeArrHdr(hasValue ? 3 : 2);
+    binaryEncoder.writeArrHdr(hasValue ? 3 : 2);
     encoder.writeUInteger(type);
     encoder.writeUInteger(msg.id);
     if (hasValue) {
@@ -103,19 +105,20 @@ const encodeCompactWithPayload = (
         value.type.encoder(codec.format)(value.data, encoder);
       } else encoder.writeAny(value.data);
     }
-  } else if (encoder instanceof JsonEncoder) {
+  } else if (typeof (encoder as any as JsonEncoder).writeStartArr === 'function' && typeof (encoder as any as JsonEncoder).writeArrSeparator === 'function') {
+    const jsonEncoder = encoder as any as JsonEncoder;
     const value = msg.value;
-    encoder.writeStartArr();
-    encoder.writeNumber(type);
-    encoder.writeArrSeparator();
-    encoder.writeNumber(msg.id);
+    jsonEncoder.writeStartArr();
+    jsonEncoder.writeNumber(type);
+    jsonEncoder.writeArrSeparator();
+    jsonEncoder.writeNumber(msg.id);
     const hasValue = value !== undefined;
     if (hasValue) {
-      encoder.writeArrSeparator();
-      if (value.type) value.type.encoder(codec.format)(value.data, encoder);
+      jsonEncoder.writeArrSeparator();
+      if (value.type) value.type.encoder(codec.format)(value.data, jsonEncoder);
       else encoder.writeAny(value.data);
     }
-    encoder.writeEndArr();
+    jsonEncoder.writeEndArr();
   } else encoder.writeArr(msg.toCompact());
 };
 
@@ -126,29 +129,31 @@ export class CompactRpcMessageCodec implements RpcMessageCodec {
   public encodeMessage(codec: JsonValueCodec, message: msg.ReactiveRpcMessage): void {
     if (message instanceof msg.NotificationMessage) {
       const encoder = codec.encoder;
-      if (encoder instanceof CborEncoder || encoder instanceof MsgPackEncoder) {
+      if (typeof (encoder as any as TlvBinaryJsonEncoder).writeArrHdr === 'function') {
+        const binaryEncoder = encoder as any as TlvBinaryJsonEncoder;
         const value = message.value;
         const hasValue = value !== undefined;
-        encoder.writeArrHdr(hasValue ? 3 : 2);
+        binaryEncoder.writeArrHdr(hasValue ? 3 : 2);
         encoder.writeUInteger(CompactMessageType.Notification);
         encoder.writeAsciiStr(message.method);
         if (hasValue) {
           if (value.type) value.type.encoder(codec.format)(value.data, encoder);
           else encoder.writeAny(value.data);
         }
-      } else if (encoder instanceof JsonEncoder) {
+      } else if (typeof (encoder as any as JsonEncoder).writeStartArr === 'function' && typeof (encoder as any as JsonEncoder).writeArrSeparator === 'function') {
+        const jsonEncoder = encoder as any as JsonEncoder;
         const value = message.value;
-        encoder.writeStartArr();
-        encoder.writeNumber(CompactMessageType.Notification);
-        encoder.writeArrSeparator();
-        encoder.writeAsciiStr(message.method);
+        jsonEncoder.writeStartArr();
+        jsonEncoder.writeNumber(CompactMessageType.Notification);
+        jsonEncoder.writeArrSeparator();
+        jsonEncoder.writeAsciiStr(message.method);
         const hasValue = value !== undefined;
         if (hasValue) {
-          encoder.writeArrSeparator();
-          if (value.type) value.type.encoder(codec.format)(value.data, encoder);
+          jsonEncoder.writeArrSeparator();
+          if (value.type) value.type.encoder(codec.format)(value.data, jsonEncoder);
           else encoder.writeAny(value.data);
         }
-        encoder.writeEndArr();
+        jsonEncoder.writeEndArr();
       } else encoder.writeArr(message.toCompact());
     } else if (message instanceof msg.RequestDataMessage) {
       encodeCompactWithNameAndPayload(codec, CompactMessageType.RequestData, message);
@@ -173,20 +178,22 @@ export class CompactRpcMessageCodec implements RpcMessageCodec {
 
   public encodeBatch(jsonCodec: JsonValueCodec, batch: msg.ReactiveRpcMessage[]): void {
     const encoder = jsonCodec.encoder;
-    if (encoder instanceof CborEncoder || encoder instanceof MsgPackEncoder) {
+    if (typeof (encoder as any as TlvBinaryJsonEncoder).writeArrHdr === 'function') {
+      const binaryEncoder = encoder as any as TlvBinaryJsonEncoder;
       const length = batch.length;
-      encoder.writeArrHdr(length);
+      binaryEncoder.writeArrHdr(length);
       for (let i = 0; i < length; i++) this.encodeMessage(jsonCodec, batch[i]);
-    } else if (encoder instanceof JsonEncoder) {
+    } else if (typeof (encoder as any as JsonEncoder).writeStartArr === 'function' && typeof (encoder as any as JsonEncoder).writeArrSeparator === 'function') {
+      const jsonEncoder = encoder as any as JsonEncoder;
       const length = batch.length;
       const last = length - 1;
-      encoder.writeStartArr();
+      jsonEncoder.writeStartArr();
       for (let i = 0; i < last; i++) {
         this.encodeMessage(jsonCodec, batch[i]);
-        encoder.writeArrSeparator();
+        jsonEncoder.writeArrSeparator();
       }
       if (length > 0) this.encodeMessage(jsonCodec, batch[last]);
-      encoder.writeEndArr();
+      jsonEncoder.writeEndArr();
     } else {
       const jsonMessages: types.CompactMessage[] = [];
       const length = batch.length;
