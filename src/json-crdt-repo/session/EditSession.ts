@@ -118,18 +118,18 @@ export class EditSession<N extends JsonNode = JsonNode<any>> {
             this.merge(<any>res.merge!);
           });
         }
-        // if (res.cursorBehind) {
-        //   setTimeout(async () => {
-        //     if (!this._stopped) return;
-        //     const get = await this.repo.getIf({
-        //       id: this.id,
-        //       cursor: this.cursor
-        //     });
-        //     if (!this._stopped) return;
-        //     if (!get) return;
-        //     this.reset(<any>get.model);
-        //   }, 50);
-        // }
+        if (res.cursorBehind) {
+          setTimeout(async () => {
+            if (this._stopped) return;
+            const get = await this.repo.getIf({
+              id: this.id,
+              cursor: this.cursor
+            });
+            if (this._stopped) return;
+            if (!get) return;
+            this.reset(<any>get.model);
+          }, 50);
+        }
         return {remote: res.remote};
       } else {
         const res = await this.repo.getIf({id: this.id, time: this.model.clock.time - 1, cursor: this.cursor});
