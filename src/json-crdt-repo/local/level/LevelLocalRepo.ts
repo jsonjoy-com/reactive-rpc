@@ -775,15 +775,15 @@ export class LevelLocalRepo implements LocalRepo {
         const op: BinStrLevelOperation = {type: 'put', key: patchKey, value: uint8};
         ops.push(op);
       }
+      if (writtenPatches.length) {
+        this.pubsub.pub({type: 'rebase', id, patches: writtenPatches, session: req.session});
+      }
       if (ops.length) {
         await this.kv.batch(ops);
         return true;
       }
       return false;
     });
-    if (writtenPatches.length) {
-      this.pubsub.pub({type: 'rebase', id, patches: writtenPatches, session: req.session});
-    }
     if (!didPush && !needsReset) {
       const merge = await this.readFrontier0(keyBase);
       return {cursor, merge};
