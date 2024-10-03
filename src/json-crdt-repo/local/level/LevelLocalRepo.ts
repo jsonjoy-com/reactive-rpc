@@ -715,6 +715,7 @@ export class LevelLocalRepo implements LocalRepo {
         } catch (error) {
           if (error instanceof Error && error.message === 'EXISTS')
             // TODO: make sure reset does not happen, if models are the same.
+            // TODO: Check for `req.time` in `_syncRead`.
             return await this._syncRead(id);
           throw error;
         }
@@ -732,6 +733,16 @@ export class LevelLocalRepo implements LocalRepo {
 
   private async _syncMerge(req: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
     const {id, patches} = req;
+    let lastKnownTime: number = 0;
+    const reqTime = req.time;
+    if (typeof reqTime === 'number') {
+      lastKnownTime = reqTime;
+      const firstPatch = patches?.[0];
+      if (firstPatch?.getId()?.sid === SESSION.GLOBAL) lastKnownTime = firstPatch.getId()!.time + firstPatch.span() - 1;
+    } else if (patches?.length) {
+      const firstPatchTime = patches?.[0]?.getId()?.time;
+      if (typeof firstPatchTime === 'number') lastKnownTime = firstPatchTime - 1;
+    }
     const keyBase = await this.blockKeyBase(id);
     if (!patches || !patches.length) throw new Error('EMPTY_BATCH');
     const writtenPatches: Uint8Array[] = [];
@@ -740,10 +751,12 @@ export class LevelLocalRepo implements LocalRepo {
     // TODO: Return correct response.
     // TODO: Check that remote state is in sync, too.
     let needsReset = false;
+    let cursorBehind = false;
     const didPush = await this.lockBlock(keyBase, async () => {
       const [tip, meta] = await Promise.all([this.readFrontierTip(keyBase), this.readMeta(keyBase)]);
-      if (meta.seq > -1 && (typeof req.cursor !== 'number' || req.cursor < meta.seq)) needsReset = true;
+      if (meta.seq > -1 && (typeof req.cursor !== 'number' || req.cursor < meta.seq)) cursorBehind = true;
       let nextTick = meta.time + 1;
+      if (lastKnownTime < meta.time) needsReset = true;
       cursor = meta.seq;
       if (tip) {
         const tipTime = tip.getId()?.time ?? 0;
@@ -775,18 +788,18 @@ export class LevelLocalRepo implements LocalRepo {
         const op: BinStrLevelOperation = {type: 'put', key: patchKey, value: uint8};
         ops.push(op);
       }
+      if (writtenPatches.length) {
+        this.pubsub.pub({type: 'rebase', id, patches: writtenPatches, session: req.session});
+      }
       if (ops.length) {
         await this.kv.batch(ops);
         return true;
       }
       return false;
     });
-    if (writtenPatches.length) {
-      this.pubsub.pub({type: 'rebase', id, patches: writtenPatches, session: req.session});
-    }
     if (!didPush && !needsReset) {
       const merge = await this.readFrontier0(keyBase);
-      return {cursor, merge};
+      return {cursor, merge, cursorBehind};
     }
     const remote = this.markDirtyAndSync(keyBase, id)
       .then(() => {})
@@ -796,9 +809,9 @@ export class LevelLocalRepo implements LocalRepo {
       });
     if (needsReset) {
       const {cursor, model} = await this._syncRead0(keyBase);
-      return {cursor, model, remote};
+      return {cursor, model, remote, cursorBehind};
     }
-    return {cursor, remote};
+    return {cursor, remote, cursorBehind};
   }
 
   protected async readLocal0(keyBase: string): Promise<[model: Model, cursor: LevelLocalRepoCursor]> {

@@ -66,9 +66,14 @@ export class EditSessionFactory {
             session.log.end.api.autoFlush();
             return session;
           } catch (error) {
-            if (error instanceof Error && error.message === 'TIMEOUT') {
+            if (!!error && typeof error === 'object' && (error as Record<string, unknown>).message === 'TIMEOUT') {
               if (!opts.make) throw error;
-            } else if (error instanceof Error && error.message === 'NOT_FOUND') {
+            } else if (
+              !!error &&
+              typeof error === 'object' &&
+              ((error as Record<string, unknown>).message === 'NOT_FOUND' ||
+                (error as Record<string, unknown>).code === 'NOT_FOUND')
+            ) {
               if (remote.throwIf === 'missing') throw error;
             } else throw error;
           }
