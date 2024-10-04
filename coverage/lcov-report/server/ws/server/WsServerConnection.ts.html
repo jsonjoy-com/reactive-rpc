@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">68.45% </span>
+                <span class="strong">68.02% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>102/149</span>
+                <span class='fraction'>100/147</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">70.58% </span>
+                <span class="strong">70.37% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>96/136</span>
+                <span class='fraction'>95/135</span>
             </div>
         
             
@@ -277,8 +277,7 @@
 <a name='L212'></a><a href='#L212'>212</a>
 <a name='L213'></a><a href='#L213'>213</a>
 <a name='L214'></a><a href='#L214'>214</a>
-<a name='L215'></a><a href='#L215'>215</a>
-<a name='L216'></a><a href='#L216'>216</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L215'></a><a href='#L215'>215</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -380,7 +379,6 @@
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -494,7 +492,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import * as crypto from 'crypto';
-import * as stream from 'stream';
+import type * as stream from 'stream';
 import {utf8Size} from '@jsonjoy.com/util/lib/strings/utf8';
 import {listToUint8} from '@jsonjoy.com/util/lib/buffers/concat';
 import {WsCloseFrame, WsFrameDecoder, WsFrameHeader, WsFrameOpcode, WsPingFrame, WsPongFrame} from '../codec';
@@ -503,7 +501,7 @@ import type {WsFrameEncoder} from '../codec/WsFrameEncoder';
 export type WsServerConnectionSocket = stream.Duplex;
 &nbsp;
 export class WsServerConnection {
-  public closed: boolean = false;
+  public closed = false;
   public maxIncomingMessage: number = 2 * 1024 * 1024;
   public maxBackpressure: number = 2 * 1024 * 1024;
 &nbsp;
@@ -512,7 +510,7 @@ export class WsServerConnection {
   };
 &nbsp;
   private _fragments: Uint8Array[] = [];
-  private _fragmentsSize: number = 0;
+  private _fragmentsSize = 0;
   public readonly defaultOnFragment = (isLast: boolean, data: Uint8Array, isUtf8: boolean): void =&gt; {
     const fragments = this._fragments;
     this._fragmentsSize += data.length;
@@ -544,7 +542,7 @@ export class WsServerConnection {
     const handleData = (data: Uint8Array): void =&gt; {
       try {
         decoder.push(data);
-        MAIN: while (true) {
+        while (true) {
           if (currentFrameHeader instanceof WsFrameHeader) {
             const length = currentFrameHeader.length;
             if (length &gt; this.maxIncomingMessage) {
@@ -571,16 +569,16 @@ export class WsServerConnection {
           if (!frame) break;
           if (frame instanceof WsPingFrame) {
             this.onping(frame.data);
-            continue MAIN;
+            continue;
           }
           if (frame instanceof WsPongFrame) {
             this.onpong(frame.data);
-            continue MAIN;
+            continue;
           }
           if (frame instanceof WsCloseFrame) {
             decoder.readCloseFrameData(frame);
             this.onClose(frame.code, frame.reason);
-            continue MAIN;
+            continue;
           }
           if (frame instanceof WsFrameHeader) {
             if (fragmentStartFrameHeader) {
@@ -593,10 +591,9 @@ export class WsServerConnection {
             if (frame.fin === 0) {
               fragmentStartFrameHeader = frame;
               currentFrameHeader = frame;
-              continue MAIN;
+              continue;
             }
             currentFrameHeader = frame;
-            continue MAIN;
           }
         }
       } catch {
@@ -643,7 +640,7 @@ export class WsServerConnection {
   public <span class="fstat-no" title="function not covered" >upgrade(</span>secWebSocketKey: string, secWebSocketProtocol: string, secWebSocketExtensions?: string): void {
     const accept = <span class="cstat-no" title="statement not covered" >secWebSocketKey + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';</span>
     const acceptSha1 = <span class="cstat-no" title="statement not covered" >crypto.createHash('sha1').update(accept).digest('base64');</span>
-    // prettier-ignore
+    // biome-ignore format: line per header
 <span class="cstat-no" title="statement not covered" >    this.socket.write(</span>
       'HTTP/1.1 101 Switching Protocols\r\n' +
         'Upgrade: websocket\r\n' +
@@ -715,7 +712,7 @@ export class WsServerConnection {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2024-10-04T09:46:05.889Z
+                at 2024-10-04T10:40:15.310Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
