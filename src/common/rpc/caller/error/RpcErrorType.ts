@@ -1,4 +1,11 @@
-import {ResolveType, t} from 'json-joy/lib/json-type';
+import {type ResolveType, t} from 'json-joy/lib/json-type';
+
+/**
+ * @protected
+ *
+ * Do not import from this module on the client side. It will import the whole
+ * `json-type` and `json-expression` libraries, due to `t` builder.
+ */
 
 export const RpcErrorType = t
   .Object(

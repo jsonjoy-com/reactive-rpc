@@ -1,4 +1,4 @@
-import {RpcError} from './error';
+import {RpcError} from './error/RpcError';
 import {RpcCaller, type RpcApiCallerOptions} from './RpcCaller';
 import {type AbstractType, FunctionStreamingType, FunctionType} from 'json-joy/lib/json-type/type/classes';
 import {printTree} from 'sonic-forest/lib/print/printTree';
@@ -90,7 +90,7 @@ export class ObjectValueCaller<V extends ObjectValue<ObjectType<any>>, Ctx = unk
           const error: any = validator(req);
           if (error) {
             const message = error.message + (Array.isArray(error?.path) ? ' Path: /' + error.path.join('/') : '');
-            throw RpcError.value(RpcError.validation(message, error));
+            throw RpcError.validation(message, error);
           }
         };
     method =

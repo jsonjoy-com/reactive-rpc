@@ -1,8 +1,9 @@
-import {RpcError} from './error';
+import {RpcError} from './error/RpcError';
 import {RpcCaller, type RpcApiCallerOptions} from './RpcCaller';
 import {type AbstractType, FunctionStreamingType, FunctionType} from 'json-joy/lib/json-type/type/classes';
 import {StaticRpcMethod, type StaticRpcMethodOptions} from '../methods/StaticRpcMethod';
 import {StreamingRpcMethod, type StreamingRpcMethodOptions} from '../methods/StreamingRpcMethod';
+import {TypedRpcError} from './error/typed';
 import type {Schema, SchemaOf, TypeOf, TypeSystem} from 'json-joy/lib/json-type';
 import type {TypeRouter} from 'json-joy/lib/json-type/system/TypeRouter';
 import type {RpcValue} from '../../messages/Value';
@@ -44,7 +45,7 @@ export class TypeRouterCaller<Router extends TypeRouter<any>, Ctx = unknown> ext
           const error = validator(req);
           if (error) {
             const message = error.message + (Array.isArray(error?.path) ? ' Path: /' + error.path.join('/') : '');
-            throw RpcError.value(RpcError.validation(message, error));
+            throw TypedRpcError.value(RpcError.validation(message, error));
           }
         };
     method =

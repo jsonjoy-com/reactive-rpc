@@ -10,6 +10,7 @@ import {LevelStore} from '../services/blocks/store/level/LevelStore';
 import {ClassicLevel} from 'classic-level';
 import {Store} from '../services/blocks/store/types';
 import type {RouteDeps} from './types';
+import {TypedRpcError} from '../../../common/rpc/caller/error/typed';
 
 export const createRouter = (services: Services) => {
   const router = ObjectValue.create(system);
@@ -28,10 +29,10 @@ export const createCaller = (services: Services = new Services()) => {
     router,
     wrapInternalError: (error: unknown) => {
       if (error instanceof RpcValue) return error;
-      if (error instanceof RpcError) return RpcError.value(error);
+      if (error instanceof RpcError) return TypedRpcError.value(error);
       // tslint:disable-next-line:no-console
       console.error(error);
-      return RpcError.valueFrom(error);
+      return TypedRpcError.valueFrom(error);
     },
   });
   return {router, caller, services};

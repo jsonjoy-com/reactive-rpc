@@ -1,6 +1,7 @@
 import * as msg from '../messages';
-import {RpcError, RpcErrorValue} from './caller';
+import {RpcErrorValue} from './caller';
 import {validateId, validateMethod} from './validation';
+import {TypedRpcError} from './caller/error/typed';
 import type {RpcCaller} from './caller/RpcCaller';
 
 export type IncomingBatchMessage =
@@ -59,7 +60,7 @@ export class RpcMessageBatchProcessor<Ctx = unknown> {
       }
       return result;
     } catch (error) {
-      const value = RpcError.internalErrorValue(error);
+      const value = TypedRpcError.internalErrorValue(error);
       return [new msg.ResponseErrorMessage(-1, value)];
     }
   }

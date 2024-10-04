@@ -1,6 +1,7 @@
 import {firstValueFrom, from, Observable, Subject} from 'rxjs';
 import {catchError, finalize, first, map, mergeWith, share, switchMap, take, takeUntil, tap} from 'rxjs/operators';
-import {RpcError, RpcErrorCodes, RpcErrorValue} from './error';
+import {RpcError, RpcErrorCodes, RpcErrorValue} from './error/RpcError';
+import {TypedRpcError} from './error/typed';
 import {RpcValue} from '../../messages/Value';
 import {StaticRpcMethod} from '../methods/StaticRpcMethod';
 import {BufferSubject} from '../../../util/rx/BufferSubject';
@@ -22,9 +23,9 @@ export interface RpcApiCallerOptions<Ctx = unknown> {
   wrapInternalError?: (error: unknown) => unknown;
 }
 
-const INVALID_REQUEST_ERROR_VALUE = RpcError.value(RpcError.badRequest());
+const INVALID_REQUEST_ERROR_VALUE = TypedRpcError.value(RpcError.badRequest());
 
-const defaultWrapInternalError = (error: unknown) => RpcError.valueFrom(error);
+const defaultWrapInternalError = (error: unknown) => TypedRpcError.valueFrom(error);
 
 /**
  * Implements methods to call Reactive-RPC methods on the server.
@@ -50,7 +51,7 @@ export class RpcCaller<Ctx = unknown> {
 
   public getMethodStrict(name: string): StaticRpcMethod<Ctx> | StreamingRpcMethod<Ctx> {
     const method = this.getMethod(name);
-    if (!method) throw RpcError.valueFromCode(RpcErrorCodes.METHOD_NOT_FOUND);
+    if (!method) throw TypedRpcError.valueFromCode(RpcErrorCodes.METHOD_NOT_FOUND);
     return method;
   }
 
@@ -70,7 +71,7 @@ export class RpcCaller<Ctx = unknown> {
   }
 
   protected wrapValidationError(error: unknown): RpcErrorValue {
-    return RpcError.valueFrom(error, INVALID_REQUEST_ERROR_VALUE);
+    return TypedRpcError.valueFrom(error, INVALID_REQUEST_ERROR_VALUE);
   }
 
   /**
@@ -209,13 +210,13 @@ export class RpcCaller<Ctx = unknown> {
           error$.complete();
         }),
         catchError((error) => {
-          throw RpcError.valueFrom(error);
+          throw TypedRpcError.valueFrom(error);
         }),
       );
 
       return {req$, reqUnsubscribe$, stop$, res$: $resWithErrorsFormatted.pipe(takeUntil(stop$))};
     } catch (error) {
-      const errorFormatted = RpcError.valueFrom(error);
+      const errorFormatted = TypedRpcError.valueFrom(error);
       req$.error(errorFormatted);
       const res$ = new Subject<RpcValue>();
       res$.error(errorFormatted);

@@ -29,6 +29,5 @@ export interface Message<P = unknown> {
   value?: undefined | unknown;
   validate(): void;
   toCompact(): P;
-  encodeCompact(codec: JsonValueCodec): void;
   encodeBinary(codec: JsonValueCodec): void;
 }

@@ -1,6 +1,6 @@
 import {RpcMessageFormat} from '../constants';
 import {decode} from './decode';
-import * as msg from '../../messages';
+import type * as msg from '../../messages';
 import type {Uint8ArrayCut} from '@jsonjoy.com/util/lib/buffers/Uint8ArrayCut';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
 import type {RpcMessageCodec} from '../types';

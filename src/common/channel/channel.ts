@@ -195,7 +195,6 @@ export interface PersistentChannelParams<T extends string | Uint8Array = string 
 
 /**
  * Channel which automatically reconnects if disconnected.
- * @todo Check if this is still used.
  */
 export class PersistentChannel<T extends string | Uint8Array = string | Uint8Array> {
   /**

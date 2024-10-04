@@ -1,5 +1,5 @@
 import {RpcValue} from '../../../messages/Value';
-import {IRpcError, RpcErrorType} from './RpcErrorType';
+import type {IRpcError} from './RpcErrorType';
 
 export enum RpcErrorCodes {
   /** Any unknown sever error is wrapped into INTERNAL_ERROR, error 500. */
@@ -63,24 +63,6 @@ export class RpcError extends Error implements IRpcError {
 
   public static validation(message: string, meta?: unknown): RpcError {
     return RpcError.fromCode(RpcErrorCodes.BAD_REQUEST, message, meta);
-  }
-
-  public static value(error: RpcError): RpcErrorValue {
-    return new RpcValue(error, RpcErrorType);
-  }
-
-  public static valueFrom(error: unknown, def = RpcError.internalErrorValue(error)): RpcErrorValue {
-    if (error instanceof RpcValue && error.data instanceof RpcError && error.type === RpcErrorType) return error;
-    if (error instanceof RpcError) return RpcError.value(error);
-    return def;
-  }
-
-  public static valueFromCode(errno: RpcErrorCodes, message?: string): RpcErrorValue {
-    return RpcError.value(RpcError.fromCode(errno, message));
-  }
-
-  public static internalErrorValue(originalError: unknown): RpcErrorValue {
-    return RpcError.value(RpcError.internal(originalError));
   }
 
   public static isRpcError(error: unknown): error is RpcError {
