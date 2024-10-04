@@ -1,10 +1,11 @@
 import * as msg from '../messages';
 import {TimedQueue} from '../util/TimedQueue';
-import {RpcErrorCodes, RpcError} from './caller/error';
+import {RpcErrorCodes, RpcError} from './caller/error/RpcError';
 import {RpcValue} from '../messages/Value';
 import {subscribeCompleteObserver} from '../util/subscribeCompleteObserver';
 import type {RpcCaller} from './caller/RpcCaller';
 import type {Call, RpcApiMap} from './caller/types';
+import {TypedRpcError} from './caller/error/typed';
 
 type Send = (messages: (msg.ReactiveRpcServerMessage | msg.NotificationMessage)[]) => void;
 
@@ -130,7 +131,7 @@ export class RpcMessageStreamProcessor<Ctx = unknown> {
     this.send = <any>(() => {});
     for (const call of this.activeStreamCalls.values()) {
       try {
-        call.req$.error(RpcError.valueFromCode(reason));
+        call.req$.error(TypedRpcError.valueFromCode(reason));
         call.stop$.next(null);
       } catch (error) {
         // tslint:disable-next-line no-console
@@ -145,7 +146,7 @@ export class RpcMessageStreamProcessor<Ctx = unknown> {
   }
 
   private sendError(id: number, code: RpcErrorCodes): void {
-    const data = RpcError.valueFromCode(code);
+    const data = TypedRpcError.valueFromCode(code);
     this.sendErrorMessage(id, data);
   }
 

@@ -14,7 +14,7 @@ import {
   ResponseUnsubscribeMessage,
 } from '../../../messages';
 import {RpcValue} from '../../../messages/Value';
-import {RpcError} from '../../../rpc/caller/error';
+import {TypedRpcError} from '../../../rpc/caller/error/typed';
 
 const writer = new Writer(8 * Math.round(Math.random() * 100));
 const codecs = new Codecs(writer);
@@ -84,7 +84,7 @@ for (const jsonCodec of codecList) {
     });
 
     test('Response Error typed', () => {
-      const value = RpcError.internalErrorValue(null);
+      const value = TypedRpcError.internalErrorValue(null);
       const message = new ResponseErrorMessage(123, value);
       const encoded = codec.encode(jsonCodec, [message]);
       const decoded1 = jsonCodec.decoder.read(encoded);

@@ -5,7 +5,7 @@ import {runApiTests} from '../../__tests__/runApiTests';
 import {sampleApi} from '../../__tests__/sample-api';
 import {of} from '../../../util/of';
 import {StreamingRpcMethod} from '../../methods/StreamingRpcMethod';
-import {RpcError} from '../error';
+import {TypedRpcError} from '../error/typed';
 
 const setup = () => {
   const caller = new ApiRpcCaller<any, object>({
@@ -46,7 +46,7 @@ describe('static calls', () => {
       },
     });
     const [, error] = await of(caller.call('test', {}, {}));
-    expect(error).toEqual(RpcError.internalErrorValue(null));
+    expect(error).toEqual(TypedRpcError.internalErrorValue(null));
   });
 });
 
@@ -95,10 +95,10 @@ describe('streaming calls', () => {
     });
 
     const [, error1] = await of(caller.call('test', {}, {}));
-    expect(error1).toEqual(RpcError.internalErrorValue(null));
+    expect(error1).toEqual(TypedRpcError.internalErrorValue(null));
 
     const [, error2] = await of(Rx.firstValueFrom(caller.call$('test', Rx.of(undefined), {})));
-    expect(error2).toEqual(RpcError.internalErrorValue(null));
+    expect(error2).toEqual(TypedRpcError.internalErrorValue(null));
   });
 });
 

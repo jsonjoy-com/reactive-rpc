@@ -1,4 +1,5 @@
-import {RpcError, RpcErrorCodes} from './error';
+import {RpcErrorCodes} from './error/RpcError';
+import {TypedRpcError} from './error/typed';
 import {RpcCaller, RpcApiCallerOptions} from './RpcCaller';
 import {FunctionStreamingType, FunctionType} from 'json-joy/lib/json-type/type/classes';
 import {StaticRpcMethod, type StaticRpcMethodOptions} from '../methods/StaticRpcMethod';
@@ -57,12 +58,12 @@ export class TypedApiCaller<Types extends TypeMap, Ctx = unknown> extends RpcCal
     const validate = customValidator
       ? (req: unknown) => {
           const error = validator(req);
-          if (error) throw RpcError.valueFromCode(RpcErrorCodes.BAD_REQUEST);
+          if (error) throw TypedRpcError.valueFromCode(RpcErrorCodes.BAD_REQUEST);
           customValidator(req);
         }
       : (req: unknown) => {
           const error = validator(req);
-          if (error) throw RpcError.valueFromCode(RpcErrorCodes.BAD_REQUEST);
+          if (error) throw TypedRpcError.valueFromCode(RpcErrorCodes.BAD_REQUEST);
         };
     const isStaticMethodAlias = alias.type instanceof FunctionType;
     const isStreamingMethodAlias = alias.type instanceof FunctionStreamingType;
@@ -87,7 +88,7 @@ export class TypedApiCaller<Types extends TypeMap, Ctx = unknown> extends RpcCal
 
   public get<K extends keyof Types>(id: K): MethodDefinition<Ctx, Types[K]> {
     const method = this.methods.get(id as string) as any;
-    if (!method) throw RpcError.valueFromCode(RpcErrorCodes.METHOD_NOT_FOUND);
+    if (!method) throw TypedRpcError.valueFromCode(RpcErrorCodes.METHOD_NOT_FOUND);
     return method;
   }
 }

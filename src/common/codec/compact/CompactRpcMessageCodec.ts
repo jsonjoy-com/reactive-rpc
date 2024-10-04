@@ -1,8 +1,9 @@
 import {RpcMessageFormat} from '../constants';
-import {RpcError, RpcErrorCodes} from '../../rpc/caller/error';
+import {RpcError, RpcErrorCodes} from '../../rpc/caller/error/RpcError';
 import * as msg from '../../messages';
 import {CompactMessageType} from './constants';
 import {RpcValue} from '../../messages/Value';
+import {TypedRpcError} from '../../rpc/caller/error/typed';
 import type {JsonEncoder} from '@jsonjoy.com/json-pack/lib/json/JsonEncoder';
 import type {RpcMessageCodec} from '../types';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
@@ -47,7 +48,7 @@ const fromJson = (arr: unknown | unknown[] | types.CompactMessage): msg.Reactive
       return new msg.NotificationMessage(arr[1], new RpcValue(arr[2], undefined));
     }
   }
-  throw RpcError.value(RpcError.validation('Unknown message type'));
+  throw TypedRpcError.value(RpcError.validation('Unknown message type'));
 };
 
 const encodeCompactWithNameAndPayload = (
@@ -68,7 +69,10 @@ const encodeCompactWithNameAndPayload = (
       if (value.type) value.type.encoder(codec.format)(value.data, encoder);
       else encoder.writeAny(value.data);
     }
-  } else if (typeof (encoder as any as JsonEncoder).writeStartArr === 'function' && typeof (encoder as any as JsonEncoder).writeArrSeparator === 'function') {
+  } else if (
+    typeof (encoder as any as JsonEncoder).writeStartArr === 'function' &&
+    typeof (encoder as any as JsonEncoder).writeArrSeparator === 'function'
+  ) {
     const jsonEncoder = encoder as any as JsonEncoder;
     const value = msg.value;
     jsonEncoder.writeStartArr();
@@ -105,7 +109,10 @@ const encodeCompactWithPayload = (
         value.type.encoder(codec.format)(value.data, encoder);
       } else encoder.writeAny(value.data);
     }
-  } else if (typeof (encoder as any as JsonEncoder).writeStartArr === 'function' && typeof (encoder as any as JsonEncoder).writeArrSeparator === 'function') {
+  } else if (
+    typeof (encoder as any as JsonEncoder).writeStartArr === 'function' &&
+    typeof (encoder as any as JsonEncoder).writeArrSeparator === 'function'
+  ) {
     const jsonEncoder = encoder as any as JsonEncoder;
     const value = msg.value;
     jsonEncoder.writeStartArr();
@@ -140,7 +147,10 @@ export class CompactRpcMessageCodec implements RpcMessageCodec {
           if (value.type) value.type.encoder(codec.format)(value.data, encoder);
           else encoder.writeAny(value.data);
         }
-      } else if (typeof (encoder as any as JsonEncoder).writeStartArr === 'function' && typeof (encoder as any as JsonEncoder).writeArrSeparator === 'function') {
+      } else if (
+        typeof (encoder as any as JsonEncoder).writeStartArr === 'function' &&
+        typeof (encoder as any as JsonEncoder).writeArrSeparator === 'function'
+      ) {
         const jsonEncoder = encoder as any as JsonEncoder;
         const value = message.value;
         jsonEncoder.writeStartArr();
@@ -183,7 +193,10 @@ export class CompactRpcMessageCodec implements RpcMessageCodec {
       const length = batch.length;
       binaryEncoder.writeArrHdr(length);
       for (let i = 0; i < length; i++) this.encodeMessage(jsonCodec, batch[i]);
-    } else if (typeof (encoder as any as JsonEncoder).writeStartArr === 'function' && typeof (encoder as any as JsonEncoder).writeArrSeparator === 'function') {
+    } else if (
+      typeof (encoder as any as JsonEncoder).writeStartArr === 'function' &&
+      typeof (encoder as any as JsonEncoder).writeArrSeparator === 'function'
+    ) {
       const jsonEncoder = encoder as any as JsonEncoder;
       const length = batch.length;
       const last = length - 1;
