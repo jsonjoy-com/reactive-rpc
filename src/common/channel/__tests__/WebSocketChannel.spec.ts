@@ -1,4 +1,4 @@
-import {createWebSocketMock, MockWebSocket} from '../mock';
+import {createWebSocketMock, type MockWebSocket} from '../mock';
 import {ChannelState, WebSocketChannel} from '../channel';
 import {WebSocketState} from '../constants';
 

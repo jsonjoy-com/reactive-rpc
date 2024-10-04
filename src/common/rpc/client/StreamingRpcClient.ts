@@ -1,4 +1,4 @@
-import {firstValueFrom, isObservable, Observable, Observer, Subject} from 'rxjs';
+import {firstValueFrom, isObservable, Observable, type Observer, Subject} from 'rxjs';
 import * as msg from '../../messages';
 import {subscribeCompleteObserver} from '../../util/subscribeCompleteObserver';
 import {TimedQueue} from '../../util/TimedQueue';
@@ -70,7 +70,7 @@ interface ObserverEntry {
  * ```
  */
 export class StreamingRpcClient implements RpcClient {
-  private id: number = 1;
+  private id = 1;
   public readonly buffer: TimedQueue<msg.ReactiveRpcClientMessage>;
 
   /**
@@ -111,11 +111,18 @@ export class StreamingRpcClient implements RpcClient {
    * @param messages A message from the server.
    */
   public onMessage(message: msg.ReactiveRpcServerMessage): void {
-    if (message instanceof msg.ResponseCompleteMessage) return this.onResponseComplete(message);
-    else if (message instanceof msg.ResponseDataMessage) return this.onResponseData(message);
-    else if (message instanceof msg.ResponseErrorMessage) return this.onResponseError(message);
-    // else if (message instanceof RequestUnsubscribeMessage) return this.onRequestUnsubscribe(message);
-    return this.onRequestUnsubscribe(message);
+    if (message instanceof msg.ResponseCompleteMessage) {
+      this.onResponseComplete(message);
+      return;
+    } else if (message instanceof msg.ResponseDataMessage) {
+      this.onResponseData(message);
+      return;
+    } else if (message instanceof msg.ResponseErrorMessage) {
+      this.onResponseError(message);
+      return;
+    }
+    // else if (message instanceof RequestUnsubscribeMessage) {this.onRequestUnsubscribe(message); return;}
+    this.onRequestUnsubscribe(message);
   }
 
   public onResponseComplete(message: msg.ResponseCompleteMessage): void {
@@ -238,7 +245,7 @@ export class StreamingRpcClient implements RpcClient {
    * Stop all in-flight RPC calls and disable buffer. This operation is not
    * reversible, you cannot use the RPC client after this call.
    */
-  public stop(reason: string = 'STOP'): void {
+  public stop(reason = 'STOP'): void {
     this.buffer.onFlush = () => {};
     for (const call of this.calls.values()) {
       call.req$.error(new Error(reason));

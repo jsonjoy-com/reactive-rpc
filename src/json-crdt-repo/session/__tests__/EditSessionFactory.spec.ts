@@ -1,7 +1,7 @@
 import {Model, s} from 'json-joy/lib/json-crdt';
 import {setup} from './setup';
 import {of, tick, until} from 'thingies';
-import {BlockId, LocalRepo} from '../../local/types';
+import type {BlockId, LocalRepo} from '../../local/types';
 
 const readLocal = async (local: LocalRepo, id: BlockId) => {
   const {model} = await local.get({id});

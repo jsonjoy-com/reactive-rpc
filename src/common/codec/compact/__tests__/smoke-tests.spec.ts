@@ -3,7 +3,7 @@ import {Codecs} from '@jsonjoy.com/json-pack/lib/codecs/Codecs';
 import {CompactRpcMessageCodec} from '..';
 import {
   NotificationMessage,
-  ReactiveRpcMessage,
+  type ReactiveRpcMessage,
   RequestCompleteMessage,
   RequestDataMessage,
   RequestErrorMessage,

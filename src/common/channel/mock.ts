@@ -37,7 +37,7 @@ export const createWebSocketMock = (params: Partial<CreateWebSocketMockParams>) 
     public binaryType: 'arraybuffer' | 'blob' = 'blob';
 
     public _readyState: WebSocketState = WebSocketState.CONNECTING;
-    public _bufferedAmount: number = 0;
+    public _bufferedAmount = 0;
 
     public get bufferedAmount(): number {
       return this._bufferedAmount;
@@ -62,7 +62,7 @@ export const createWebSocketMock = (params: Partial<CreateWebSocketMockParams>) 
 
     public close(code?: number, reason?: string): void {
       if (!params.onClose) return;
-      return params.onClose(code, reason);
+      params.onClose(code, reason);
     }
 
     public send(data: string | ArrayBufferLike | Blob | ArrayBufferView): void {
@@ -78,7 +78,7 @@ export const createWebSocketMock = (params: Partial<CreateWebSocketMockParams>) 
         }
       }
       if (!params.onSend) return;
-      return params.onSend(data);
+      params.onSend(data);
     }
 
     public addEventListener() {

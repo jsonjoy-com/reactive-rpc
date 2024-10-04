@@ -1,10 +1,10 @@
-import {LevelLocalRepo, LevelLocalRepoOpts} from '../local/level/LevelLocalRepo';
+import {LevelLocalRepo, type LevelLocalRepoOpts} from '../local/level/LevelLocalRepo';
 import {Locks} from 'thingies/lib/Locks';
 import {BehaviorSubject} from 'rxjs';
 import {setup as remoteSetup} from '../remote/__tests__/setup';
 import {MemoryLevel} from 'memory-level';
 import {pubsub as createPubsub} from '../pubsub';
-import {BinStrLevel, LevelLocalRepoPubSub} from '../local/level/types';
+import type {BinStrLevel, LevelLocalRepoPubSub} from '../local/level/types';
 import {EditSessionFactory} from '../session/EditSessionFactory';
 import {Model, Patch} from 'json-joy/lib/json-crdt';
 

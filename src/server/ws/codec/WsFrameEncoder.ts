@@ -19,7 +19,7 @@ export class WsFrameEncoder<W extends IWriter & IWriterGrowable = IWriter & IWri
     return this.writer.flush();
   }
 
-  public encodeClose(reason: string, code: number = 0): Uint8Array {
+  public encodeClose(reason: string, code = 0): Uint8Array {
     this.writeClose(reason, code);
     return this.writer.flush();
   }
@@ -54,7 +54,7 @@ export class WsFrameEncoder<W extends IWriter & IWriterGrowable = IWriter & IWri
     }
   }
 
-  public writeClose(reason: string, code: number = 0): void {
+  public writeClose(reason: string, code = 0): void {
     if (reason || code) {
       const reasonLength = reason.length;
       const length = 2 + reasonLength;

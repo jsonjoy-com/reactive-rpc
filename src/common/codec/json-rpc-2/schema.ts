@@ -1,4 +1,4 @@
-import {ResolveType, TypeSystem} from 'json-joy/lib/json-type';
+import {type ResolveType, TypeSystem} from 'json-joy/lib/json-type';
 
 export const system = new TypeSystem();
 const t = system.t;

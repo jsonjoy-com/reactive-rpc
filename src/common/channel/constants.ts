@@ -1,4 +1,4 @@
-export const enum WebSocketState {
+export enum WebSocketState {
   CONNECTING = 0,
   OPEN = 1,
   CLOSING = 2,

@@ -1,5 +1,5 @@
 import {tick, until} from 'thingies';
-import {ApiTestSetup} from '../../common/rpc/__tests__/runApiTests';
+import type {ApiTestSetup} from '../../common/rpc/__tests__/runApiTests';
 import type {JsonCrdtTestSetup} from '../../__demos__/json-crdt-server/__tests__/setup';
 
 const roomId = () => 'room-' + Math.random().toString(36).slice(2);

@@ -1,5 +1,5 @@
 import {Log} from 'json-joy/lib/json-crdt/log/Log';
-import {JsonNode, Model, Patch} from 'json-joy/lib/json-crdt';
+import {type JsonNode, Model, type Patch} from 'json-joy/lib/json-crdt';
 import {concurrency} from 'thingies/lib/concurrencyDecorator';
 import {createRace} from 'thingies/lib/createRace';
 import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
@@ -81,6 +81,7 @@ export class EditSession<N extends JsonNode = JsonNode<any>> {
     this.saveInProgress = true;
     try {
       const patches: Patch[] = [];
+      // biome-ignore lint: for loop not possible here
       log.patches.forEach((patch) => {
         patches.push(patch.v);
       });
@@ -185,6 +186,7 @@ export class EditSession<N extends JsonNode = JsonNode<any>> {
     const end = log.end;
     if (end.api.builder.patch.ops.length) end.api.flush();
     end.reset(model);
+    // biome-ignore lint: for loop not possible here
     log.patches.forEach((patch) => end.applyPatch(patch.v));
   }
 
@@ -202,6 +204,7 @@ export class EditSession<N extends JsonNode = JsonNode<any>> {
     const lastPatch = patches[patches.length - 1];
     let nextTick = lastPatch.getId()!.time + lastPatch.span();
     const rebased: Patch[] = [];
+    // biome-ignore lint: for loop not possible here
     log.patches.forEach(({v}) => {
       const patch = v.rebase(nextTick);
       rebased.push(patch);

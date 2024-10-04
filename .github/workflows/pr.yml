@@ -38,7 +38,7 @@ jobs:
       - run: yarn install --frozen-lockfile
       - run: yarn build
       - run: yarn lint
-      - run: yarn prettier:check
+      - run: yarn format
       - run: yarn typedoc
   e2e-sample-api-http1:
     runs-on: ubuntu-latest

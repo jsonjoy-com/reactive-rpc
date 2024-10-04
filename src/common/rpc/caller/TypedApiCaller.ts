@@ -1,6 +1,6 @@
 import {RpcErrorCodes} from './error/RpcError';
 import {TypedRpcError} from './error/typed';
-import {RpcCaller, RpcApiCallerOptions} from './RpcCaller';
+import {RpcCaller, type RpcApiCallerOptions} from './RpcCaller';
 import {FunctionStreamingType, FunctionType} from 'json-joy/lib/json-type/type/classes';
 import {StaticRpcMethod, type StaticRpcMethodOptions} from '../methods/StaticRpcMethod';
 import {StreamingRpcMethod, type StreamingRpcMethodOptions} from '../methods/StreamingRpcMethod';
@@ -10,26 +10,23 @@ export interface TypedApiCallerOptions<Ctx = unknown> extends Omit<RpcApiCallerO
   system: TypeSystem;
 }
 
-type MethodReq<F> =
-  F extends FunctionType<infer Req, any>
+type MethodReq<F> = F extends FunctionType<infer Req, any>
+  ? TypeOf<SchemaOf<Req>>
+  : F extends FunctionStreamingType<infer Req, any>
     ? TypeOf<SchemaOf<Req>>
-    : F extends FunctionStreamingType<infer Req, any>
-      ? TypeOf<SchemaOf<Req>>
-      : never;
+    : never;
 
-type MethodRes<F> =
-  F extends FunctionType<any, infer Res>
+type MethodRes<F> = F extends FunctionType<any, infer Res>
+  ? TypeOf<SchemaOf<Res>>
+  : F extends FunctionStreamingType<any, infer Res>
     ? TypeOf<SchemaOf<Res>>
-    : F extends FunctionStreamingType<any, infer Res>
-      ? TypeOf<SchemaOf<Res>>
-      : never;
+    : never;
 
-type MethodDefinition<Ctx, F> =
-  F extends FunctionType<any, any>
-    ? StaticRpcMethodOptions<Ctx, MethodReq<F>, MethodRes<F>>
-    : F extends FunctionStreamingType<any, any>
-      ? StreamingRpcMethodOptions<Ctx, MethodReq<F>, MethodRes<F>>
-      : never;
+type MethodDefinition<Ctx, F> = F extends FunctionType<any, any>
+  ? StaticRpcMethodOptions<Ctx, MethodReq<F>, MethodRes<F>>
+  : F extends FunctionStreamingType<any, any>
+    ? StreamingRpcMethodOptions<Ctx, MethodReq<F>, MethodRes<F>>
+    : never;
 
 export class TypedApiCaller<Types extends TypeMap, Ctx = unknown> extends RpcCaller<Ctx> {
   protected readonly system: TypeSystem;

@@ -1,6 +1,6 @@
 import {EncodingFormat} from '@jsonjoy.com/json-pack/lib/constants';
-import {TlvBinaryJsonEncoder} from '@jsonjoy.com/json-pack/lib/types';
-import {JsonJsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/json';
+import type {TlvBinaryJsonEncoder} from '@jsonjoy.com/json-pack/lib/types';
+import type {JsonJsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/json';
 import {RpcMessageFormat} from '../constants';
 import {RpcError} from '../../rpc/caller/error/RpcError';
 import {RpcValue} from '../../messages/Value';

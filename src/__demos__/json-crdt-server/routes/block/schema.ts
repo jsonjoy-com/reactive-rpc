@@ -24,7 +24,7 @@ export const BlockBatchSeqRef = t.Ref<typeof BlockBatchSeq>('BlockBatchSeq');
 
 // ---------------------------------------------------------------------- Patch
 
-// prettier-ignore
+// biome-ignore format: props
 export const BlockPatchPartial = t.Object(
   t.prop('blob', t.bin).options({
     title: 'Patch Blob',
@@ -33,7 +33,7 @@ export const BlockPatchPartial = t.Object(
 );
 export const BlockPatchPartialRef = t.Ref<typeof BlockPatchPartial>('BlockPatchPartial');
 
-// prettier-ignore
+// biome-ignore format: props
 export const BlockPatchPartialReturn = t.Object(
   t.prop('ts', t.num.options({format: 'u'})).options({
     title: 'Patch Creation Time',
@@ -51,7 +51,7 @@ export const BlockPatchRef = t.Ref<typeof BlockPatch>('BlockPatch');
 
 // ---------------------------------------------------------------------- Batch
 
-// prettier-ignore
+// biome-ignore format: props
 export const BlockBatchPartial = t.Object(
   t.prop('patches', t.Array(BlockPatchPartialRef)),
   t.propOpt('cts', t.num.options({
@@ -62,7 +62,7 @@ export const BlockBatchPartial = t.Object(
 );
 export const BlockBatchPartialRef = t.Ref<typeof BlockBatchPartial>('BlockBatchPartial');
 
-// prettier-ignore
+// biome-ignore format: props
 export const BlockBatchPartialReturn = t.Object(
   t.prop('seq', t.num.options({format: 'u'})).options({
     title: 'Batch Sequence Number',
@@ -103,7 +103,7 @@ export const BlockSnapshotReturn = t
   });
 export const BlockSnapshotReturnRef = t.Ref<typeof BlockSnapshotReturn>('BlockSnapshotReturn');
 
-// prettier-ignore
+// biome-ignore format: props
 export const BlockSnapshot = BlockSnapshotReturn.extend(t.Object(
   t.prop('blob', t.bin).options({
     title: 'Snapshot Blob',
@@ -120,7 +120,7 @@ export const NewBlockSnapshotResponseRef = t.Ref<typeof NewBlockSnapshotResponse
 
 // ---------------------------------------------------------------------- Block
 
-// prettier-ignore
+// biome-ignore format: props
 export const BlockNew = t.Object(
   t.prop('id', t.Ref<typeof BlockId>('BlockId')),
   t.prop('ts', t.num.options({format: 'u'})),
@@ -128,7 +128,7 @@ export const BlockNew = t.Object(
 );
 export const BlockNewRef = t.Ref<typeof BlockNew>('BlockNew');
 
-// prettier-ignore
+// biome-ignore format: props
 export const Block = BlockNew.extend(t.Object(
   t.prop('snapshot', BlockSnapshotRef),
   t.prop('tip', t.Array(BlockBatchRef)),

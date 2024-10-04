@@ -1,6 +1,6 @@
-import * as msg from '../messages';
+import type * as msg from '../messages';
 import {StreamingRpcClient} from './client/StreamingRpcClient';
-import {RpcMessageStreamProcessor} from './RpcMessageStreamProcessor';
+import type {RpcMessageStreamProcessor} from './RpcMessageStreamProcessor';
 
 export interface RpcMessageStreamProcessorLocalClientParams<Ctx = unknown> {
   ctx: Ctx;

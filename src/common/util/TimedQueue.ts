@@ -6,12 +6,12 @@ export class TimedQueue<T> {
   /**
    * Queue will be flushed when it reaches this number of items.
    */
-  public itemLimit: number = 100;
+  public itemLimit = 100;
 
   /**
    * Queue will be flushed after this many milliseconds.
    */
-  public timeLimit: number = 5;
+  public timeLimit = 5;
 
   /**
    * Method that will be called when queue is flushed.

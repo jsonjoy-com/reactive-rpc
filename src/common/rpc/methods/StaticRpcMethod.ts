@@ -1,6 +1,6 @@
 import {firstValueFrom, from} from 'rxjs';
-import {IRpcMethodBase, IStaticRpcMethod} from './types';
-import {ConstSchema} from 'json-joy/lib/json-type';
+import type {IRpcMethodBase, IStaticRpcMethod} from './types';
+import type {ConstSchema} from 'json-joy/lib/json-type';
 
 export interface StaticRpcMethodOptions<Ctx = unknown, Req = unknown, Res = unknown>
   extends Omit<IRpcMethodBase<Ctx, Req, Res>, 'isStreaming' | 'call$'> {}

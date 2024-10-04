@@ -1,4 +1,4 @@
-import {ResolveType} from 'json-joy/lib/json-type';
+import type {ResolveType} from 'json-joy/lib/json-type';
 import {BlockIdRef, BlockRef} from '../schema';
 import type {RouteDeps, Router, RouterBase} from '../../types';
 
@@ -12,10 +12,7 @@ export const get =
       }),
     );
 
-    // prettier-ignore
-    const Response = t.Object(
-      t.prop('block', BlockRef),
-    );
+    const Response = t.Object(t.prop('block', BlockRef));
 
     const Func = t.Function(Request, Response).options({
       title: 'Read Block',

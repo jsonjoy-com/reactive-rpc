@@ -1,6 +1,6 @@
-import {firstValueFrom, from, Observable, Subject} from 'rxjs';
+import {firstValueFrom, from, type Observable, Subject} from 'rxjs';
 import {catchError, finalize, first, map, mergeWith, share, switchMap, take, takeUntil, tap} from 'rxjs/operators';
-import {RpcError, RpcErrorCodes, RpcErrorValue} from './error/RpcError';
+import {RpcError, RpcErrorCodes, type RpcErrorValue} from './error/RpcError';
 import {TypedRpcError} from './error/typed';
 import {RpcValue} from '../../messages/Value';
 import {StaticRpcMethod} from '../methods/StaticRpcMethod';

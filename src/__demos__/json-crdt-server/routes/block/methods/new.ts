@@ -16,10 +16,7 @@ export const new_ =
       }),
     );
 
-    // prettier-ignore
-    const Response = t.Object(
-      t.prop('snapshot', BlockSnapshotReturnRef),
-    ).options({
+    const Response = t.Object(t.prop('snapshot', BlockSnapshotReturnRef)).options({
       title: 'New block creation response',
       description:
         'The response object for the new block creation, contains server generated metadata without blobs supplied by the client.',

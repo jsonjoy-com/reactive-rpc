@@ -3,7 +3,7 @@ import {StreamingRpcClient} from '../client/StreamingRpcClient';
 import {RpcDuplex} from '../RpcDuplex';
 import {ApiRpcCaller} from '../caller/ApiRpcCaller';
 import {sampleApi} from './sample-api';
-import {ApiTestSetup, runApiTests} from './runApiTests';
+import {type ApiTestSetup, runApiTests} from './runApiTests';
 
 const setup = () => {
   const server = new RpcDuplex({

@@ -1,7 +1,7 @@
 import {Model, Patch, s} from 'json-joy/lib/json-crdt';
 import {setup} from './setup';
 import {firstValueFrom, ReplaySubject} from 'rxjs';
-import {LocalRepo, LocalRepoMergeEvent, LocalRepoResetEvent} from '../../types';
+import type {LocalRepo, LocalRepoMergeEvent, LocalRepoResetEvent} from '../../types';
 
 const get = async (kit: Awaited<ReturnType<typeof setup>>, id = kit.blockId): Promise<Model> => {
   const {block} = await kit.remote.client.call('block.get', {id: id.join('/')});

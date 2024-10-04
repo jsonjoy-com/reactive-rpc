@@ -8,7 +8,7 @@ import {Services} from '../services/Services';
 import {MemoryStore} from '../services/blocks/store/MemoryStore';
 import {LevelStore} from '../services/blocks/store/level/LevelStore';
 import {ClassicLevel} from 'classic-level';
-import {Store} from '../services/blocks/store/types';
+import type {Store} from '../services/blocks/store/types';
 import type {RouteDeps} from './types';
 import {TypedRpcError} from '../../../common/rpc/caller/error/typed';
 

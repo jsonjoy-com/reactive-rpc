@@ -1,4 +1,4 @@
-import {defer, finalize, Observable, share} from 'rxjs';
+import {defer, finalize, type Observable, share} from 'rxjs';
 
 export const shareByKey = <TValue>(sub: (key: string) => Observable<TValue>): ((key: string) => Observable<TValue>) => {
   const map: Record<string, Observable<TValue>> = {};

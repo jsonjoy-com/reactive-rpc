@@ -1,5 +1,5 @@
-import {Observable, Observer} from 'rxjs';
-import {TPresenceEntry} from '../routes/presence/schema';
+import {Observable, type Observer} from 'rxjs';
+import type {TPresenceEntry} from '../routes/presence/schema';
 
 export type PresenceRoom = Map<string, TPresenceEntry>;
 

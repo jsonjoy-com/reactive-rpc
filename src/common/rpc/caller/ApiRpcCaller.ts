@@ -1,6 +1,6 @@
 import {StaticRpcMethod} from '../methods/StaticRpcMethod';
 import {StreamingRpcMethod} from '../methods/StreamingRpcMethod';
-import {RpcCaller, RpcApiCallerOptions} from './RpcCaller';
+import {RpcCaller, type RpcApiCallerOptions} from './RpcCaller';
 import {printTree} from 'sonic-forest/lib/print/printTree';
 import type {IStaticRpcMethod, IStreamingRpcMethod} from '../types';
 import type {RpcApiMap} from './types';
@@ -44,7 +44,7 @@ export class ApiRpcCaller<
 
   // ---------------------------------------------------------------- Printable
 
-  public toString(tab: string = ''): string {
+  public toString(tab = ''): string {
     return (
       `${this.constructor.name}` +
       printTree(

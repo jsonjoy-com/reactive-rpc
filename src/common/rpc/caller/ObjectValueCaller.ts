@@ -4,15 +4,7 @@ import {type AbstractType, FunctionStreamingType, FunctionType} from 'json-joy/l
 import {printTree} from 'sonic-forest/lib/print/printTree';
 import {StaticRpcMethod, type StaticRpcMethodOptions} from '../methods/StaticRpcMethod';
 import {StreamingRpcMethod, type StreamingRpcMethodOptions} from '../methods/StreamingRpcMethod';
-import {
-  type ObjectType,
-  type Schema,
-  type TypeSystem,
-  ObjectFieldType,
-  TypeOf,
-  SchemaOf,
-  Type,
-} from 'json-joy/lib/json-type';
+import type {ObjectType, Schema, TypeSystem, ObjectFieldType, TypeOf, SchemaOf, Type} from 'json-joy/lib/json-type';
 import type {Printable} from 'sonic-forest/lib/print/types';
 import type {ObjectValue, UnObjectType, UnObjectValue} from 'json-joy/lib/json-type-value/ObjectValue';
 import type {Value} from 'json-joy/lib/json-type-value/Value';
@@ -24,26 +16,23 @@ type ToObject<T> = T extends [string, unknown][] ? {[K in T[number] as K[0]]: K[
 type ObjectFieldsToMap<F> = ToObject<{[K in keyof F]: ObjectFieldToTuple<F[K]>}>;
 type ObjectValueToTypeMap<V> = ObjectFieldsToMap<UnObjectType<UnObjectValue<V>>>;
 
-type MethodReq<F> =
-  F extends FunctionType<infer Req, any>
+type MethodReq<F> = F extends FunctionType<infer Req, any>
+  ? TypeOf<SchemaOf<Req>>
+  : F extends FunctionStreamingType<infer Req, any>
     ? TypeOf<SchemaOf<Req>>
-    : F extends FunctionStreamingType<infer Req, any>
-      ? TypeOf<SchemaOf<Req>>
-      : never;
+    : never;
 
-type MethodRes<F> =
-  F extends FunctionType<any, infer Res>
+type MethodRes<F> = F extends FunctionType<any, infer Res>
+  ? TypeOf<SchemaOf<Res>>
+  : F extends FunctionStreamingType<any, infer Res>
     ? TypeOf<SchemaOf<Res>>
-    : F extends FunctionStreamingType<any, infer Res>
-      ? TypeOf<SchemaOf<Res>>
-      : never;
+    : never;
 
-type MethodDefinition<Ctx, F> =
-  F extends FunctionType<any, any>
-    ? StaticRpcMethodOptions<Ctx, MethodReq<F>, MethodRes<F>>
-    : F extends FunctionStreamingType<any, any>
-      ? StreamingRpcMethodOptions<Ctx, MethodReq<F>, MethodRes<F>>
-      : never;
+type MethodDefinition<Ctx, F> = F extends FunctionType<any, any>
+  ? StaticRpcMethodOptions<Ctx, MethodReq<F>, MethodRes<F>>
+  : F extends FunctionStreamingType<any, any>
+    ? StreamingRpcMethodOptions<Ctx, MethodReq<F>, MethodRes<F>>
+    : never;
 
 export interface ObjectValueCallerOptions<V extends ObjectValue<ObjectType<any>>, Ctx = unknown>
   extends Omit<RpcApiCallerOptions<Ctx>, 'getMethod'> {
@@ -133,7 +122,7 @@ export class ObjectValueCaller<V extends ObjectValue<ObjectType<any>>, Ctx = unk
 
   // ---------------------------------------------------------------- Printable
 
-  public toString(tab: string = ''): string {
+  public toString(tab = ''): string {
     return (
       `${this.constructor.name}` +
       printTree(tab, [(tab) => this.router.toString(tab), (tab) => this.system.toString(tab)])

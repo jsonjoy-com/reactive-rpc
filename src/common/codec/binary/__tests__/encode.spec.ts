@@ -1,6 +1,6 @@
 import {
   NotificationMessage,
-  ReactiveRpcMessage,
+  type ReactiveRpcMessage,
   RequestDataMessage,
   RequestUnsubscribeMessage,
   ResponseDataMessage,

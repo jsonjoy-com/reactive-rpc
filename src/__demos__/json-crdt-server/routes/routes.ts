@@ -6,7 +6,7 @@ import type {RouteDeps} from './types';
 import type {ObjectValue} from 'json-joy/lib/json-type-value/ObjectValue';
 import type {ObjectType} from 'json-joy/lib/json-type';
 
-// prettier-ignore
+// biome-ignore format: each on its own line
 export const routes = (d: RouteDeps) => <R extends ObjectType<any>>(r: ObjectValue<R>) =>
   ( util(d)
   ( pubsub(d)

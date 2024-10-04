@@ -2,7 +2,7 @@ import {Subject} from 'rxjs';
 import {RequestCompleteMessage, ResponseCompleteMessage} from '../../messages';
 import {ApiRpcCaller} from '../caller/ApiRpcCaller';
 import {RpcValue} from '../../messages/Value';
-import {RpcMessageStreamProcessor, RpcMessageStreamProcessorFromApiOptions} from '../RpcMessageStreamProcessor';
+import {RpcMessageStreamProcessor, type RpcMessageStreamProcessorFromApiOptions} from '../RpcMessageStreamProcessor';
 import {sampleApi} from './sample-api';
 
 const setup = (params: Partial<RpcMessageStreamProcessorFromApiOptions> = {}) => {

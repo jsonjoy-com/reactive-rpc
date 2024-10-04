@@ -1,7 +1,7 @@
 import {Uint8ArrayCut} from '@jsonjoy.com/util/lib/buffers/Uint8ArrayCut';
 import {
   NotificationMessage,
-  ReactiveRpcMessage,
+  type ReactiveRpcMessage,
   RequestCompleteMessage,
   RequestDataMessage,
   RequestErrorMessage,

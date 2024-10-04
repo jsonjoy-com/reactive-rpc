@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import * as stream from 'stream';
+import type * as stream from 'stream';
 import {utf8Size} from '@jsonjoy.com/util/lib/strings/utf8';
 import {listToUint8} from '@jsonjoy.com/util/lib/buffers/concat';
 import {WsCloseFrame, WsFrameDecoder, WsFrameHeader, WsFrameOpcode, WsPingFrame, WsPongFrame} from '../codec';
@@ -8,7 +8,7 @@ import type {WsFrameEncoder} from '../codec/WsFrameEncoder';
 export type WsServerConnectionSocket = stream.Duplex;
 
 export class WsServerConnection {
-  public closed: boolean = false;
+  public closed = false;
   public maxIncomingMessage: number = 2 * 1024 * 1024;
   public maxBackpressure: number = 2 * 1024 * 1024;
 
@@ -17,7 +17,7 @@ export class WsServerConnection {
   };
 
   private _fragments: Uint8Array[] = [];
-  private _fragmentsSize: number = 0;
+  private _fragmentsSize = 0;
   public readonly defaultOnFragment = (isLast: boolean, data: Uint8Array, isUtf8: boolean): void => {
     const fragments = this._fragments;
     this._fragmentsSize += data.length;
@@ -49,7 +49,7 @@ export class WsServerConnection {
     const handleData = (data: Uint8Array): void => {
       try {
         decoder.push(data);
-        MAIN: while (true) {
+        while (true) {
           if (currentFrameHeader instanceof WsFrameHeader) {
             const length = currentFrameHeader.length;
             if (length > this.maxIncomingMessage) {
@@ -76,16 +76,16 @@ export class WsServerConnection {
           if (!frame) break;
           if (frame instanceof WsPingFrame) {
             this.onping(frame.data);
-            continue MAIN;
+            continue;
           }
           if (frame instanceof WsPongFrame) {
             this.onpong(frame.data);
-            continue MAIN;
+            continue;
           }
           if (frame instanceof WsCloseFrame) {
             decoder.readCloseFrameData(frame);
             this.onClose(frame.code, frame.reason);
-            continue MAIN;
+            continue;
           }
           if (frame instanceof WsFrameHeader) {
             if (fragmentStartFrameHeader) {
@@ -98,10 +98,9 @@ export class WsServerConnection {
             if (frame.fin === 0) {
               fragmentStartFrameHeader = frame;
               currentFrameHeader = frame;
-              continue MAIN;
+              continue;
             }
             currentFrameHeader = frame;
-            continue MAIN;
           }
         }
       } catch {
@@ -148,7 +147,7 @@ export class WsServerConnection {
   public upgrade(secWebSocketKey: string, secWebSocketProtocol: string, secWebSocketExtensions?: string): void {
     const accept = secWebSocketKey + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
     const acceptSha1 = crypto.createHash('sha1').update(accept).digest('base64');
-    // prettier-ignore
+    // biome-ignore format: line per header
     this.socket.write(
       'HTTP/1.1 101 Switching Protocols\r\n' +
         'Upgrade: websocket\r\n' +

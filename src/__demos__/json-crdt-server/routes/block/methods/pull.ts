@@ -4,7 +4,7 @@ import type {RouteDeps, Router, RouterBase} from '../../types';
 export const pull =
   ({t, services}: RouteDeps) =>
   <R extends RouterBase>(r: Router<R>) => {
-    // prettier-ignore
+    // biome-ignore format: props
     const Request = t.Object(
       t.prop('id', BlockIdRef).options({
         title: 'Block ID',
@@ -26,7 +26,7 @@ export const pull =
       }),
     );
 
-    // prettier-ignore
+    // biome-ignore format: props
     const Response = t.Object(
       t.prop('batches', t.Array(BlockBatchRef)).options({
         title: 'Batches',

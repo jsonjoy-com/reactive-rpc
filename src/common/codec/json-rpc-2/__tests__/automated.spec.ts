@@ -1,7 +1,7 @@
 import {JsonJsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/json';
 import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 import {JsonRpc2RpcMessageCodec} from '..';
-import {ReactiveRpcMessage} from '../../../messages';
+import type {ReactiveRpcMessage} from '../../../messages';
 import {messages} from '../../../messages/__tests__/fixtures';
 
 const filteredMessages: [string, ReactiveRpcMessage][] = [

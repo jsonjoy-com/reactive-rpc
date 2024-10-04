@@ -1,11 +1,11 @@
 import {BrowserLevel} from 'browser-level';
 import {createBinaryWsRpcClient} from '../browser/createBinaryWsRpcClient';
-import {DemoServerClient, DemoServerRemoteHistory} from './remote/DemoServerRemoteHistory';
+import {type DemoServerClient, DemoServerRemoteHistory} from './remote/DemoServerRemoteHistory';
 import {EditSessionFactory} from './session/EditSessionFactory';
-import {BinStrLevel, LevelLocalRepoPubSubMessage} from './local/level/types';
+import type {BinStrLevel, LevelLocalRepoPubSubMessage} from './local/level/types';
 import {PubSubBC} from './pubsub';
 import {Locks} from 'thingies/lib/Locks';
-import {LevelLocalRepo, LevelLocalRepoOpts} from './local/level/LevelLocalRepo';
+import {LevelLocalRepo, type LevelLocalRepoOpts} from './local/level/LevelLocalRepo';
 import {Model} from 'json-joy/lib/json-crdt';
 import {onLine$} from 'rx-use/lib/onLine$';
 import type {EditSession} from './session/EditSession';

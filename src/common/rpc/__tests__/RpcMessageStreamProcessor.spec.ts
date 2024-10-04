@@ -1,8 +1,8 @@
-import {RpcMessageStreamProcessor, RpcMessageStreamProcessorOptions} from '../RpcMessageStreamProcessor';
+import {RpcMessageStreamProcessor, type RpcMessageStreamProcessorOptions} from '../RpcMessageStreamProcessor';
 import {RpcError} from '../caller';
-import {of, from, Subject, Observable, Subscriber} from 'rxjs';
+import {of, from, Subject, Observable, type Subscriber} from 'rxjs';
 import {map, switchMap, take} from 'rxjs/operators';
-import {ApiRpcCaller, ApiRpcCallerOptions} from '../caller/ApiRpcCaller';
+import {ApiRpcCaller, type ApiRpcCallerOptions} from '../caller/ApiRpcCaller';
 import {
   NotificationMessage,
   RequestCompleteMessage,
@@ -23,7 +23,7 @@ const setup = (
 ) => {
   const send = jest.fn();
   const subject = new Subject<any>();
-  let token: string = '';
+  let token = '';
   const ctx = {ip: '127.0.0.1'};
   const caller = new ApiRpcCaller<any, any>({
     api: {

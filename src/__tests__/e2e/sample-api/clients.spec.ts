@@ -1,4 +1,4 @@
-import {ApiTestSetup, runApiTests} from '../../../common/rpc/__tests__/runApiTests';
+import {type ApiTestSetup, runApiTests} from '../../../common/rpc/__tests__/runApiTests';
 import {setupCodecs} from '../codecs';
 import {setupRpcPersistentClient, setupFetchRpcClient, setupStreamingRpcClient} from '../clients';
 

@@ -1,7 +1,7 @@
-import {NodeBuilder, s} from 'json-joy/lib/json-crdt';
+import {type NodeBuilder, s} from 'json-joy/lib/json-crdt';
 import {setup as setup0} from './setup';
 import {until} from 'thingies/lib/until';
-import {EditSession} from '../EditSession';
+import type {EditSession} from '../EditSession';
 import {EditSessionFactory} from '../EditSessionFactory';
 import {BehaviorSubject} from 'rxjs';
 

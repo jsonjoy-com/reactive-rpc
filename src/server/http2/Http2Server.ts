@@ -1,10 +1,10 @@
 import * as http2 from 'http2';
 import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 import {Codecs} from '@jsonjoy.com/json-pack/lib/codecs/Codecs';
-import {Router, RouteMatcher} from '@jsonjoy.com/jit-router';
-import {Printable} from 'sonic-forest/lib/print/types';
+import {Router, type RouteMatcher} from '@jsonjoy.com/jit-router';
+import type {Printable} from 'sonic-forest/lib/print/types';
 import {printTree} from 'sonic-forest/lib/print/printTree';
-import {Http2ConnectionContext} from './context';
+import type {Http2ConnectionContext} from './context';
 import {RpcCodecs} from '../../common/codec/RpcCodecs';
 import {RpcMessageCodecs} from '../../common/codec/RpcMessageCodecs';
 
@@ -265,7 +265,7 @@ export class Http2Server implements Printable {
 
   // ---------------------------------------------------------------- Printable
 
-  public toString(tab: string = ''): string {
+  public toString(tab = ''): string {
     return (
       `${this.constructor.name}` +
       printTree(tab, [

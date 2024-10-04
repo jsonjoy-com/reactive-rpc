@@ -2,7 +2,7 @@ import {Model, s} from 'json-joy/lib/json-crdt';
 import {setup} from './setup';
 import {BehaviorSubject} from 'rxjs';
 import {until} from 'thingies';
-import {LocalRepoRebaseEvent} from '../../types';
+import type {LocalRepoRebaseEvent} from '../../types';
 
 describe('events', () => {
   test('can emit to another tab', async () => {

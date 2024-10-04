@@ -101,8 +101,8 @@ export class WsFrameDecoder {
   public readCloseFrameData(frame: WsCloseFrame): void {
     let length = frame.length;
     if (length > 125) throw new WsFrameDecodingError();
-    let code: number = 0;
-    let reason: string = '';
+    let code = 0;
+    let reason = '';
     if (length > 0) {
       if (length < 2) throw new WsFrameDecodingError();
       const reader = this.reader;

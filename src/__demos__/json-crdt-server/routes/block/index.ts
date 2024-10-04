@@ -48,7 +48,7 @@ export const block =
 
     system.alias('BlockEvent', BlockEvent);
 
-    // prettier-ignore
+    // biome-ignore format: each on its own line
     return (
     ( new_(d)
     ( get(d)

@@ -2,7 +2,7 @@ import {s} from 'json-joy/lib/json-crdt';
 import {setup} from './setup';
 import {BehaviorSubject} from 'rxjs';
 import {until} from 'thingies';
-import {LocalRepoRebaseEvent} from '../../local/types';
+import type {LocalRepoRebaseEvent} from '../../local/types';
 import {Testbed} from '../../__tests__/testbed';
 
 describe('events', () => {

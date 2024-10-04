@@ -1,18 +1,18 @@
 import {Codecs} from '@jsonjoy.com/json-pack/lib/codecs/Codecs';
 import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 import {copy} from '@jsonjoy.com/util/lib/buffers/copy';
-import {Match, Router} from '@jsonjoy.com/jit-router';
+import {type Match, Router} from '@jsonjoy.com/jit-router';
 import {enableCors} from './util';
-import {IncomingBatchMessage, RpcMessageBatchProcessor} from '../../common/rpc/RpcMessageBatchProcessor';
+import {type IncomingBatchMessage, RpcMessageBatchProcessor} from '../../common/rpc/RpcMessageBatchProcessor';
 import {RpcError, RpcErrorCodes} from '../../common/rpc/caller/error/RpcError';
 import {RpcErrorType} from '../../common/rpc/caller/error/RpcErrorType';
 import {ConnectionContext} from '../context';
 import {RpcMessageCodecs} from '../../common/codec/RpcMessageCodecs';
 import {RpcValue} from '../../common/messages/Value';
 import {RpcCodecs} from '../../common/codec/RpcCodecs';
-import {Printable} from 'sonic-forest/lib/print/types';
+import type {Printable} from 'sonic-forest/lib/print/types';
 import {printTree} from 'sonic-forest/lib/print/printTree';
-import {type ReactiveRpcMessage, RpcMessageStreamProcessor, ReactiveRpcClientMessage} from '../../common';
+import {type ReactiveRpcMessage, RpcMessageStreamProcessor, type ReactiveRpcClientMessage} from '../../common';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
 import type * as types from './types';
 import type {RouteHandler} from './types';
@@ -72,8 +72,8 @@ export class RpcApp<Ctx extends ConnectionContext> implements Printable {
 
   constructor(protected readonly options: RpcAppOptions) {
     this.app = options.uws;
-    (this.maxRequestBodySize = options.maxRequestBodySize ?? 1024 * 1024),
-      (this.codecs = new RpcCodecs(options.codecs ?? new Codecs(new Writer()), new RpcMessageCodecs()));
+    this.maxRequestBodySize = options.maxRequestBodySize ?? 1024 * 1024;
+    this.codecs = new RpcCodecs(options.codecs ?? new Codecs(new Writer()), new RpcMessageCodecs());
     this.batchProcessor = new RpcMessageBatchProcessor<Ctx>({caller: options.caller});
   }
 
@@ -106,14 +106,14 @@ export class RpcApp<Ctx extends ConnectionContext> implements Printable {
     });
   }
 
-  public enableHttpPing(path: string = '/ping'): this {
+  public enableHttpPing(path = '/ping'): this {
     this.route('GET', path, async () => {
       return 'pong';
     });
     return this;
   }
 
-  public enableHttpRpc(path: string = '/rpc'): this {
+  public enableHttpRpc(path = '/rpc'): this {
     this.routeRaw('POST', path, async (ctx: Ctx) => {
       try {
         const res = ctx.res!;
@@ -143,7 +143,7 @@ export class RpcApp<Ctx extends ConnectionContext> implements Printable {
     return this;
   }
 
-  public enableWsRpc(path: string = '/rpc'): this {
+  public enableWsRpc(path = '/rpc'): this {
     const maxBackpressure = 4 * 1024 * 1024;
     const augmentContext = this.options.augmentContext ?? noop;
     const options = this.options;
@@ -287,7 +287,7 @@ export class RpcApp<Ctx extends ConnectionContext> implements Printable {
 
   // ---------------------------------------------------------------- Printable
 
-  public toString(tab: string = ''): string {
+  public toString(tab = ''): string {
     return (
       `${this.constructor.name}` +
       printTree(tab, [

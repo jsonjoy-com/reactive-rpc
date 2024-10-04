@@ -1,5 +1,5 @@
 import {tick, until} from 'thingies';
-import {Services, ServicesOpts} from '../Services';
+import {Services, type ServicesOpts} from '../Services';
 import {Model, Patch} from 'json-joy/lib/json-crdt';
 import {MemoryLevel} from 'memory-level';
 import {LevelStore} from '../blocks/store/level/LevelStore';

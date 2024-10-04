@@ -1,11 +1,11 @@
 import * as http from 'http';
-import * as net from 'net';
+import type * as net from 'net';
 import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 import {Codecs} from '@jsonjoy.com/json-pack/lib/codecs/Codecs';
 import {WsServerConnection} from '../ws/server/WsServerConnection';
 import {WsFrameEncoder} from '../ws/codec/WsFrameEncoder';
-import {Router, RouteMatcher} from '@jsonjoy.com/jit-router';
-import {Printable} from 'sonic-forest/lib/print/types';
+import {Router, type RouteMatcher} from '@jsonjoy.com/jit-router';
+import type {Printable} from 'sonic-forest/lib/print/types';
 import {printTree} from 'sonic-forest/lib/print/printTree';
 import {PayloadTooLarge} from '../errors';
 import {setCodecs} from './util';
@@ -246,7 +246,7 @@ export class Http1Server implements Printable {
    * @returns Authentication token, if any.
    */
   public findToken(req: http.IncomingMessage): string {
-    let token: string = '';
+    let token = '';
     const headers = req.headers;
     let header: string | string[] | undefined;
     header = headers.authorization;
@@ -265,7 +265,7 @@ export class Http1Server implements Printable {
 
   // ------------------------------------------------------- High-level routing
 
-  public enableHttpPing(path: string = '/ping') {
+  public enableHttpPing(path = '/ping') {
     this.route({
       path,
       handler: (ctx) => {
@@ -276,7 +276,7 @@ export class Http1Server implements Printable {
 
   // ---------------------------------------------------------------- Printable
 
-  public toString(tab: string = ''): string {
+  public toString(tab = ''): string {
     return (
       `${this.constructor.name}` +
       printTree(tab, [

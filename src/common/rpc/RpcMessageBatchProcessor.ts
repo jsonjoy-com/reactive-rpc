@@ -1,5 +1,5 @@
 import * as msg from '../messages';
-import {RpcErrorValue} from './caller';
+import type {RpcErrorValue} from './caller';
 import {validateId, validateMethod} from './validation';
 import {TypedRpcError} from './caller/error/typed';
 import type {RpcCaller} from './caller/RpcCaller';

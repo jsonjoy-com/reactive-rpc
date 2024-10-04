@@ -1,4 +1,4 @@
-import {RpcError, RpcErrorCodes, RpcErrorValue} from './RpcError';
+import {RpcError, type RpcErrorCodes, type RpcErrorValue} from './RpcError';
 import {RpcValue} from '../../../messages/Value';
 import {RpcErrorType} from './RpcErrorType';
 
