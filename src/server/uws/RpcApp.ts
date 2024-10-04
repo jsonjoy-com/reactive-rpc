@@ -22,7 +22,7 @@ const HDR_BAD_REQUEST = Buffer.from('400 Bad Request', 'utf8');
 const HDR_NOT_FOUND = Buffer.from('404 Not Found', 'utf8');
 const ERR_NOT_FOUND = RpcError.fromCode(RpcErrorCodes.NOT_FOUND, 'Not Found');
 
-const noop = (x: any) => {};
+const noop = () => {};
 
 export interface RpcAppOptions {
   uws: types.TemplatedApp;
@@ -189,7 +189,7 @@ export class RpcApp<Ctx extends ConnectionContext> implements Printable {
           logger.error('RX_WS_OPEN', error);
         }
       },
-      message: (ws_: types.WebSocket, buf: ArrayBuffer, isBinary: boolean) => {
+      message: (ws_: types.WebSocket, buf: ArrayBuffer) => {
         try {
           const ws = ws_ as types.RpcWebSocket<Ctx>;
           const ctx = ws.ctx;
@@ -212,7 +212,7 @@ export class RpcApp<Ctx extends ConnectionContext> implements Printable {
           logger.error('RX_WS_MESSAGE', error);
         }
       },
-      close: (ws_: types.WebSocket, code: number, message: ArrayBuffer) => {
+      close: (ws_: types.WebSocket) => {
         const ws = ws_ as types.RpcWebSocket<Ctx>;
         ws.rpc!.stop();
       },
@@ -249,7 +249,8 @@ export class RpcApp<Ctx extends ConnectionContext> implements Printable {
           responseCodec = ctx.resCodec;
           augmentContext(ctx);
           await handler(ctx);
-        } catch (err) {
+        } catch (_error: unknown) {
+          let err: unknown = _error;
           if (err instanceof RpcValue) err = err.data;
           if (!(err instanceof RpcError)) err = RpcError.from(err);
           const error = <RpcError>err;

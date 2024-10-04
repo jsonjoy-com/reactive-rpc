@@ -26,6 +26,7 @@ describe('events', () => {
       model2.applyPatch(patch);
     }
     expect(model2.view()).toEqual({foo: 2});
+    sub.unsubscribe();
     await kit.stop();
   });
 

@@ -6,7 +6,7 @@ import {sampleApi} from './sample-api';
 
 const setup = () => {
   const server = new RpcMessageStreamProcessor<any>({
-    send: (messages: unknown) => {},
+    send: () => {},
     caller: new ApiRpcCaller<any, any>({
       api: sampleApi,
     }),

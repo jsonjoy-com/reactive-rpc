@@ -1,9 +1,5 @@
 import {TimedQueue} from '../TimedQueue';
 
-test('can create queue', () => {
-  const queue = new TimedQueue<123>();
-});
-
 test('can add items', () => {
   const queue = new TimedQueue<number>();
   queue.onFlush = jest.fn();

@@ -1,7 +1,7 @@
 import {BufferSubject} from '../BufferSubject';
 
 test('can create subject', () => {
-  const subject = new BufferSubject(10);
+  new BufferSubject(10);
 });
 
 test('can subscribe and unsubscribe', () => {

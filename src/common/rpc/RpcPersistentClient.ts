@@ -40,7 +40,7 @@ export class RpcPersistentClient {
     this.channel.open$.pipe(filter((open) => open)).subscribe(() => {
       const close$ = this.channel.open$.pipe(filter((open) => !open));
       const client = new StreamingRpcClient({
-        ...(params.client || {}),
+        ...params.client,
         send: (messages: msg.ReactiveRpcClientMessage[]): void => {
           const encoded = codec.encode(messages, codec.req);
           this.channel.send$(encoded).subscribe();

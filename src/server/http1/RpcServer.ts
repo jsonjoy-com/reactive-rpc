@@ -139,7 +139,7 @@ export class RpcServer implements Printable {
       path,
       maxIncomingMessage: 2 * 1024 * 1024,
       maxOutgoingBackpressure: 2 * 1024 * 1024,
-      handler: (ctx: WsConnectionContext, req: http.IncomingMessage) => {
+      handler: (ctx: WsConnectionContext) => {
         const connection = ctx.connection;
         const reqCodec = ctx.reqCodec;
         const resCodec = ctx.resCodec;
@@ -162,7 +162,7 @@ export class RpcServer implements Printable {
           bufferSize: 1,
           bufferTime: 0,
         });
-        connection.onmessage = (uint8: Uint8Array, isUtf8: boolean) => {
+        connection.onmessage = (uint8: Uint8Array) => {
           let messages: ReactiveRpcClientMessage[];
           try {
             messages = msgCodec.decodeBatch(reqCodec, uint8) as ReactiveRpcClientMessage[];
@@ -179,7 +179,7 @@ export class RpcServer implements Printable {
             return;
           }
         };
-        connection.onclose = (code: number, reason: string) => {
+        connection.onclose = () => {
           rpc.stop();
         };
       },

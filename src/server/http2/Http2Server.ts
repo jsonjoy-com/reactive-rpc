@@ -1,11 +1,9 @@
 import * as http2 from 'http2';
 import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 import {Codecs} from '@jsonjoy.com/json-pack/lib/codecs/Codecs';
-import {WsServerConnection} from '../ws/server/WsServerConnection';
 import {Router, RouteMatcher} from '@jsonjoy.com/jit-router';
 import {Printable} from 'sonic-forest/lib/print/types';
 import {printTree} from 'sonic-forest/lib/print/printTree';
-import {PayloadTooLarge} from '../errors';
 import {Http2ConnectionContext} from './context';
 import {RpcCodecs} from '../../common/codec/RpcCodecs';
 import {RpcMessageCodecs} from '../../common/codec/RpcMessageCodecs';
@@ -83,12 +81,12 @@ export class Http2Server implements Printable {
 
   // ------------------------------------------------------------- HTTP routing
 
-  public onnotfound: Http2NotFoundHandler = (stream: http2.Http2Stream) => {
+  public onnotfound: Http2NotFoundHandler = () => {
     // res.writeHead(404, 'Not Found');
     // res.end();
   };
 
-  public oninternalerror: Http2InternalErrorHandler = (error: unknown, res) => {
+  public oninternalerror: Http2InternalErrorHandler = () => {
     // if (error instanceof PayloadTooLarge) {
     //   res.statusCode = 413;
     //   res.statusMessage = 'Payload Too Large';
@@ -113,7 +111,7 @@ export class Http2Server implements Printable {
     this.httpRouter.add(route, match);
   }
 
-  private readonly onStream = async (stream: http2.Http2Stream, headers: http2.IncomingHttpHeaders, flags: number) => {
+  private readonly onStream = async (stream: http2.Http2Stream) => {
     stream.end('Hello, World!');
     // try {
     //   res.sendDate = false;

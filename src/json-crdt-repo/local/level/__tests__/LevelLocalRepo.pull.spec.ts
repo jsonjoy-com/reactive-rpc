@@ -2,7 +2,6 @@ import {Model, Patch, s} from 'json-joy/lib/json-crdt';
 import {setup} from './setup';
 import {firstValueFrom, ReplaySubject} from 'rxjs';
 import {LocalRepo, LocalRepoMergeEvent, LocalRepoResetEvent} from '../../types';
-import {until} from 'thingies';
 
 const get = async (kit: Awaited<ReturnType<typeof setup>>, id = kit.blockId): Promise<Model> => {
   const {block} = await kit.remote.client.call('block.get', {id: id.join('/')});
@@ -111,6 +110,7 @@ describe('.pull()', () => {
       await kit.local.pull(kit.blockId);
       const get3 = await local.get({id: kit.blockId});
       expect(get3.model.view()).toEqual({foo: 'baz', x: 1});
+      expect(cnt).toBe(0);
       await kit.stop();
     });
 

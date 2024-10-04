@@ -5,7 +5,7 @@ export class CliParamHelp implements CliParam {
   public readonly param = 'help';
   public readonly short = 'h';
   public readonly title = 'Print help and exit';
-  public readonly createInstance = (cli: Cli, pointer: string, value: unknown) =>
+  public readonly createInstance = (cli: Cli) =>
     new (class implements CliParamInstance {
       public readonly onParam = async () => {
         const paramLines = cli.params.map((param) => {

@@ -18,7 +18,7 @@ export class Http2ConnectionContext<Meta = Record<string, unknown>> implements C
     public msgCodec: RpcMessageCodec,
   ) {}
 
-  public async body(maxPayload: number): Promise<Uint8Array> {
+  public async body(): Promise<Uint8Array> {
     throw new Error('not implemented');
   }
 }

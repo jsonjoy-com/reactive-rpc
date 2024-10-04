@@ -42,7 +42,7 @@ describe('events', () => {
     const model2 = model.clone();
     model.api.obj([]).set({foo: 2});
     const patch2 = model.api.flush();
-    const res2 = await kit.local.sync({
+    await kit.local.sync({
       id: kit.blockId,
       patches: [patch2],
       cursor: res1.cursor,
@@ -76,7 +76,7 @@ describe('events', () => {
     const model2 = model.clone();
     model.api.obj([]).set({foo: 2});
     const patch2 = model.api.flush();
-    const res2 = await kit.local.sync({
+    await kit.local.sync({
       id: kit.blockId,
       patches: [patch2],
       cursor: res1.cursor,

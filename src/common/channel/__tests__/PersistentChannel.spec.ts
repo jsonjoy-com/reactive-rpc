@@ -104,6 +104,7 @@ describe('.stop()', () => {
     await new Promise((r) => setTimeout(r, 1));
     expect(onSend).toHaveBeenCalledTimes(2);
     expect(onClose).toHaveBeenCalledTimes(1);
+    expect(channel).toBe(undefined);
   });
 });
 
@@ -126,6 +127,7 @@ describe('.send$() method', () => {
     expect(onSend).toHaveBeenCalledTimes(1);
     expect(onSend).toHaveBeenCalledWith('asdf');
     expect(persistent.open$.getValue()).toBe(true);
+    expect(channel).not.toBe(undefined);
   });
 
   test('buffers and sends message out once channel is connected', async () => {
@@ -144,6 +146,7 @@ describe('.send$() method', () => {
     await future;
     expect(onSend).toHaveBeenCalledTimes(1);
     expect(onSend).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]));
+    expect(channel).not.toBe(undefined);
   });
 
   test('does not send messages once .stop() is executed', async () => {
@@ -161,10 +164,11 @@ describe('.send$() method', () => {
     await firstValueFrom(persistent.send$('foo').pipe(take(1)));
     expect(onSend).toHaveBeenCalledTimes(2);
     persistent.stop();
-    const a = of(firstValueFrom(persistent.send$('bar').pipe(take(1))));
+    of(firstValueFrom(persistent.send$('bar').pipe(take(1))));
     await new Promise((r) => setTimeout(r, 1));
     ws()._open();
     await new Promise((r) => setTimeout(r, 1));
     expect(onSend).toHaveBeenCalledTimes(2);
+    expect(channel).toBe(undefined);
   });
 });

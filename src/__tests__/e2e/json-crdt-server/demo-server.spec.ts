@@ -22,27 +22,27 @@ if (process.env.TEST_E2E && process.env.TEST_E2E_DEMO_SERVER) {
     });
   });
 
-  // describe('FetchRpcClient', () => {
-  //   const codec = cborCodec();
-  //   const setup: ApiTestSetup = async () => setupDemoServerFetchClient(codec);
-  //   describe(`protocol: application/x.${codec.specifier()}`, () => {
-  //     runUtilTests(setup, {staticOnly: true});
-  //     runPubsubTests(setup, {staticOnly: true});
-  //     runPresenceTests(setup, {staticOnly: true});
-  //     runBlockTests(setup, {staticOnly: true});
-  //   });
-  // });
+  describe('FetchRpcClient', () => {
+    const codec = cborCodec();
+    const setup: ApiTestSetup = async () => setupDemoServerFetchClient(codec);
+    describe(`protocol: application/x.${codec.specifier()}`, () => {
+      runUtilTests(setup);
+      runPubsubTests(setup, {staticOnly: true});
+      runPresenceTests(setup, {staticOnly: true});
+      runBlockTests(setup, {staticOnly: true});
+    });
+  });
 
-  // describe('StreamingRpcClient', () => {
-  //   const codec = cborCodec();
-  //   const setup: ApiTestSetup = async () => setupDemoServerStreamingClient(codec);
-  //   describe(`protocol: application/x.${codec.specifier()}`, () => {
-  //     runUtilTests(setup, {staticOnly: true});
-  //     runPubsubTests(setup, {staticOnly: true});
-  //     runPresenceTests(setup, {staticOnly: true});
-  //     runBlockTests(setup, {staticOnly: true});
-  //   });
-  // });
+  describe('StreamingRpcClient', () => {
+    const codec = cborCodec();
+    const setup: ApiTestSetup = async () => setupDemoServerStreamingClient(codec);
+    describe(`protocol: application/x.${codec.specifier()}`, () => {
+      runUtilTests(setup);
+      runPubsubTests(setup, {staticOnly: true});
+      runPresenceTests(setup, {staticOnly: true});
+      runBlockTests(setup, {staticOnly: true});
+    });
+  });
 } else {
   test.skip('set TEST_E2E=1 env var to run this test suite', () => {});
 }

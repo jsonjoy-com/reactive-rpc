@@ -23,7 +23,7 @@ const startServer = async () => {
   const cp = spawn('yarn', [`demo:e2e:${suite}:${server}`], {
     shell: true,
   });
-  process.on('exit', (code) => {
+  process.on('exit', () => {
     cp.kill();
   });
   cp.stdout.on('data', (data) => {
@@ -58,7 +58,7 @@ const runTests = async () => {
     },
     stdio: 'inherit',
   });
-  process.on('exit', (code) => {
+  process.on('exit', () => {
     cp.kill();
   });
   cp.on('close', (code) => {

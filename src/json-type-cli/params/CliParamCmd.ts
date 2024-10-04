@@ -18,7 +18,7 @@ export class CliParamCmd implements CliParam {
         let codec = cli.requestCodec;
         let cmdPointer: string = '';
         if (cmd[0] === '(') {
-          const regex = /^\((.+)\)\:([a-z0-9]*)(\:([^\:]*))$/;
+          const regex = /^\((.+)\):([a-z0-9]*)(:([^:]*))$/;
           const match = regex.exec(cmd);
           if (match) {
             const [, cmd_, cmdCodec, , cmdPointer_] = match;
@@ -39,7 +39,7 @@ export class CliParamCmd implements CliParam {
           ls.stderr.on('data', (data) => {
             reject(bufferToUint8Array(data));
           });
-          ls.on('close', (code) => {
+          ls.on('close', () => {
             resolve(listToUint8(uint8s));
           });
         });

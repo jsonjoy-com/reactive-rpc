@@ -1,15 +1,15 @@
 import {toTree} from 'json-joy/lib/json-text/toTree';
 import {AbstractType} from 'json-joy/lib/json-type/type/classes';
-import type {Cli} from '../Cli';
-import type {CliContext, CliParam, CliParamInstance} from '../types';
 import {formatError} from '../util';
+import type {Cli} from '../Cli';
+import type {CliParam, CliParamInstance} from '../types';
 
 export class CliParamPlan implements CliParam {
   public readonly param = 'plan';
   public readonly title = 'Show execution plan';
-  public readonly createInstance = (cli: Cli, pointer: string, rawValue: unknown) =>
+  public readonly createInstance = (cli: Cli) =>
     new (class implements CliParamInstance {
-      public readonly onBeforeCall = async (method: string, ctx: CliContext) => {
+      public readonly onBeforeCall = async (method: string) => {
         const fn = cli.router.get(method).type;
         if (!fn) throw new Error(`Method ${method} not found`);
         const out: any = {

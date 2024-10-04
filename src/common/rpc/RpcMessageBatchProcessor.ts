@@ -68,7 +68,7 @@ export class RpcMessageBatchProcessor<Ctx = unknown> {
   public onNotification(message: msg.NotificationMessage, ctx: Ctx): void {
     const method = message.method;
     validateMethod(method);
-    this.caller.notification(method, message.value.data, ctx).catch((error: unknown) => {});
+    this.caller.notification(method, message.value.data, ctx).catch(() => {});
   }
 
   public async onRequest(
