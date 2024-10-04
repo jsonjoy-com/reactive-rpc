@@ -44,7 +44,6 @@ export type BlockSyncRecord = [
    * Unencrypted block ID.
    */
   id: BlockId,
-
   /**
    * Time when block was marked as dirty.
    */

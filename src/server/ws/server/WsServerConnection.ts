@@ -147,7 +147,7 @@ export class WsServerConnection {
   public upgrade(secWebSocketKey: string, secWebSocketProtocol: string, secWebSocketExtensions?: string): void {
     const accept = secWebSocketKey + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
     const acceptSha1 = crypto.createHash('sha1').update(accept).digest('base64');
-    // prettier-ignore
+    // biome-ignore format: line per header
     this.socket.write(
       'HTTP/1.1 101 Switching Protocols\r\n' +
         'Upgrade: websocket\r\n' +

@@ -111,9 +111,16 @@ export class StreamingRpcClient implements RpcClient {
    * @param messages A message from the server.
    */
   public onMessage(message: msg.ReactiveRpcServerMessage): void {
-    if (message instanceof msg.ResponseCompleteMessage) {this.onResponseComplete(message); return;}
-    else if (message instanceof msg.ResponseDataMessage) {this.onResponseData(message); return;}
-    else if (message instanceof msg.ResponseErrorMessage) {this.onResponseError(message); return;}
+    if (message instanceof msg.ResponseCompleteMessage) {
+      this.onResponseComplete(message);
+      return;
+    } else if (message instanceof msg.ResponseDataMessage) {
+      this.onResponseData(message);
+      return;
+    } else if (message instanceof msg.ResponseErrorMessage) {
+      this.onResponseError(message);
+      return;
+    }
     // else if (message instanceof RequestUnsubscribeMessage) {this.onRequestUnsubscribe(message); return;}
     this.onRequestUnsubscribe(message);
   }

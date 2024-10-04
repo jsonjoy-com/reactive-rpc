@@ -10,7 +10,8 @@
 	"javascript": {
 		"formatter": {
 			"quoteStyle": "single",
-			"trailingCommas": "es5"
+			"trailingCommas": "all",
+			"bracketSpacing": false
 		}
 	},
 	"linter": {

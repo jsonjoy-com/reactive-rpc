@@ -61,9 +61,11 @@ export const schema =
     });
   };
 
-// prettier-ignore
-export const util = (d: RouteDeps) => <R extends RouterBase>(r: Router<R>) =>
-  ( ping(d)
+export const util =
+  (d: RouteDeps) =>
+  <R extends RouterBase>(r: Router<R>) =>
+    // biome-ignore format: each on its own line
+    ( ping(d)
   ( echo(d)
   ( info(d)
   ( schema(d)

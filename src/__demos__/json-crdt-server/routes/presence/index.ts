@@ -9,7 +9,7 @@ export const presence =
   <R extends RouterBase>(r: Router<R>) => {
     d.system.alias('PresenceEntry', PresenceEntry);
 
-    // prettier-ignore
+    // biome-ignore format: each on its own line
     return (
       ( update(d)
       ( remove(d)
