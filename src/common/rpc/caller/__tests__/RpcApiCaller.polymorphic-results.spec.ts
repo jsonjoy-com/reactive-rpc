@@ -1,5 +1,5 @@
 import {ApiRpcCaller} from '../ApiRpcCaller';
-import {firstValueFrom, Observable, of} from 'rxjs';
+import {firstValueFrom, type Observable, of} from 'rxjs';
 import {map} from 'rxjs/operators';
 import {StreamingRpcMethod} from '../../methods/StreamingRpcMethod';
 import {StaticRpcMethod} from '../../methods/StaticRpcMethod';

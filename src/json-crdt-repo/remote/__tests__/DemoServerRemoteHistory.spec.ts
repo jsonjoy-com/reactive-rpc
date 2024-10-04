@@ -1,6 +1,6 @@
 import {Model, Patch} from 'json-joy/lib/json-crdt';
 import {SESSION} from 'json-joy/lib/json-crdt-patch/constants';
-import {Value} from 'json-joy/lib/json-type-value/Value';
+import type {Value} from 'json-joy/lib/json-type-value/Value';
 import {setup} from './setup';
 import {until} from 'thingies';
 

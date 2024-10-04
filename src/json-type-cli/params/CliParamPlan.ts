@@ -1,5 +1,5 @@
 import {toTree} from 'json-joy/lib/json-text/toTree';
-import {AbstractType} from 'json-joy/lib/json-type/type/classes';
+import type {AbstractType} from 'json-joy/lib/json-type/type/classes';
 import {formatError} from '../util';
 import type {Cli} from '../Cli';
 import type {CliParam, CliParamInstance} from '../types';

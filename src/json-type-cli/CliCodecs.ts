@@ -3,7 +3,7 @@ import type {CliCodec} from './types';
 const CODEC_REGEX = /(\w{0,32})(?:\:(\w{0,32}))?/;
 
 export class CliCodecs {
-  public defaultCodec: string = 'json4';
+  public defaultCodec = 'json4';
   public readonly codecs: Map<string, CliCodec<string>> = new Map();
 
   public register(codec: CliCodec<string>): void {
@@ -35,7 +35,7 @@ export class CliCodecs {
    * @returns 2-tuple of selected codecs.
    */
   public getCodecs(format: unknown): [request: CliCodec<string>, response: CliCodec<string>] {
-    if (typeof format !== 'string') throw new Error(`Invalid --format type.`);
+    if (typeof format !== 'string') throw new Error('Invalid --format type.');
     if (!format) {
       const codec = this.get('');
       return [codec, codec];

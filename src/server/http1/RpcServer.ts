@@ -1,19 +1,19 @@
 import * as http from 'http';
-import {Printable} from 'sonic-forest/lib/print/types';
+import type {Printable} from 'sonic-forest/lib/print/types';
 import {printTree} from 'sonic-forest/lib/print/printTree';
 import {Http1Server} from './Http1Server';
 import {RpcError} from '../../common/rpc/caller';
 import {
-  IncomingBatchMessage,
-  ReactiveRpcClientMessage,
-  ReactiveRpcMessage,
+  type IncomingBatchMessage,
+  type ReactiveRpcClientMessage,
+  type ReactiveRpcMessage,
   RpcMessageBatchProcessor,
   RpcMessageStreamProcessor,
 } from '../../common';
-import {WsConnectionContext} from './context';
+import type {WsConnectionContext} from './context';
 import type {RpcCaller} from '../../common/rpc/caller/RpcCaller';
 import type {ServerLogger} from './types';
-import {ConnectionContext} from '../types';
+import type {ConnectionContext} from '../types';
 
 const DEFAULT_MAX_PAYLOAD = 4 * 1024 * 1024;
 
@@ -97,7 +97,7 @@ export class RpcServer implements Printable {
     });
   }
 
-  public enableHttpRpc(path: string = '/rpc'): void {
+  public enableHttpRpc(path = '/rpc'): void {
     const batchProcessor = this.batchProcessor;
     const logger = this.opts.logger ?? console;
     this.http1.route({
@@ -131,7 +131,7 @@ export class RpcServer implements Printable {
     });
   }
 
-  public enableWsRpc(path: string = '/rpc'): void {
+  public enableWsRpc(path = '/rpc'): void {
     const opts = this.opts;
     const logger = opts.logger ?? console;
     const caller = opts.caller;
@@ -195,7 +195,7 @@ export class RpcServer implements Printable {
 
   // ---------------------------------------------------------------- Printable
 
-  public toString(tab: string = ''): string {
+  public toString(tab = ''): string {
     return (
       `${this.constructor.name}` +
       printTree(tab, [

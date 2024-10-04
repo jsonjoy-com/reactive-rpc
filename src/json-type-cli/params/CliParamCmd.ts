@@ -16,7 +16,7 @@ export class CliParamCmd implements CliParam {
       public readonly onRequest = async () => {
         let cmd = String(rawValue);
         let codec = cli.requestCodec;
-        let cmdPointer: string = '';
+        let cmdPointer = '';
         if (cmd[0] === '(') {
           const regex = /^\((.+)\):([a-z0-9]*)(:([^:]*))$/;
           const match = regex.exec(cmd);

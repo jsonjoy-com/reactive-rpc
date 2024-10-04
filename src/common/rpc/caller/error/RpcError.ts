@@ -1,34 +1,34 @@
-import {RpcValue} from '../../../messages/Value';
+import type {RpcValue} from '../../../messages/Value';
 import type {IRpcError} from './RpcErrorType';
 
 export enum RpcErrorCodes {
   /** Any unknown sever error is wrapped into INTERNAL_ERROR, error 500. */
-  INTERNAL_ERROR,
+  INTERNAL_ERROR = 0,
 
   /** When request is not valid, e.g. when request validation fails, error 400. */
-  BAD_REQUEST,
+  BAD_REQUEST = 1,
 
   /**
    * Error thrown when there was no activity on a
    * stream for a long time, and timeout was reached.
    */
-  TIMEOUT,
+  TIMEOUT = 2,
 
   /** Resource not found, error 404. */
-  NOT_FOUND,
+  NOT_FOUND = 3,
 
   /** When operation cannot be performed due to a conflict, error 409. */
-  CONFLICT,
+  CONFLICT = 4,
 
-  ID_TAKEN,
-  INVALID_METHOD,
-  INVALID_METHOD_NAME,
-  NO_METHOD_SPECIFIED,
-  METHOD_NOT_FOUND,
+  ID_TAKEN = 5,
+  INVALID_METHOD = 6,
+  INVALID_METHOD_NAME = 7,
+  NO_METHOD_SPECIFIED = 8,
+  METHOD_NOT_FOUND = 9,
 
-  STOP,
-  DISCONNECT,
-  BUFFER_OVERFLOW,
+  STOP = 10,
+  DISCONNECT = 11,
+  BUFFER_OVERFLOW = 12,
 }
 
 export type RpcErrorValue = RpcValue<RpcError>;
@@ -41,7 +41,7 @@ export class RpcError extends Error implements IRpcError {
 
   public static fromCode(
     errno: RpcErrorCodes,
-    message: string = '',
+    message = '',
     meta: unknown = undefined,
     originalError: unknown = undefined,
   ): RpcError {
@@ -49,7 +49,7 @@ export class RpcError extends Error implements IRpcError {
     return new RpcError(message || code, code, errno, undefined, meta || undefined, originalError);
   }
 
-  public static internal(originalError: unknown, message: string = 'Internal Server Error'): RpcError {
+  public static internal(originalError: unknown, message = 'Internal Server Error'): RpcError {
     return RpcError.fromCode(RpcErrorCodes.INTERNAL_ERROR, message, undefined, originalError);
   }
 

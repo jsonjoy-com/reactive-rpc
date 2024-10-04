@@ -1,7 +1,7 @@
-import {Observable} from 'rxjs';
+import type {Observable} from 'rxjs';
 import * as msg from '../messages';
-import {StreamingRpcClient} from './client/StreamingRpcClient';
-import {RpcMessageStreamProcessor} from './RpcMessageStreamProcessor';
+import type {StreamingRpcClient} from './client/StreamingRpcClient';
+import type {RpcMessageStreamProcessor} from './RpcMessageStreamProcessor';
 
 export interface RpcDuplexParams<Ctx = unknown> {
   client: StreamingRpcClient;
@@ -28,10 +28,10 @@ export class RpcDuplex<Ctx = unknown> {
     else if (message instanceof msg.RequestErrorMessage) this.server.onRequestErrorMessage(message, ctx);
     else if (message instanceof msg.ResponseUnsubscribeMessage) this.server.onUnsubscribeMessage(message);
     else if (message instanceof msg.NotificationMessage) this.server.onNotificationMessage(message, ctx);
-    else if (message instanceof msg.ResponseCompleteMessage) return this.client.onResponseComplete(message);
-    else if (message instanceof msg.ResponseDataMessage) return this.client.onResponseData(message);
-    else if (message instanceof msg.ResponseErrorMessage) return this.client.onResponseError(message);
-    else if (message instanceof msg.RequestUnsubscribeMessage) return this.client.onRequestUnsubscribe(message);
+    else if (message instanceof msg.ResponseCompleteMessage) this.client.onResponseComplete(message);
+    else if (message instanceof msg.ResponseDataMessage) this.client.onResponseData(message);
+    else if (message instanceof msg.ResponseErrorMessage) this.client.onResponseError(message);
+    else if (message instanceof msg.RequestUnsubscribeMessage) this.client.onRequestUnsubscribe(message);
   }
 
   public call$(method: string, data: unknown): Observable<unknown>;

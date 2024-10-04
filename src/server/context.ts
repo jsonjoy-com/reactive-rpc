@@ -37,8 +37,8 @@ export class ConnectionContext<Meta = Record<string, unknown>> {
    * @returns Authentication token, if any.
    */
   private static findToken(req: HttpRequest): string {
-    let token: string = '';
-    let text: string = '';
+    let token = '';
+    let text = '';
     text = req.getHeader('authorization');
     if (text) token = ConnectionContext.findTokenInText(text);
     if (token) return token;

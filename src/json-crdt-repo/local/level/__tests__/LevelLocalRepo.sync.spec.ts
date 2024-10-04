@@ -1,9 +1,9 @@
-import {Model, s, NodeBuilder, Patch} from 'json-joy/lib/json-crdt';
+import {Model, s, type NodeBuilder, type Patch} from 'json-joy/lib/json-crdt';
 import {setup} from './setup';
 import {Log} from 'json-joy/lib/json-crdt/log/Log';
 import {tick, until} from 'thingies';
 import {BehaviorSubject} from 'rxjs';
-import {LocalRepoEvent, LocalRepoMergeEvent} from '../../types';
+import type {LocalRepoEvent, LocalRepoMergeEvent} from '../../types';
 
 describe('.sync()', () => {
   describe('new session', () => {

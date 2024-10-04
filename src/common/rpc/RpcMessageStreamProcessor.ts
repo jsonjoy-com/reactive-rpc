@@ -1,7 +1,7 @@
 import * as msg from '../messages';
 import {TimedQueue} from '../util/TimedQueue';
 import {RpcErrorCodes, RpcError} from './caller/error/RpcError';
-import {RpcValue} from '../messages/Value';
+import type {RpcValue} from '../messages/Value';
 import {subscribeCompleteObserver} from '../util/subscribeCompleteObserver';
 import type {RpcCaller} from './caller/RpcCaller';
 import type {Call, RpcApiMap} from './caller/types';
@@ -240,11 +240,23 @@ export class RpcMessageStreamProcessor<Ctx = unknown> {
   public onRequestErrorMessage(message: msg.RequestErrorMessage, ctx: Ctx): void {
     const {id, method, value} = message;
     const call = this.activeStreamCalls.get(id);
-    if (call) return call.req$.error(value.data);
-    if (!method) return this.sendError(id, RpcErrorCodes.NO_METHOD_SPECIFIED);
-    if (!this.caller.exists(method)) return this.sendError(id, RpcErrorCodes.METHOD_NOT_FOUND);
+    if (call) {
+      call.req$.error(value.data);
+      return;
+    }
+    if (!method) {
+      this.sendError(id, RpcErrorCodes.NO_METHOD_SPECIFIED);
+      return;
+    }
+    if (!this.caller.exists(method)) {
+      this.sendError(id, RpcErrorCodes.METHOD_NOT_FOUND);
+      return;
+    }
     const {isStreaming} = this.caller.info(method);
-    if (!isStreaming) return this.sendError(id, RpcErrorCodes.INVALID_METHOD);
+    if (!isStreaming) {
+      void this.sendError(id, RpcErrorCodes.INVALID_METHOD);
+      return;
+    }
     const streamCall = this.createStreamCall(id, method, ctx);
     if (!streamCall) return;
     streamCall.req$.error(value.data);

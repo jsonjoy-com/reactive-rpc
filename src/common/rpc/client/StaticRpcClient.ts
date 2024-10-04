@@ -31,7 +31,7 @@ export interface StaticRpcClientOptions {
 }
 
 export class StaticRpcClient implements RpcClient {
-  private id: number = 1;
+  private id = 1;
   public readonly buffer: TimedQueue<msg.ReactiveRpcClientMessage>;
   public onsend: (messages: msg.ReactiveRpcClientMessage[]) => Promise<msg.ReactiveRpcServerMessage[]> = async () => {
     throw new Error('onsend not implemented');

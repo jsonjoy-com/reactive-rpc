@@ -1,4 +1,4 @@
-import {Subject, Subscription, Subscriber} from 'rxjs';
+import {Subject, type Subscription, type Subscriber} from 'rxjs';
 import {RpcError, RpcErrorCodes} from '../../common/rpc/caller';
 
 export class BufferSubject<T> extends Subject<T> {

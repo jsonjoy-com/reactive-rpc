@@ -1,5 +1,5 @@
-import {Model, NodeBuilder} from 'json-joy/lib/json-crdt';
-import {BlockId, LocalRepo} from '../local/types';
+import {Model, type NodeBuilder} from 'json-joy/lib/json-crdt';
+import type {BlockId, LocalRepo} from '../local/types';
 import {EditSession} from './EditSession';
 import {timeout} from 'thingies/lib/timeout';
 

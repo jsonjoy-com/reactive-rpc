@@ -3,7 +3,7 @@ import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 import {Codecs} from '@jsonjoy.com/json-pack/lib/codecs/Codecs';
 import {
   NotificationMessage,
-  ReactiveRpcMessage,
+  type ReactiveRpcMessage,
   RequestCompleteMessage,
   RequestDataMessage,
   RequestErrorMessage,

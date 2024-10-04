@@ -324,7 +324,7 @@ test('does not send unsubscribe when error has been received', async () => {
   const value = new RpcValue(Buffer.from([25]), undefined);
   client.onMessages([new ResponseErrorMessage(1, value)]);
   expect(send).toHaveBeenCalledTimes(1);
-  let error;
+  let error: any;
   try {
     await promise;
   } catch (err) {

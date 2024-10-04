@@ -4,8 +4,8 @@ import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 import {ConnectionContext} from '../../server/context';
 import {RpcCodecs} from '../codec/RpcCodecs';
 import {RpcMessageCodecs} from '../codec/RpcMessageCodecs';
-import {ReactiveRpcClientMessage, ReactiveRpcMessage, ReactiveRpcServerMessage} from '../messages';
-import {RpcMessageStreamProcessor, StreamingRpcClient, TypedRpcClient} from '../rpc';
+import type {ReactiveRpcClientMessage, ReactiveRpcMessage, ReactiveRpcServerMessage} from '../messages';
+import {RpcMessageStreamProcessor, StreamingRpcClient, type TypedRpcClient} from '../rpc';
 import type {RpcCaller} from '../rpc/caller/RpcCaller';
 import type {CallerToMethods} from '../types';
 
@@ -73,6 +73,7 @@ export const buildE2eClient = <Caller extends RpcCaller<any>>(caller: Caller, op
     codecs.value.cbor,
     codecs.messages.binary,
   );
+  // biome-ignore lint: client used inside the function
   let client: StreamingRpcClient;
   const streamProcessor = new RpcMessageStreamProcessor({
     caller,

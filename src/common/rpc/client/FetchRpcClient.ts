@@ -1,4 +1,4 @@
-import {StaticRpcClient, StaticRpcClientOptions} from './StaticRpcClient';
+import {StaticRpcClient, type StaticRpcClientOptions} from './StaticRpcClient';
 import {EncodedStaticRpcClient} from './EncodedStaticRpcClient';
 import type {RpcMessageCodec} from '../../codec/types';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';

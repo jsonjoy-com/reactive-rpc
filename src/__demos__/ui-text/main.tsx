@@ -27,9 +27,10 @@ const main = async () => {
 
     return (
       <div style={{padding: 32}}>
-        <textarea ref={ref} style={{width: 600, height: 300}}></textarea>
+        <textarea ref={ref} style={{width: 600, height: 300}} />
         <hr />
         <button
+          type="button"
           onClick={async () => {
             const {block} = await repo.remote.read(id);
             const model = Model.fromBinary(block.snapshot.blob);

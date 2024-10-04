@@ -1,8 +1,8 @@
-import * as msg from '../messages';
-import {firstValueFrom, Observable, ReplaySubject, timer} from 'rxjs';
+import type * as msg from '../messages';
+import {firstValueFrom, type Observable, ReplaySubject, timer} from 'rxjs';
 import {filter, first, share, switchMap, takeUntil} from 'rxjs/operators';
-import {StreamingRpcClient, StreamingRpcClientOptions} from './client/StreamingRpcClient';
-import {PersistentChannel, PersistentChannelParams} from '../channel';
+import {StreamingRpcClient, type StreamingRpcClientOptions} from './client/StreamingRpcClient';
+import {PersistentChannel, type PersistentChannelParams} from '../channel';
 import type {RpcCodec} from '../codec/RpcCodec';
 
 export interface RpcPersistentClientParams {

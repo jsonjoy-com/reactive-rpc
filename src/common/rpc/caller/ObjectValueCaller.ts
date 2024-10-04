@@ -4,10 +4,10 @@ import {type AbstractType, FunctionStreamingType, FunctionType} from 'json-joy/l
 import {printTree} from 'sonic-forest/lib/print/printTree';
 import {StaticRpcMethod, type StaticRpcMethodOptions} from '../methods/StaticRpcMethod';
 import {StreamingRpcMethod, type StreamingRpcMethodOptions} from '../methods/StreamingRpcMethod';
-import {
-  type ObjectType,
-  type Schema,
-  type TypeSystem,
+import type {
+  ObjectType,
+  Schema,
+  TypeSystem,
   ObjectFieldType,
   TypeOf,
   SchemaOf,
@@ -133,7 +133,7 @@ export class ObjectValueCaller<V extends ObjectValue<ObjectType<any>>, Ctx = unk
 
   // ---------------------------------------------------------------- Printable
 
-  public toString(tab: string = ''): string {
+  public toString(tab = ''): string {
     return (
       `${this.constructor.name}` +
       printTree(tab, [(tab) => this.router.toString(tab), (tab) => this.system.toString(tab)])

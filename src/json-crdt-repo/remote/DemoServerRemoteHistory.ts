@@ -1,4 +1,4 @@
-import {CallerToMethods, TypedRpcClient} from '../../common';
+import type {CallerToMethods, TypedRpcClient} from '../../common';
 import {shareByKey} from '../../util/rx/shareByKey';
 import type {JsonJoyDemoRpcCaller} from '../../__demos__/json-crdt-server';
 import type {
@@ -30,7 +30,7 @@ export class DemoServerRemoteHistory implements ServerHistory {
   public async pull(
     id: string,
     seq: Cursor = -1,
-    create: boolean = false,
+    create = false,
   ): Promise<{
     batches: DemoServerBatch[];
     snapshot?: DemoServerSnapshot;

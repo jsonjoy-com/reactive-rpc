@@ -38,6 +38,7 @@ const Demo: React.FC = () => {
       <ClickableJsonCrdt model={model} showRoot />
       <hr />
       <button
+        type="button"
         onClick={async () => {
           const {block} = await repo.remote.read(id);
           const model = Model.fromBinary(block.snapshot.blob);

@@ -1,8 +1,8 @@
 import {PresenceService} from './PresenceService';
 import {PubsubService} from './PubSubService';
-import {BlocksServices, BlocksServicesOpts} from './blocks/BlocksServices';
+import {BlocksServices, type BlocksServicesOpts} from './blocks/BlocksServices';
 import {MemoryStore} from './blocks/store/MemoryStore';
-import {Store} from './blocks/store/types';
+import type {Store} from './blocks/store/types';
 
 export interface ServicesOpts {
   store?: Store;

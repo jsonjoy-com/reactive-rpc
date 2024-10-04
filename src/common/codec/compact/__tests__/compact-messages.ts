@@ -1,5 +1,5 @@
 import {CompactMessageType} from '../constants';
-import {
+import type {
   CompactNotificationMessage,
   CompactRequestDataMessage,
   CompactRequestCompleteMessage,

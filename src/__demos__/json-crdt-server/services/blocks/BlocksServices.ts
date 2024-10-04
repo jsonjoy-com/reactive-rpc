@@ -142,8 +142,8 @@ export class BlocksServices {
     const {store} = this;
     if (typeof offset !== 'number') offset = await store.seq(id);
     if (typeof offset !== 'number') throw RpcError.fromCode(RpcErrorCodes.NOT_FOUND);
-    let min: number = 0,
-      max: number = 0;
+    let min = 0,
+      max = 0;
     if (!limit || Math.round(limit) !== limit) throw RpcError.badRequest('INVALID_LIMIT');
     if (limit > 0) {
       min = Number(offset) || 0;
@@ -170,7 +170,7 @@ export class BlocksServices {
   public async pull(
     id: string,
     lastKnownSeq: number,
-    create: boolean = false,
+    create = false,
   ): Promise<{batches: StoreBatch[]; snapshot?: StoreSnapshot}> {
     const {store} = this;
     if (typeof lastKnownSeq !== 'number' || lastKnownSeq !== Math.round(lastKnownSeq) || lastKnownSeq < -1)

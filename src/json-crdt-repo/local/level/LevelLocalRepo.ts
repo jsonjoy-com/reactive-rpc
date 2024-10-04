@@ -1,4 +1,4 @@
-import {BehaviorSubject, defer, Observable, type Subscription} from 'rxjs';
+import {BehaviorSubject, defer, type Observable, type Subscription} from 'rxjs';
 import {catchError, filter, finalize, map, share, switchMap} from 'rxjs/operators';
 import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 import {CborJsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/cbor';
@@ -50,7 +50,7 @@ import {gzip, ungzip} from '@jsonjoy.com/util/lib/compression/gzip';
  * 1. Implement pull loop, when WebSocket subscription cannot be established.
  */
 
-const enum Defaults {
+enum Defaults {
   /**
    * The root of the block repository.
    *
@@ -401,7 +401,7 @@ export class LevelLocalRepo implements LocalRepo {
 
   public async readFrontierTip(keyBase: string): Promise<Patch | undefined> {
     const frontierBase = this.frontierKeyBase(keyBase);
-    const lte = frontierBase + `~`;
+    const lte = frontierBase + '~';
     for await (const blob of this.kv.values({lte, limit: 1, reverse: true}))
       return Patch.fromBinary(await this.decrypt(blob, false));
     return;
@@ -454,7 +454,7 @@ export class LevelLocalRepo implements LocalRepo {
    * @param id Block ID.
    * @param pull Whether to pull if there are no patches to push.
    */
-  protected async push(keyBase: string, id: BlockId, doPull: boolean = false): Promise<boolean> {
+  protected async push(keyBase: string, id: BlockId, doPull = false): Promise<boolean> {
     if (this._stopped) return false;
     if (!this.connected$.getValue()) throw new Error('DISCONNECTED');
     const remote = this.opts.rpc;
@@ -585,7 +585,7 @@ export class LevelLocalRepo implements LocalRepo {
       if (isLocked) continue;
       await this.lockBlockForSync(keyBase, async () => {
         let error: unknown;
-        let success: boolean = false;
+        let success = false;
         try {
           success = await this.push(keyBase, id, true);
         } catch (err) {
@@ -598,7 +598,7 @@ export class LevelLocalRepo implements LocalRepo {
     return resultList;
   }
 
-  protected _remoteSyncLoopActive: boolean = false;
+  protected _remoteSyncLoopActive = false;
   protected _remoteSyncDelayTimer: unknown;
 
   protected runRemoteSyncLoop(): void {
@@ -676,7 +676,7 @@ export class LevelLocalRepo implements LocalRepo {
   }
 
   public async getIf(request: LocalRepoGetIfRequest): Promise<null | LocalRepoGetIfResponse> {
-    let get: boolean = false;
+    let get = false;
     const keyBase = await this.blockKeyBase(request.id);
     const meta = await this.readMeta(keyBase);
     if (typeof request.cursor === 'number') {
@@ -739,7 +739,7 @@ export class LevelLocalRepo implements LocalRepo {
 
   private async _syncMerge(req: LocalRepoSyncRequest): Promise<LocalRepoSyncResponse> {
     const {id, patches} = req;
-    let lastKnownTime: number = 0;
+    let lastKnownTime = 0;
     const reqTime = req.time;
     if (typeof reqTime === 'number') {
       lastKnownTime = reqTime;

@@ -1,5 +1,5 @@
-import {createWebSocketMock, MockWebSocket} from '../mock';
-import {WebSocketChannel, PersistentChannel, Channel, PersistentChannelParams} from '../channel';
+import {createWebSocketMock, type MockWebSocket} from '../mock';
+import {WebSocketChannel, PersistentChannel, type Channel, type PersistentChannelParams} from '../channel';
 import {firstValueFrom} from 'rxjs';
 import {take} from 'rxjs/operators';
 import {of} from '../../util/of';

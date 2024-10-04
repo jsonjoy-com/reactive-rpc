@@ -5,7 +5,7 @@ import type {RpcCodecs} from '../../common/codec/RpcCodecs';
 
 export const getBody = (request: http.IncomingMessage, max: number): Promise<Buffer[]> => {
   return new Promise<Buffer[]>((resolve, reject) => {
-    let size: number = 0;
+    let size = 0;
     const chunks: Buffer[] = [];
     request.on('error', (error) => {
       request.removeAllListeners();

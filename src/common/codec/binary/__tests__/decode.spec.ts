@@ -1,6 +1,6 @@
 import {
   NotificationMessage,
-  ReactiveRpcMessage,
+  type ReactiveRpcMessage,
   RequestCompleteMessage,
   RequestDataMessage,
   RequestUnsubscribeMessage,
@@ -12,7 +12,7 @@ import {
 import {RpcValue} from '../../../messages/Value';
 import {decode} from '../decode';
 import {Reader} from '@jsonjoy.com/util/lib/buffers/Reader';
-import {Uint8ArrayCut} from '@jsonjoy.com/util/lib/buffers/Uint8ArrayCut';
+import type {Uint8ArrayCut} from '@jsonjoy.com/util/lib/buffers/Uint8ArrayCut';
 import {CborJsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/cbor';
 import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 

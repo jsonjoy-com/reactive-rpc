@@ -1,6 +1,6 @@
 import type {RpcMessageStreamProcessor} from '../../common';
 import type {ConnectionContext} from '../context';
-import * as uws from './types-uws';
+import type * as uws from './types-uws';
 
 export * from './types-uws';
 

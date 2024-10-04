@@ -1,6 +1,6 @@
 import {RpcErrorCodes} from './error/RpcError';
 import {TypedRpcError} from './error/typed';
-import {RpcCaller, RpcApiCallerOptions} from './RpcCaller';
+import {RpcCaller, type RpcApiCallerOptions} from './RpcCaller';
 import {FunctionStreamingType, FunctionType} from 'json-joy/lib/json-type/type/classes';
 import {StaticRpcMethod, type StaticRpcMethodOptions} from '../methods/StaticRpcMethod';
 import {StreamingRpcMethod, type StreamingRpcMethodOptions} from '../methods/StreamingRpcMethod';

@@ -16,7 +16,7 @@ export const listen =
 
     const Func = t.Function$(Request, Response).options({
       title: 'Listen for block changes',
-      description: `Subscribe to a block to receive updates when it changes.`,
+      description: 'Subscribe to a block to receive updates when it changes.',
     });
 
     return r.prop('block.listen', Func, (req$) => {

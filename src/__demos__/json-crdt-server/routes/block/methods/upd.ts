@@ -1,4 +1,4 @@
-import {ResolveType} from 'json-joy/lib/json-type';
+import type {ResolveType} from 'json-joy/lib/json-type';
 import {
   BlockBatchPartialRef,
   BlockBatchPartialReturnRef,

@@ -1,5 +1,5 @@
 import WebSocket from 'ws';
-import {RpcCodec} from '../../common/codec/RpcCodec';
+import type {RpcCodec} from '../../common/codec/RpcCodec';
 import {RpcPersistentClient, WebSocketChannel} from '../../common';
 import {FetchRpcClient} from '../../common/rpc/client/FetchRpcClient';
 import {StreamingRpcClient} from '../../common';

@@ -1,7 +1,7 @@
 import {firstValueFrom, lastValueFrom} from 'rxjs';
-import {StreamingRpcClient} from '../client/StreamingRpcClient';
+import type {StreamingRpcClient} from '../client/StreamingRpcClient';
 import {of} from '../../util/of';
-import {RpcError} from '../caller';
+import type {RpcError} from '../caller';
 
 export interface ApiTestSetupResult extends Pick<StreamingRpcClient, 'call' | 'call$' | 'stop'> {
   client: Pick<StreamingRpcClient, 'call' | 'call$' | 'stop'>;

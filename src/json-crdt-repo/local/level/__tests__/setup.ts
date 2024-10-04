@@ -1,11 +1,11 @@
-import {LevelLocalRepo, LevelLocalRepoOpts} from '../LevelLocalRepo';
+import {LevelLocalRepo, type LevelLocalRepoOpts} from '../LevelLocalRepo';
 import {Locks} from 'thingies/lib/Locks';
 import {Model, Patch} from 'json-joy/lib/json-crdt';
 import {Log} from 'json-joy/lib/json-crdt/log/Log';
 import {BehaviorSubject} from 'rxjs';
 import {setup as remoteSetup} from '../../../remote/__tests__/setup';
 import {MemoryLevel} from 'memory-level';
-import {BinStrLevel, LevelLocalRepoPubSub} from '../types';
+import type {BinStrLevel, LevelLocalRepoPubSub} from '../types';
 import {pubsub as createPubsub} from '../../../pubsub';
 
 /* tslint:disable:no-console */
@@ -26,7 +26,7 @@ export const setup = async (
     valueEncoding: 'view',
   }) as unknown as BinStrLevel;
   const blockId = [...col, id];
-  const createLocal = (sid: number = 12345678) => {
+  const createLocal = (sid = 12345678) => {
     const busName = 'test-' + id;
     const pubsub = createPubsub(busName) as LevelLocalRepoPubSub;
     const local = new LevelLocalRepo({
