@@ -7,7 +7,9 @@ export const enum WsFrameOpcode {
   BINARY = 2,
 
   // Control frames
+  // eslint-disable-next-line
   MIN_CONTROL_OPCODE = 8,
+  // eslint-disable-next-line
   CLOSE = 8,
   PING = 9,
   PONG = 10,

@@ -675,7 +675,7 @@ describe('.sync()', () => {
       expect(model2.view()).toEqual([1, 2, 3, 4]);
 
       // Save changes of the other tab
-      const sync3 = await local2.local.sync({
+      await local2.local.sync({
         id: kit.blockId,
         patches: [model1.api.flush()],
         cursor: sync1.cursor,
@@ -734,7 +734,7 @@ describe('.sync()', () => {
       // Add more changes to the other tab
       model1.api.arr([]).del(0, 1);
       model1.api.arr([]).ins(1, [5]);
-      const sync4 = await local2.local.sync({
+      await local2.local.sync({
         id: kit.blockId,
         patches: [model1.api.flush()],
         cursor: sync3.cursor,
@@ -760,7 +760,7 @@ describe('.sync()', () => {
       const model1 = await kit.getModelFromRemote();
       model1.api.root({foo: 'bar'});
       expect(model1.view()).toEqual({foo: 'bar'});
-      const res = await kit.remote.client.call('block.upd', {
+      await kit.remote.client.call('block.upd', {
         id: kit.blockId.join('/'),
         batch: {
           patches: [

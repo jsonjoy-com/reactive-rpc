@@ -104,7 +104,7 @@ export class WsServerConnection {
             continue MAIN;
           }
         }
-      } catch (error) {
+      } catch {
         this.onClose(1002, 'DATA');
       }
     };
@@ -144,7 +144,8 @@ export class WsServerConnection {
 
   // ----------------------------------------------------------- Handle upgrade
 
-  public upgrade(secWebSocketKey: string, secWebSocketProtocol: string, secWebSocketExtensions: string): void {
+  // eslint-disable-next-line
+  public upgrade(secWebSocketKey: string, secWebSocketProtocol: string, secWebSocketExtensions?: string): void {
     const accept = secWebSocketKey + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
     const acceptSha1 = crypto.createHash('sha1').update(accept).digest('base64');
     // prettier-ignore

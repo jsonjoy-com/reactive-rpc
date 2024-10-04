@@ -21,6 +21,8 @@ test('creates raw socket and initializes it with listeners', () => {
   expect(ws!.onerror).not.toBe(null);
   expect(ws!.onmessage).not.toBe(null);
   expect(ws!.onopen).not.toBe(null);
+
+  rx.close();
 });
 
 const setup = () => {
@@ -113,7 +115,7 @@ test('.send() returns buffered amount diff', () => {
 
 describe('.open$', () => {
   test('does not emit at the beginning', async () => {
-    const {rx, ws} = setup();
+    const {rx} = setup();
     const open = jest.fn();
     rx.open$.subscribe(open);
     expect(open).toHaveBeenCalledTimes(0);
@@ -241,7 +243,7 @@ describe('.close$', () => {
 
 describe('.error$', () => {
   test('does not emit at the beginning', async () => {
-    const {rx, ws} = setup();
+    const {rx} = setup();
     const error = jest.fn();
     rx.error$.subscribe(error);
     expect(error).toHaveBeenCalledTimes(0);
@@ -258,7 +260,7 @@ describe('.error$', () => {
 
 describe('.message$', () => {
   test('does not emit at the beginning', async () => {
-    const {rx, ws} = setup();
+    const {rx} = setup();
     const message = jest.fn();
     rx.message$.subscribe(message);
     expect(message).toHaveBeenCalledTimes(0);

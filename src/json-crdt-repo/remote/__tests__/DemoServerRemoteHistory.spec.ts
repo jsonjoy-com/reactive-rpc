@@ -71,7 +71,7 @@ describe('.read()', () => {
     const {remote} = await setup();
     const id = genId();
     try {
-      const read = await remote.read(id);
+      await remote.read(id);
       throw new Error('not this error');
     } catch (error) {
       expect(error).toMatchObject({
@@ -164,7 +164,7 @@ describe('.scanBwd()', () => {
     const patch1 = model1.api.flush();
     const blob1 = patch1.toBinary();
     await remote.create(id, {patches: [{blob: blob1}]});
-    const read1 = await remote.read(id);
+    await remote.read(id);
     model1.api.obj([]).set({
       foo: 'bar',
     });
@@ -239,10 +239,10 @@ describe('.delete()', () => {
     const {remote, caller} = await setup();
     const id = genId();
     await remote.create(id);
-    const get1 = await caller.call('block.get', {id}, {});
+    await caller.call('block.get', {id}, {});
     await remote.delete(id);
     try {
-      const get2 = await caller.call('block.get', {id}, {});
+      await caller.call('block.get', {id}, {});
       throw new Error('not this error');
     } catch (err) {
       expect((err as Value<any>).data.message).toBe('NOT_FOUND');
@@ -252,7 +252,7 @@ describe('.delete()', () => {
 
 describe('.listen()', () => {
   test('can subscribe to block "upd" events', async () => {
-    const {remote, caller} = await setup();
+    const {remote} = await setup();
     const id = genId();
     const model = Model.create();
     model.api.root({score: 42});
@@ -263,7 +263,7 @@ describe('.listen()', () => {
     remote.listen(id).subscribe(({event}) => {
       events.push(event);
     });
-    const model2 = Model.create();
+    Model.create();
     model.api.obj([]).set({
       foo: 'bar',
     });

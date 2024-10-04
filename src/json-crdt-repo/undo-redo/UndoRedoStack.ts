@@ -63,7 +63,7 @@ export class UndoRedoStack {
       }
       this.undoStack.push(undo as UndoItem);
       return 1;
-    } catch (error) {
+    } catch {
       return -3;
     } finally {
       this.locked = false;

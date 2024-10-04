@@ -10,7 +10,7 @@ export class CliCodecText implements CliCodec<'text'> {
     return new TextEncoder().encode(str + '\n');
   }
 
-  decode(bytes: Uint8Array): unknown {
+  decode(): unknown {
     throw new Error('Not implemented');
   }
 }

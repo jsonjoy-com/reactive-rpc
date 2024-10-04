@@ -10,7 +10,7 @@ export class CliCodecRaw implements CliCodec<'raw'> {
     return new TextEncoder().encode(str);
   }
 
-  decode(bytes: Uint8Array): unknown {
+  decode(): unknown {
     throw new Error('Not available');
   }
 }

@@ -239,7 +239,7 @@ export class StreamingRpcClient implements RpcClient {
    * reversible, you cannot use the RPC client after this call.
    */
   public stop(reason: string = 'STOP'): void {
-    this.buffer.onFlush = (message) => {};
+    this.buffer.onFlush = () => {};
     for (const call of this.calls.values()) {
       call.req$.error(new Error(reason));
       call.req$.error(new Error(reason));

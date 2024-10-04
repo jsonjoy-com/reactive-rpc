@@ -84,14 +84,14 @@ const setup = (
         call$: (request$: any) => {
           const obs = request$.pipe(
             take(1),
-            switchMap((request) => from([new Uint8Array([1]), new Uint8Array([2]), new Uint8Array([3])])),
+            switchMap(() => from([new Uint8Array([1]), new Uint8Array([2]), new Uint8Array([3])])),
           );
           return obs;
         },
       },
       subject: {
         isStreaming: true,
-        call$: (request$: any) => {
+        call$: () => {
           return subject;
         },
       },
@@ -147,7 +147,7 @@ test('does not execute any methods on initialization', async () => {
 });
 
 test('if RPC method throws, sends back error message', async () => {
-  const {server, send, caller, ctx} = setup();
+  const {server, send, caller} = setup();
   jest.spyOn(caller, 'call');
   expect(send).toHaveBeenCalledTimes(0);
   const message = new RequestCompleteMessage(1, 'error', val(new Uint8Array([2])));
@@ -609,7 +609,7 @@ describe('validation', () => {
 describe('pre-call checks', () => {
   describe('static method', () => {
     test('proceeds with call when pre-call checks pass', async () => {
-      const onPreCall = jest.fn(async (request) => {});
+      const onPreCall = jest.fn(async () => {});
       const {server, send} = setup(
         {},
         {
@@ -634,7 +634,7 @@ describe('pre-call checks', () => {
     });
 
     test('fails call when pre-call checks fail', async () => {
-      const onPreCall = jest.fn(async (request) => {
+      const onPreCall = jest.fn(async () => {
         throw RpcError.internal(null, 'fail...');
       });
       const {server, send} = setup(
@@ -663,7 +663,7 @@ describe('pre-call checks', () => {
 
   describe('streaming method', () => {
     test('proceeds with call when pre-call checks pass', async () => {
-      const onPreCall = jest.fn(async (request) => {});
+      const onPreCall = jest.fn(async () => {});
       const {server, send} = setup(
         {},
         {
@@ -671,7 +671,7 @@ describe('pre-call checks', () => {
             test: {
               isStreaming: true,
               onPreCall,
-              call$: (req$: any) => from([1, 2]),
+              call$: () => from([1, 2]),
             },
           },
         },
@@ -692,7 +692,7 @@ describe('pre-call checks', () => {
     describe('request buffer', () => {
       test('buffer size is 10 by default', async () => {
         const preCallFuture = new Defer();
-        const onPreCall = jest.fn(async (request) => {
+        const onPreCall = jest.fn(async () => {
           await preCallFuture.promise;
         });
         const {server, send} = setup(
@@ -702,7 +702,7 @@ describe('pre-call checks', () => {
               test: {
                 isStreaming: true,
                 onPreCall,
-                call$: (req$: any) => from([1, 2]),
+                call$: () => from([1, 2]),
                 validate: () => {},
               },
             },
@@ -735,7 +735,7 @@ describe('pre-call checks', () => {
 
       test('buffer size can be set to 5 for the whole server', async () => {
         const preCallFuture = new Defer();
-        const onPreCall = jest.fn(async (request) => {
+        const onPreCall = jest.fn(async () => {
           await preCallFuture.promise;
         });
         const {server, send} = setup(
@@ -746,7 +746,7 @@ describe('pre-call checks', () => {
               test: {
                 onPreCall,
                 isStreaming: true,
-                call$: (req$: any) => from([1, 2]),
+                call$: () => from([1, 2]),
                 validate: () => {},
               },
             },
@@ -771,7 +771,7 @@ describe('pre-call checks', () => {
 
       test('buffer size can be set to 5 per method', async () => {
         const preCallFuture = new Defer();
-        const onPreCall = jest.fn(async (request) => {
+        const onPreCall = jest.fn(async () => {
           await preCallFuture.promise;
         });
         const {server, send} = setup(
@@ -781,7 +781,7 @@ describe('pre-call checks', () => {
               test: {
                 isStreaming: true,
                 onPreCall,
-                call$: (req$: any) => from([1, 2]),
+                call$: () => from([1, 2]),
                 validate: () => {},
                 preCallBufferSize: 5,
               },
@@ -808,7 +808,7 @@ describe('pre-call checks', () => {
       test('when pre-call checks finish just before buffer is full, can receive more request data', async () => {
         const preCallFuture = new Defer();
         const response$ = new Subject();
-        const onPreCall = jest.fn(async (request) => {
+        const onPreCall = jest.fn(async () => {
           await preCallFuture.promise;
         });
         const next = jest.fn();

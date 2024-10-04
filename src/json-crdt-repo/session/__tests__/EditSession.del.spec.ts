@@ -1,6 +1,4 @@
 import {s} from 'json-joy/lib/json-crdt';
-import {setup} from './setup';
-import {EditSessionFactory} from '../EditSessionFactory';
 import {until} from 'thingies/lib/until';
 import {of} from 'thingies';
 import {BehaviorSubject} from 'rxjs';

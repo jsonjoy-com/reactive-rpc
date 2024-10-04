@@ -35,7 +35,7 @@ export class EditSession<N extends JsonNode = JsonNode<any>> {
   ) {
     this.log = new Log<N>(() => this.start.clone());
     const api = this.log.end.api;
-    const flushUnsubscribe = api.onFlush.listen((a) => {
+    const flushUnsubscribe = api.onFlush.listen(() => {
       this.syncLog();
     });
     const patchUnsubscribe = api.onPatch.listen((patch) => {
@@ -106,7 +106,7 @@ export class EditSession<N extends JsonNode = JsonNode<any>> {
         // "cursor" shall not be returned from .sync() call. The cursor shall update
         // only when remote model changes are received, during local .sync() write
         // only the local model is updated.
-        if (typeof res.cursor !== undefined) {
+        if (typeof res.cursor !== 'undefined') {
           this.cursor = res.cursor;
         }
         if (res.model) {

@@ -16,7 +16,7 @@ export class TimedQueue<T> {
   /**
    * Method that will be called when queue is flushed.
    */
-  public onFlush: (list: T[]) => void = (list: T[]) => {};
+  public onFlush: (list: T[]) => void = () => {};
 
   private list: T[] = [];
   private timer: null | number | NodeJS.Timeout = null;

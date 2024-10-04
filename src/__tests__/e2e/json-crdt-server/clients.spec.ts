@@ -25,7 +25,7 @@ if (process.env.TEST_E2E) {
     for (const codec of list) {
       const setup: ApiTestSetup = async () => setupFetchRpcClient(codec);
       describe(`protocol: application/x.${codec.specifier()}`, () => {
-        runUtilTests(setup, {staticOnly: true});
+        runUtilTests(setup);
         runPubsubTests(setup, {staticOnly: true});
         runPresenceTests(setup, {staticOnly: true});
         runBlockTests(setup, {staticOnly: true});
@@ -39,7 +39,7 @@ if (process.env.TEST_E2E) {
     for (const codec of list) {
       const setup: ApiTestSetup = async () => setupStreamingRpcClient(codec);
       describe(`protocol: application/x.${codec.specifier()}`, () => {
-        runUtilTests(setup, {staticOnly: true});
+        runUtilTests(setup);
         runPubsubTests(setup, {staticOnly: true});
         runPresenceTests(setup, {staticOnly: true});
         runBlockTests(setup, {staticOnly: true});

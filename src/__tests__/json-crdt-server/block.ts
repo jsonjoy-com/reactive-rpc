@@ -184,7 +184,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
           text: 'Hell',
         });
         const patch1 = model.api.flush();
-        const newResult = await call('block.new', {
+        await call('block.new', {
           id,
           batch: {
             patches: [

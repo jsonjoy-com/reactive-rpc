@@ -10,7 +10,7 @@ export interface ApiTestSetupResult extends Pick<StreamingRpcClient, 'call' | 'c
 
 export type ApiTestSetup = () => ApiTestSetupResult | Promise<ApiTestSetupResult>;
 
-export const runApiTests = (setup: ApiTestSetup, params: {staticOnly?: boolean} = {}) => {
+export const runApiTests = (setup: ApiTestSetup) => {
   describe('ping', () => {
     test('can execute static RPC method', async () => {
       const {client} = await setup();

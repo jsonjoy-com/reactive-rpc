@@ -44,7 +44,6 @@ export const setupDemoServerStreamingClient = (codec: RpcCodec) => {
   const contentType = 'application/x.' + protocolSpecifier;
   const client = new StreamingRpcClient({
     send: async (messages) => {
-      const port = +(process.env.PORT || 9999);
       const url = `http${secure ? 's' : ''}://${host}/rpc`;
       codec.req.encoder.writer.reset();
       codec.msg.encodeBatch(codec.req, messages);

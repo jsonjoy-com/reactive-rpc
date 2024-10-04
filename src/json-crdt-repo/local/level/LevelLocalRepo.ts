@@ -1,6 +1,5 @@
 import {BehaviorSubject, defer, Observable, type Subscription} from 'rxjs';
-import {catchError, filter, finalize, map, share, switchMap, tap} from 'rxjs/operators';
-import {gzip, ungzip} from '@jsonjoy.com/util/lib/compression/gzip';
+import {catchError, filter, finalize, map, share, switchMap} from 'rxjs/operators';
 import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 import {CborJsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/cbor';
 import {Model, Patch} from 'json-joy/lib/json-crdt';
@@ -42,6 +41,9 @@ import type {CrudLocalRepoCipher} from './types';
 import type {Locks} from 'thingies/lib/Locks';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
 
+// eslint-disable-next-line
+import {gzip, ungzip} from '@jsonjoy.com/util/lib/compression/gzip';
+
 /**
  * @todo
  *
@@ -65,6 +67,7 @@ const enum Defaults {
    * s!b!<collection>!<id>
    * ```
    */
+  // eslint-disable-next-line
   SyncRoot = 's',
 
   /**
@@ -110,6 +113,7 @@ const enum Defaults {
    * b!<collection>!<id>!s!<seq>
    * ```
    */
+  // eslint-disable-next-line
   Snapshots = 's',
 
   /**
@@ -210,12 +214,14 @@ export class LevelLocalRepo implements LocalRepo {
     this._conSub?.unsubscribe();
   }
 
+  // eslint-disable-next-line
   protected async encrypt(blob: Uint8Array, zip: boolean): Promise<Uint8Array> {
     // if (zip) blob = await gzip(blob);
     // if (this.cipher) blob = await this.cipher.encrypt(blob);
     return blob;
   }
 
+  // eslint-disable-next-line
   protected async decrypt(blob: Uint8Array, zip: boolean): Promise<Uint8Array> {
     // if (this.cipher) blob = await this.cipher.decrypt(blob);
     // if (zip) blob = await ungzip(blob);
@@ -1024,7 +1030,7 @@ export class LevelLocalRepo implements LocalRepo {
       ),
     );
     sub = source.pipe(
-      catchError((error) => source),
+      catchError(() => source),
       finalize<void>(() => {
         delete this._subs[blockId];
       }),

@@ -14,12 +14,6 @@ const setup = () => {
   return {caller};
 };
 
-test('can instantiate', () => {
-  const caller = new ApiRpcCaller({
-    api: {},
-  });
-});
-
 describe('static calls', () => {
   test('can execute "ping"', async () => {
     const {caller} = setup();

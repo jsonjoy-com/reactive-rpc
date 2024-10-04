@@ -5,7 +5,7 @@ export class CliParamVersion implements CliParam {
   public readonly param = 'version';
   public readonly short = 'v';
   public readonly title = 'Print version and exit';
-  public readonly createInstance = (cli: Cli, pointer: string, value: unknown) =>
+  public readonly createInstance = (cli: Cli) =>
     new (class implements CliParamInstance {
       public readonly onParam = async () => {
         const version = cli.options.version ?? '0.0.0-unknown';

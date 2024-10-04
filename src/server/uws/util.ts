@@ -6,7 +6,7 @@ export const enableCors = (uws: TemplatedApp) => {
   const AccessControlAllowCredentials = Buffer.from('Access-Control-Allow-Credentials');
   const AccessControlAllowCredentialsTrue = Buffer.from('true');
 
-  uws.options('/*', (res, req) => {
+  uws.options('/*', (res) => {
     res.cork(() => {
       res.writeHeader(AccessControlAllowOrigin, AccessControlAllowOriginAllowAll);
       res.writeHeader(AccessControlAllowCredentials, AccessControlAllowCredentialsTrue);

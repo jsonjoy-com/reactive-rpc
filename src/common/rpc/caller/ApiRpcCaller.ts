@@ -51,7 +51,7 @@ export class ApiRpcCaller<
         tab,
         [...this.methods.entries()].map(
           ([name, method]) =>
-            (tab) =>
+            () =>
               `${name}${method.isStreaming ? ' (streaming)' : ''}`,
         ),
       )
