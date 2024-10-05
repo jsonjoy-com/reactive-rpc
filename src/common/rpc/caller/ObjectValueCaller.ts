@@ -43,7 +43,7 @@ export class ObjectValueCaller<V extends ObjectValue<ObjectType<any>>, Ctx = unk
   extends RpcCaller<Ctx>
   implements Printable
 {
-  protected readonly router: V;
+  public readonly router: V;
   protected readonly system: TypeSystem;
   protected readonly methods = new Map<string, StaticRpcMethod<Ctx> | StreamingRpcMethod<Ctx>>();
 

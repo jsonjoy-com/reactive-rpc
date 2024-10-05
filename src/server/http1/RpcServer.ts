@@ -14,6 +14,9 @@ import type {Http1ConnectionContext, WsConnectionContext} from './context';
 import type {RpcCaller} from '../../common/rpc/caller/RpcCaller';
 import type {ServerLogger} from './types';
 import type {ConnectionContext} from '../types';
+import {ObjectValueCaller} from '../../common/rpc/caller/ObjectValueCaller';
+import {ObjectValue} from 'json-joy/lib/json-type-value/ObjectValue';
+import {ObjectType} from 'json-joy/lib/json-type/type/classes';
 
 const DEFAULT_MAX_PAYLOAD = 4 * 1024 * 1024;
 
@@ -199,12 +202,40 @@ export class RpcServer implements Printable {
     });
   }
 
+  /**
+   * Exposes JSON Type schema under the GET /schema endpoint.
+   */
+  public enableSchema(path: string = '/schema', method: string = 'GET'): void {
+    const caller = this.opts.caller;
+    let responseBody = Buffer.from('{}');
+    if (caller instanceof ObjectValueCaller) {
+      const api = caller.router as ObjectValue<ObjectType<any>>;
+      const schema = {
+        value: api.type.getSchema(),
+        types: api.type.system?.exportTypes(),
+      };
+      responseBody = Buffer.from(JSON.stringify(schema));
+    }
+    this.http1.route({
+      method,
+      path,
+      handler: (ctx) => {
+        const res = ctx.res;
+        res.writeHead(200, 'OK', {
+          'Content-Type': 'application/json',
+        });
+        res.end(responseBody);
+      },
+    });
+  }
+
   public enableDefaults(): void {
     this.enableCors();
     this.enableHttpPing();
     this.enableHttpRpc();
     this.enableJsonRcp2HttpRpc();
     this.enableWsRpc();
+    this.enableSchema();
   }
 
   // ---------------------------------------------------------------- Printable
