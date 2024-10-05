@@ -17,6 +17,7 @@ import type {ConnectionContext} from '../types';
 import {ObjectValueCaller} from '../../common/rpc/caller/ObjectValueCaller';
 import {ObjectValue} from 'json-joy/lib/json-type-value/ObjectValue';
 import {ObjectType} from 'json-joy/lib/json-type/type/classes';
+import {gzip} from '@jsonjoy.com/util/lib/compression/gzip';
 
 const DEFAULT_MAX_PAYLOAD = 4 * 1024 * 1024;
 
@@ -207,7 +208,7 @@ export class RpcServer implements Printable {
    */
   public enableSchema(path: string = '/schema', method: string = 'GET'): void {
     const caller = this.opts.caller;
-    let responseBody = Buffer.from('{}');
+    let responseBody: Uint8Array = Buffer.from('{}');
     if (caller instanceof ObjectValueCaller) {
       const api = caller.router as ObjectValue<ObjectType<any>>;
       const schema = {
@@ -216,6 +217,8 @@ export class RpcServer implements Printable {
       };
       responseBody = Buffer.from(JSON.stringify(schema));
     }
+    let responseBodyCompressed: Uint8Array = new Uint8Array(0);
+    gzip(responseBody).then((compressed) => responseBodyCompressed = compressed);
     this.http1.route({
       method,
       path,
@@ -223,8 +226,11 @@ export class RpcServer implements Printable {
         const res = ctx.res;
         res.writeHead(200, 'OK', {
           'Content-Type': 'application/json',
+          'Content-Encoding': 'gzip',
+          'Cache-Control': 'public, max-age=3600, immutable',
+          'Content-Length': responseBodyCompressed.length,
         });
-        res.end(responseBody);
+        res.end(responseBodyCompressed);
       },
     });
   }
