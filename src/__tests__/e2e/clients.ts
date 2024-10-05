@@ -6,7 +6,7 @@ import {StreamingRpcClient} from '../../common';
 
 export const setupRpcPersistentClient = (codec: RpcCodec) => {
   const port = +(process.env.PORT || 9999);
-  const url = `ws://localhost:${port}/rpc`;
+  const url = `ws://localhost:${port}/rx`;
   const client = new RpcPersistentClient({
     codec,
     channel: {
@@ -25,7 +25,7 @@ export const setupRpcPersistentClient = (codec: RpcCodec) => {
 
 export const setupFetchRpcClient = (codec: RpcCodec) => {
   const port = +(process.env.PORT || 9999);
-  const url = `http://localhost:${port}/rpc`;
+  const url = `http://localhost:${port}/rx`;
   const client = new FetchRpcClient({
     url,
     msgCodec: codec.msg,
@@ -44,7 +44,7 @@ export const setupStreamingRpcClient = (codec: RpcCodec) => {
   const client = new StreamingRpcClient({
     send: async (messages) => {
       const port = +(process.env.PORT || 9999);
-      const url = `http://localhost:${port}/rpc`;
+      const url = `http://localhost:${port}/rx`;
       codec.req.encoder.writer.reset();
       codec.msg.encodeBatch(codec.req, messages);
       const body = codec.req.encoder.writer.flush();

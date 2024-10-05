@@ -1,5 +1,5 @@
 // Run: npx ts-node src/json-crdt-server/main-uws.ts
-// curl localhost:9999/rpc -H 'Content-Type: rpc.rx.compact.json' -d '[1,1,"util.ping"]'
+// curl localhost:9999/rx -d '[1,1,"util.ping"]'
 
 import {App} from 'uWebSockets.js';
 import {RpcApp} from '../../server/uws/RpcApp';

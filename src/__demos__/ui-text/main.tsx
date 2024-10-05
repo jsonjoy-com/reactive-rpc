@@ -8,7 +8,7 @@ import {Model, Patch} from 'json-joy/lib/json-crdt';
 
 const main = async () => {
   const repo = new JsonCrdtRepo({
-    wsUrl: 'wss://demo-iasd8921ondk0.jsonjoy.com/rpc',
+    wsUrl: 'wss://demo-iasd8921ondk0.jsonjoy.com/rx',
   });
   const id = 'block-sync-ui-demo-text-3';
   const session = await repo.sessions.load({id: [id], make: {}, remote: {timeout: 1000}});
