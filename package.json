@@ -58,7 +58,7 @@
     "demo:ui:json": "webpack serve --config ./src/__demos__/ui-json/webpack.config.js",
     "demo:ui:text": "webpack serve --config ./src/__demos__/ui-text/webpack.config.js",
     "start:json-crdt-server:http1": "NODE_ENV=production PORT=80 JSON_CRDT_STORE=level pm2 start lib/__demos__/json-crdt-server/main-http1.js",
-    "start": "NODE_ENV=production PORT=80 JSON_CRDT_STORE=level pm2 start lib/__demos__/json-crdt-server/main-http1.js --exp-backoff-restart-delay=100",
+    "start": "ts-node src/__demos__/json-crdt-server/main-http1",
     "coverage": "yarn test --collectCoverage",
     "typedoc": "typedoc",
     "build:pages": "rimraf gh-pages && mkdir -p gh-pages && cp -r typedocs/* gh-pages && cp -r coverage gh-pages/coverage",

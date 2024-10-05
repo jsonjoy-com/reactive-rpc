@@ -14,13 +14,17 @@ import {Http1ConnectionContext, WsConnectionContext} from './context';
 import {RpcCodecs} from '../../common/codec/RpcCodecs';
 import {RpcMessageCodecs} from '../../common/codec/RpcMessageCodecs';
 import {NullObject} from '@jsonjoy.com/util/lib/NullObject';
+import type {RpcMessageCodec} from '../../common/codec/types';
 
 export type Http1Handler = (ctx: Http1ConnectionContext) => void | Promise<void>;
 export type Http1NotFoundHandler = (res: http.ServerResponse, req: http.IncomingMessage) => void;
 export type Http1InternalErrorHandler = (error: unknown, res: http.ServerResponse, req: http.IncomingMessage) => void;
 
 export class Http1EndpointMatch {
-  constructor(public readonly handler: Http1Handler) {}
+  constructor(
+    public readonly handler: Http1Handler,
+    public readonly msgCodec: RpcMessageCodec,
+  ) {}
 }
 
 export interface Http1EndpointDefinition {
@@ -39,6 +43,11 @@ export interface Http1EndpointDefinition {
    * The handler function.
    */
   handler: Http1Handler;
+
+  /**
+   * Default message codec for this route.
+   */
+  msgCodec?: RpcMessageCodec;
 }
 
 export interface WsEndpointDefinition {
@@ -112,7 +121,7 @@ export class Http1Server implements Printable {
     const method = def.method ? def.method.toUpperCase() : 'GET';
     const route = method + path;
     Number(route);
-    const match = new Http1EndpointMatch(def.handler);
+    const match = new Http1EndpointMatch(def.handler, def.msgCodec ?? this.codecs.messages.jsonRpc2);
     this.httpRouter.add(route, match);
   }
 
@@ -136,6 +145,7 @@ export class Http1Server implements Printable {
       const codecs = this.codecs;
       const ip = this.findIp(req);
       const token = this.findToken(req);
+      const matchData = match.data;
       const ctx = new Http1ConnectionContext(
         req,
         res,
@@ -147,12 +157,12 @@ export class Http1Server implements Printable {
         new NullObject(),
         codecs.value.json,
         codecs.value.json,
-        codecs.messages.compact,
+        matchData.msgCodec,
       );
       const headers = req.headers;
       const contentType = headers['content-type'];
       if (typeof contentType === 'string') setCodecs(ctx, contentType, codecs);
-      const handler = match.data.handler;
+      const handler = matchData.handler;
       await handler(ctx);
     } catch (error) {
       this.oninternalerror(error, res, req);

@@ -20,7 +20,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: yarn
       - run: yarn install --frozen-lockfile
-      - run: yarn prettier:check
+      - run: yarn lint
       - run: yarn format
       - run: yarn test:ci --ci
       - run: PORT=10000 yarn test:e2e --server http1 --suite sample-api
