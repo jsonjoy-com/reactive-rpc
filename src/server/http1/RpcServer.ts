@@ -15,8 +15,8 @@ import type {RpcCaller} from '../../common/rpc/caller/RpcCaller';
 import type {ServerLogger} from './types';
 import type {ConnectionContext} from '../types';
 import {ObjectValueCaller} from '../../common/rpc/caller/ObjectValueCaller';
-import {ObjectValue} from 'json-joy/lib/json-type-value/ObjectValue';
-import {ObjectType} from 'json-joy/lib/json-type/type/classes';
+import type {ObjectValue} from 'json-joy/lib/json-type-value/ObjectValue';
+import type {ObjectType} from 'json-joy/lib/json-type/type/classes';
 import {gzip} from '@jsonjoy.com/util/lib/compression/gzip';
 
 const DEFAULT_MAX_PAYLOAD = 4 * 1024 * 1024;
@@ -137,7 +137,7 @@ export class RpcServer implements Printable {
       msgCodec: http1.codecs.messages.compact,
     });
   }
-  
+
   public enableJsonRcp2HttpRpc(path = '/rpc'): void {
     const http1 = this.http1;
     http1.route({
@@ -218,7 +218,7 @@ export class RpcServer implements Printable {
       responseBody = Buffer.from(JSON.stringify(schema));
     }
     let responseBodyCompressed: Uint8Array = new Uint8Array(0);
-    gzip(responseBody).then((compressed) => responseBodyCompressed = compressed);
+    gzip(responseBody).then((compressed) => (responseBodyCompressed = compressed));
     this.http1.route({
       method,
       path,
