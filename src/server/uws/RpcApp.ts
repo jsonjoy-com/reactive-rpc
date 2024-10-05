@@ -113,7 +113,7 @@ export class RpcApp<Ctx extends ConnectionContext> implements Printable {
     return this;
   }
 
-  public enableHttpRpc(path = '/rpc'): this {
+  public enableHttpRpc(path = '/rx'): this {
     this.routeRaw('POST', path, async (ctx: Ctx) => {
       try {
         const res = ctx.res!;
@@ -143,7 +143,7 @@ export class RpcApp<Ctx extends ConnectionContext> implements Printable {
     return this;
   }
 
-  public enableWsRpc(path = '/rpc'): this {
+  public enableWsRpc(path = '/rx'): this {
     const maxBackpressure = 4 * 1024 * 1024;
     const augmentContext = this.options.augmentContext ?? noop;
     const options = this.options;
