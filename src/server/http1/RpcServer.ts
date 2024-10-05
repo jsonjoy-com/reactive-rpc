@@ -10,7 +10,7 @@ import {
   RpcMessageBatchProcessor,
   RpcMessageStreamProcessor,
 } from '../../common';
-import type {WsConnectionContext} from './context';
+import type {Http1ConnectionContext, WsConnectionContext} from './context';
 import type {RpcCaller} from '../../common/rpc/caller/RpcCaller';
 import type {ServerLogger} from './types';
 import type {ConnectionContext} from '../types';
@@ -97,41 +97,54 @@ export class RpcServer implements Printable {
     });
   }
 
-  public enableHttpRpc(path = '/rpc'): void {
-    const batchProcessor = this.batchProcessor;
-    const logger = this.opts.logger ?? console;
-    this.http1.route({
+  private processHttpRpcRequest = async (ctx: Http1ConnectionContext) => {
+    const res = ctx.res;
+    const body = await ctx.body(DEFAULT_MAX_PAYLOAD);
+    if (!res.socket) return;
+    try {
+      const messageCodec = ctx.msgCodec;
+      const incomingMessages = messageCodec.decodeBatch(ctx.reqCodec, body);
+      try {
+        const outgoingMessages = await this.batchProcessor.onBatch(incomingMessages as IncomingBatchMessage[], ctx);
+        if (!res.socket) return;
+        const resCodec = ctx.resCodec;
+        messageCodec.encodeBatch(resCodec, outgoingMessages);
+        const buf = resCodec.encoder.writer.flush();
+        if (!res.socket) return;
+        res.end(buf);
+      } catch (error) {
+        const logger = this.opts.logger ?? console;
+        logger.error('HTTP_RPC_PROCESSING', error, {messages: incomingMessages});
+        throw RpcError.from(error);
+      }
+    } catch (error) {
+      if (typeof error === 'object' && error)
+        if ((error as any).message === 'Invalid JSON') throw RpcError.badRequest();
+      throw RpcError.from(error);
+    }
+  };
+
+  public enableHttpRpc(path = '/rx'): void {
+    const http1 = this.http1;
+    http1.route({
       method: 'POST',
       path,
-      handler: async (ctx) => {
-        const res = ctx.res;
-        const body = await ctx.body(DEFAULT_MAX_PAYLOAD);
-        if (!res.socket) return;
-        try {
-          const messageCodec = ctx.msgCodec;
-          const incomingMessages = messageCodec.decodeBatch(ctx.reqCodec, body);
-          try {
-            const outgoingMessages = await batchProcessor.onBatch(incomingMessages as IncomingBatchMessage[], ctx);
-            if (!res.socket) return;
-            const resCodec = ctx.resCodec;
-            messageCodec.encodeBatch(resCodec, outgoingMessages);
-            const buf = resCodec.encoder.writer.flush();
-            if (!res.socket) return;
-            res.end(buf);
-          } catch (error) {
-            logger.error('HTTP_RPC_PROCESSING', error, {messages: incomingMessages});
-            throw RpcError.from(error);
-          }
-        } catch (error) {
-          if (typeof error === 'object' && error)
-            if ((error as any).message === 'Invalid JSON') throw RpcError.badRequest();
-          throw RpcError.from(error);
-        }
-      },
+      handler: this.processHttpRpcRequest,
+      msgCodec: http1.codecs.messages.compact,
+    });
+  }
+  
+  public enableJsonRcp2HttpRpc(path = '/rpc'): void {
+    const http1 = this.http1;
+    http1.route({
+      method: 'POST',
+      path,
+      handler: this.processHttpRpcRequest,
+      msgCodec: http1.codecs.messages.jsonRpc2,
     });
   }
 
-  public enableWsRpc(path = '/rpc'): void {
+  public enableWsRpc(path = '/rx'): void {
     const opts = this.opts;
     const logger = opts.logger ?? console;
     const caller = opts.caller;
@@ -190,6 +203,7 @@ export class RpcServer implements Printable {
     this.enableCors();
     this.enableHttpPing();
     this.enableHttpRpc();
+    this.enableJsonRcp2HttpRpc();
     this.enableWsRpc();
   }
 

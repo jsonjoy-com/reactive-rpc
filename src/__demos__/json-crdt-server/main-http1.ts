@@ -1,5 +1,6 @@
 // Run: npx ts-node src/json-crdt-server/main-http1.ts
-// curl localhost:9999/rpc -H 'Content-Type: rpc.rx.compact.json' -d '[1,1,"util.ping"]'
+// curl localhost:9999/rpc -d '{"method": "util.ping", "id": 0}'
+// curl localhost:9999/rx -d '[1,1,"util.ping"]'
 
 import {createCaller, createServices} from './routes';
 import {RpcServer} from '../../server/http1/RpcServer';
