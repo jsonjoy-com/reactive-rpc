@@ -1,11 +1,11 @@
 import {RpcError} from './error/RpcError';
 import {RpcCaller, type RpcApiCallerOptions} from './RpcCaller';
-import {type AbstractType, FunctionStreamingType, FunctionType} from 'json-joy/lib/json-type/type/classes';
+import {type AbstractType, FunctionStreamingType, FunctionType} from '@jsonjoy.com/json-type/lib/type/classes';
 import {StaticRpcMethod, type StaticRpcMethodOptions} from '../methods/StaticRpcMethod';
 import {StreamingRpcMethod, type StreamingRpcMethodOptions} from '../methods/StreamingRpcMethod';
 import {TypedRpcError} from './error/typed';
-import type {Schema, SchemaOf, TypeOf, TypeSystem} from 'json-joy/lib/json-type';
-import type {TypeRouter} from 'json-joy/lib/json-type/system/TypeRouter';
+import type {Schema, SchemaOf, TypeOf, TypeSystem} from '@jsonjoy.com/json-type';
+import type {TypeRouter} from '@jsonjoy.com/json-type/lib/system/TypeRouter';
 import type {RpcValue} from '../../messages/Value';
 import type {Observable} from 'rxjs';
 

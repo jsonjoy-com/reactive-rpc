@@ -1,5 +1,5 @@
 import type {Observable} from 'rxjs';
-import type {Type} from 'json-joy/lib/json-type';
+import type {Type} from '@jsonjoy.com/json-type';
 
 export interface IRpcMethodBase<Ctx = unknown, Req = unknown, Res = unknown> {
   /**

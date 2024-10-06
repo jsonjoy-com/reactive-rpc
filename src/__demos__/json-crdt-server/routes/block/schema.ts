@@ -1,5 +1,5 @@
 import {t} from '../system';
-import type {ResolveType} from 'json-joy/lib/json-type';
+import type {ResolveType} from '@jsonjoy.com/json-type';
 
 export const BlockId = t.str.options({
   title: 'Block ID',

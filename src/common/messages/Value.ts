@@ -1,5 +1,5 @@
-import {Value as V} from 'json-joy/lib/json-type-value/Value';
-import type {Type} from 'json-joy/lib/json-type';
+import {Value as V} from '@jsonjoy.com/json-type/lib/value/Value';
+import type {Type} from '@jsonjoy.com/json-type';
 
 /**
  * @deprecated Use `Value` directly.

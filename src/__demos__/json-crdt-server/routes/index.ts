@@ -3,7 +3,7 @@ import {RpcError} from '../../../common/rpc/caller';
 import {RpcValue} from '../../../common/messages/Value';
 import {ObjectValueCaller} from '../../../common/rpc/caller/ObjectValueCaller';
 import {system} from './system';
-import {ObjectValue} from 'json-joy/lib/json-type-value/ObjectValue';
+import {ObjectValue} from '@jsonjoy.com/json-type/lib/value/ObjectValue';
 import {Services} from '../services/Services';
 import {MemoryStore} from '../services/blocks/store/MemoryStore';
 import {LevelStore} from '../services/blocks/store/level/LevelStore';

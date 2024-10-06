@@ -15,8 +15,8 @@ import type {RpcCaller} from '../../common/rpc/caller/RpcCaller';
 import type {ServerLogger} from './types';
 import type {ConnectionContext} from '../types';
 import {ObjectValueCaller} from '../../common/rpc/caller/ObjectValueCaller';
-import type {ObjectValue} from 'json-joy/lib/json-type-value/ObjectValue';
-import type {ObjectType} from 'json-joy/lib/json-type/type/classes';
+import type {ObjectValue} from '@jsonjoy.com/json-type/lib/value/ObjectValue';
+import type {ObjectType} from '@jsonjoy.com/json-type/lib/type/classes';
 import {gzip} from '@jsonjoy.com/util/lib/compression/gzip';
 
 const DEFAULT_MAX_PAYLOAD = 4 * 1024 * 1024;

@@ -1,4 +1,4 @@
-import {type ResolveType, t} from 'json-joy/lib/json-type';
+import {type ResolveType, t} from '@jsonjoy.com/json-type';
 
 /**
  * @protected

@@ -1,5 +1,5 @@
-import {TypeSystem} from 'json-joy/lib/json-type';
-import {ObjectValue} from 'json-joy/lib/json-type-value/ObjectValue';
+import {TypeSystem} from '@jsonjoy.com/json-type';
+import {ObjectValue} from '@jsonjoy.com/json-type/lib/value/ObjectValue';
 import {ObjectValueCaller} from '../ObjectValueCaller';
 
 test('can execute simple calls', async () => {
