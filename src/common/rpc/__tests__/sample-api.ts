@@ -1,7 +1,7 @@
 import {timer, from, Observable} from 'rxjs';
 import {map, switchMap, take} from 'rxjs/operators';
 import type {IStaticRpcMethod, IStreamingRpcMethod} from '../types';
-import {t} from 'json-joy/lib/json-type';
+import {t} from '@jsonjoy.com/json-type';
 import {RpcError} from '../caller';
 import {ApiRpcCaller} from '../caller/ApiRpcCaller';
 

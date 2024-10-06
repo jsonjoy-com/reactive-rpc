@@ -1,6 +1,6 @@
-import type {ObjectType, TypeSystem} from 'json-joy/lib/json-type';
-import type {ObjectValue} from 'json-joy/lib/json-type-value/ObjectValue';
-import type {TypeBuilder} from 'json-joy/lib/json-type/type/TypeBuilder';
+import type {ObjectType, TypeSystem} from '@jsonjoy.com/json-type';
+import type {ObjectValue} from '@jsonjoy.com/json-type/lib/value/ObjectValue';
+import type {TypeBuilder} from '@jsonjoy.com/json-type/lib/type/TypeBuilder';
 import type {Services} from '../services/Services';
 
 export interface RouteDeps {

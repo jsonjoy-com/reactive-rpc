@@ -14,7 +14,7 @@ import {
 } from '../../messages';
 import {until} from 'thingies';
 import {RpcValue} from '../../messages/Value';
-import {t} from 'json-joy/lib/json-type';
+import {t} from '@jsonjoy.com/json-type';
 import {Defer} from '../../../util/Defer';
 
 const setup = (

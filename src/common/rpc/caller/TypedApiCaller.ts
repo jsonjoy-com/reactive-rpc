@@ -1,10 +1,10 @@
 import {RpcErrorCodes} from './error/RpcError';
 import {TypedRpcError} from './error/typed';
 import {RpcCaller, type RpcApiCallerOptions} from './RpcCaller';
-import {FunctionStreamingType, FunctionType} from 'json-joy/lib/json-type/type/classes';
+import {FunctionStreamingType, FunctionType} from '@jsonjoy.com/json-type/lib/type/classes';
 import {StaticRpcMethod, type StaticRpcMethodOptions} from '../methods/StaticRpcMethod';
 import {StreamingRpcMethod, type StreamingRpcMethodOptions} from '../methods/StreamingRpcMethod';
-import type {SchemaOf, TypeMap, TypeOf, TypeSystem} from 'json-joy/lib/json-type';
+import type {SchemaOf, TypeMap, TypeOf, TypeSystem} from '@jsonjoy.com/json-type';
 
 export interface TypedApiCallerOptions<Ctx = unknown> extends Omit<RpcApiCallerOptions<Ctx>, 'getMethod'> {
   system: TypeSystem;

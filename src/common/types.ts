@@ -1,7 +1,7 @@
 import type {Observable} from 'rxjs';
-import type {FunctionStreamingType, FunctionType, ResolveType} from 'json-joy/lib/json-type';
-import type {ObjectValue, ObjectValueToTypeMap, UnObjectType} from 'json-joy/lib/json-type-value/ObjectValue';
-import type {TypeRouter} from 'json-joy/lib/json-type/system/TypeRouter';
+import type {FunctionStreamingType, FunctionType, ResolveType} from '@jsonjoy.com/json-type';
+import type {ObjectValue, ObjectValueToTypeMap, UnObjectType} from '@jsonjoy.com/json-type/lib/value/ObjectValue';
+import type {TypeRouter} from '@jsonjoy.com/json-type/lib/system/TypeRouter';
 import type {ObjectValueCaller} from './rpc/caller/ObjectValueCaller';
 import type {RpcCaller} from './rpc/caller/RpcCaller';
 import type {TypeRouterCaller} from './rpc/caller/TypeRouterCaller';

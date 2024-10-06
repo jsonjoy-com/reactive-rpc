@@ -1,4 +1,4 @@
-import {TypeSystem} from 'json-joy/lib/json-type';
+import {TypeSystem} from '@jsonjoy.com/json-type';
 
 export const system = new TypeSystem();
 export const t = system.t;
