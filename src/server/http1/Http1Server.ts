@@ -1,4 +1,5 @@
 import * as http from 'http';
+import * as https from 'https';
 import type * as net from 'net';
 import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 import {Codecs} from '@jsonjoy.com/json-pack/lib/codecs/Codecs';
@@ -64,11 +65,28 @@ export interface Http1ServerOpts {
   writer?: Writer;
 }
 
+export type Http1CreateServerOpts = Http1CreateHttpServerOpts | Http1CreateHttpsServerOpts;
+
+export interface Http1CreateHttpServerOpts {
+  tls?: false;
+  conf?: http.ServerOptions;
+}
+
+export interface Http1CreateHttpsServerOpts {
+  tls: true;
+  conf?: https.ServerOptions;
+}
+
 export class Http1Server implements Printable {
-  public static start(opts: http.ServerOptions = {}, port = 8000): Http1Server {
-    const rawServer = http.createServer(opts);
+  public static create = (opts: Http1CreateServerOpts = {}): http.Server | https.Server => {
+    if (opts.tls) return https.createServer(opts.conf || {});
+    return http.createServer(opts.conf || {});
+  };
+
+  public static start(port: number = 8080, rawServerOpts: Http1CreateServerOpts = {}, opts?: Omit<Http1ServerOpts, 'server'>): Http1Server {
+    const rawServer = Http1Server.create(rawServerOpts);
     rawServer.listen(port);
-    const server = new Http1Server({server: rawServer});
+    const server = new Http1Server({...opts, server: rawServer});
     return server;
   }
 
