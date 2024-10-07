@@ -96,11 +96,13 @@ export class Http1Server implements Printable {
       if (secureContext && secureContextRefreshInterval) {
         const timer = setInterval(() => {
           try {
-            secureContext().then((context) => {
-              server.setSecureContext(context);
-            }).catch((error) => {
-              console.error('Failed to update secure context:', error);
-            });
+            secureContext()
+              .then((context) => {
+                server.setSecureContext(context);
+              })
+              .catch((error) => {
+                console.error('Failed to update secure context:', error);
+              });
           } catch (error) {
             console.error('Failed to update secure context:', error);
           }

@@ -40,7 +40,7 @@
   "license": "Apache-2.0",
   "scripts": {
     "format": "biome format ./src",
-    "format:write": "biome format --write ./src",
+    "format:fix": "biome format --write ./src",
     "lint": "biome lint ./src",
     "lint:fix": "biome lint --apply ./src",
     "clean": "rimraf lib typedocs coverage gh-pages yarn-error.log db dist",
