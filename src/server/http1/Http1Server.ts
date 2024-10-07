@@ -76,13 +76,41 @@ export interface Http1CreateHttpServerOpts {
 export interface Http1CreateHttpsServerOpts {
   tls: true;
   conf?: https.ServerOptions;
+  secureContext?: () => Promise<tls.SecureContextOptions>;
+
+  /**
+   * If specified, and the `secureContext` is also specified, will be used to
+   * refresh the secure context every `secureContextRefreshInterval` milliseconds.
+   */
   secureContextRefreshInterval?: number;
-  secureContext?: () => tls.SecureContextOptions;
 }
 
 export class Http1Server implements Printable {
-  public static create = (opts: Http1CreateServerOpts = {}): http.Server | https.Server => {
-    if (opts.tls) return https.createServer(opts.conf || {});
+  public static create = async (opts: Http1CreateServerOpts = {}): Promise<http.Server | https.Server> => {
+    if (opts.tls) {
+      const {secureContext, secureContextRefreshInterval} = opts;
+      const server = https.createServer({
+        ...(secureContext ? await secureContext() : {}),
+        ...opts.conf,
+      });
+      if (secureContext && secureContextRefreshInterval) {
+        const timer = setInterval(() => {
+          try {
+            secureContext().then((context) => {
+              server.setSecureContext(context);
+            }).catch((error) => {
+              console.error('Failed to update secure context:', error);
+            });
+          } catch (error) {
+            console.error('Failed to update secure context:', error);
+          }
+        }, secureContextRefreshInterval);
+        server.once('close', () => {
+          clearInterval(timer);
+        });
+      }
+      return server;
+    }
     return http.createServer(opts.conf || {});
   };
 

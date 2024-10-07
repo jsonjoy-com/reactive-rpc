@@ -36,21 +36,21 @@ export class RpcServer implements Printable {
   public static readonly startWithDefaults = async (opts: RpcServerStartOpts): Promise<RpcServer> => {
     const port = opts.port || 8080;
     const logger = opts.logger ?? console;
-    const server = Http1Server.create(opts.create);
-    const http1Server = new Http1Server({...opts.server, server});
-    const rpcServer = new RpcServer({
+    const server = await Http1Server.create(opts.create);
+    const http1 = new Http1Server({...opts.server, server});
+    const rpc = new RpcServer({
       caller: opts.caller,
-      http1: http1Server,
+      http1,
       logger,
     });
-    rpcServer.enableDefaults();
-    await http1Server.start();
+    rpc.enableDefaults();
+    await http1.start();
     server.listen(port, () => {
       let host = server.address() || 'localhost';
       if (typeof host === 'object') host = (host as any).address;
       logger.log({msg: 'SERVER_STARTED', host, port});
     });
-    return rpcServer;
+    return rpc;
   };
 
   public readonly http1: Http1Server;
