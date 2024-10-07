@@ -1,7 +1,7 @@
 // Run: npx ts-node src/__demos__/json-crdt-server/main-http1-tls.ts
 // curl https://localhost/rx --insecure -d '[1,1,"util.ping"]'
 
-import * as tls from 'tls';
+import type * as tls from 'tls';
 import * as fs from 'fs';
 import {createCaller, createServices} from './routes';
 import {RpcServer} from '../../server/http1/RpcServer';

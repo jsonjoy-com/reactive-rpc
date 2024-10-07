@@ -1,6 +1,6 @@
 import type {Printable} from 'sonic-forest/lib/print/types';
 import {printTree} from 'sonic-forest/lib/print/printTree';
-import {Http1CreateServerOpts, Http1Server, Http1ServerOpts} from './Http1Server';
+import {type Http1CreateServerOpts, Http1Server, type Http1ServerOpts} from './Http1Server';
 import {RpcError} from '../../common/rpc/caller';
 import {
   type IncomingBatchMessage,

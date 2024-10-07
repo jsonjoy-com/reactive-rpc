@@ -1,6 +1,6 @@
 import * as http from 'http';
 import * as https from 'https';
-import * as tls from 'tls';
+import type * as tls from 'tls';
 import type * as net from 'net';
 import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 import {Codecs} from '@jsonjoy.com/json-pack/lib/codecs/Codecs';
