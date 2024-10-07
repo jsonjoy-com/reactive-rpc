@@ -1,4 +1,6 @@
 import * as http from 'http';
+import * as https from 'https';
+import type * as tls from 'tls';
 import type * as net from 'net';
 import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 import {Codecs} from '@jsonjoy.com/json-pack/lib/codecs/Codecs';
@@ -64,13 +66,55 @@ export interface Http1ServerOpts {
   writer?: Writer;
 }
 
+export type Http1CreateServerOpts = Http1CreateHttpServerOpts | Http1CreateHttpsServerOpts;
+
+export interface Http1CreateHttpServerOpts {
+  tls?: false;
+  conf?: http.ServerOptions;
+}
+
+export interface Http1CreateHttpsServerOpts {
+  tls: true;
+  conf?: https.ServerOptions;
+  secureContext?: () => Promise<tls.SecureContextOptions>;
+
+  /**
+   * If specified, and the `secureContext` is also specified, will be used to
+   * refresh the secure context every `secureContextRefreshInterval` milliseconds.
+   */
+  secureContextRefreshInterval?: number;
+}
+
 export class Http1Server implements Printable {
-  public static start(opts: http.ServerOptions = {}, port = 8000): Http1Server {
-    const rawServer = http.createServer(opts);
-    rawServer.listen(port);
-    const server = new Http1Server({server: rawServer});
-    return server;
-  }
+  public static create = async (opts: Http1CreateServerOpts = {}): Promise<http.Server | https.Server> => {
+    if (opts.tls) {
+      const {secureContext, secureContextRefreshInterval} = opts;
+      const server = https.createServer({
+        ...(secureContext ? await secureContext() : {}),
+        ...opts.conf,
+      });
+      if (secureContext && secureContextRefreshInterval) {
+        const timer = setInterval(() => {
+          try {
+            secureContext()
+              .then((context) => {
+                server.setSecureContext(context);
+              })
+              .catch((error) => {
+                console.error('Failed to update secure context:', error);
+              });
+          } catch (error) {
+            console.error('Failed to update secure context:', error);
+          }
+        }, secureContextRefreshInterval);
+        server.once('close', () => {
+          clearInterval(timer);
+        });
+      }
+      return server;
+    }
+    return http.createServer(opts.conf || {});
+  };
 
   public readonly codecs: RpcCodecs;
   public readonly server: http.Server;
@@ -82,7 +126,7 @@ export class Http1Server implements Printable {
     this.wsEncoder = new WsFrameEncoder(writer);
   }
 
-  public start(): void {
+  public async start(): Promise<void> {
     const server = this.server;
     this.httpMatcher = this.httpRouter.compile();
     this.wsMatcher = this.wsRouter.compile();
@@ -91,6 +135,11 @@ export class Http1Server implements Printable {
     server.on('clientError', (err, socket) => {
       socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
     });
+  }
+
+  public async stop(): Promise<void> {
+    const server = this.server;
+    server.removeAllListeners();
   }
 
   // ------------------------------------------------------------- HTTP routing

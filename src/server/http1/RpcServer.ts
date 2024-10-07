@@ -1,7 +1,6 @@
-import * as http from 'http';
 import type {Printable} from 'sonic-forest/lib/print/types';
 import {printTree} from 'sonic-forest/lib/print/printTree';
-import {Http1Server} from './Http1Server';
+import {type Http1CreateServerOpts, Http1Server, type Http1ServerOpts} from './Http1Server';
 import {RpcError} from '../../common/rpc/caller';
 import {
   type IncomingBatchMessage,
@@ -10,14 +9,14 @@ import {
   RpcMessageBatchProcessor,
   RpcMessageStreamProcessor,
 } from '../../common';
+import {ObjectValueCaller} from '../../common/rpc/caller/ObjectValueCaller';
+import {gzip} from '@jsonjoy.com/util/lib/compression/gzip';
 import type {Http1ConnectionContext, WsConnectionContext} from './context';
 import type {RpcCaller} from '../../common/rpc/caller/RpcCaller';
 import type {ServerLogger} from './types';
 import type {ConnectionContext} from '../types';
-import {ObjectValueCaller} from '../../common/rpc/caller/ObjectValueCaller';
 import type {ObjectValue} from '@jsonjoy.com/json-type/lib/value/ObjectValue';
 import type {ObjectType} from '@jsonjoy.com/json-type/lib/type/classes';
-import {gzip} from '@jsonjoy.com/util/lib/compression/gzip';
 
 const DEFAULT_MAX_PAYLOAD = 4 * 1024 * 1024;
 
@@ -29,36 +28,29 @@ export interface RpcServerOpts {
 
 export interface RpcServerStartOpts extends Omit<RpcServerOpts, 'http1'> {
   port?: number;
-  server?: http.Server;
+  server?: Omit<Http1ServerOpts, 'server'>;
+  create?: Http1CreateServerOpts;
 }
 
 export class RpcServer implements Printable {
-  public static readonly create = (opts: RpcServerOpts) => {
-    const server = new RpcServer(opts);
-    opts.http1.enableHttpPing();
-    return server;
-  };
-
-  public static readonly startWithDefaults = (opts: RpcServerStartOpts): RpcServer => {
-    const port = opts.port ?? 8080;
+  public static readonly startWithDefaults = async (opts: RpcServerStartOpts): Promise<RpcServer> => {
+    const port = opts.port || 8080;
     const logger = opts.logger ?? console;
-    const server = http.createServer();
-    const http1Server = new Http1Server({
-      server,
-    });
-    const rpcServer = new RpcServer({
+    const server = await Http1Server.create(opts.create);
+    const http1 = new Http1Server({...opts.server, server});
+    const rpc = new RpcServer({
       caller: opts.caller,
-      http1: http1Server,
+      http1,
       logger,
     });
-    rpcServer.enableDefaults();
-    http1Server.start();
+    rpc.enableDefaults();
+    await http1.start();
     server.listen(port, () => {
       let host = server.address() || 'localhost';
       if (typeof host === 'object') host = (host as any).address;
       logger.log({msg: 'SERVER_STARTED', host, port});
     });
-    return rpcServer;
+    return rpc;
   };
 
   public readonly http1: Http1Server;

@@ -9,7 +9,7 @@ export type JsonJoyDemoRpcCaller = ReturnType<typeof createCaller>['caller'];
 
 const main = async () => {
   const services = await createServices();
-  const server = RpcServer.startWithDefaults({
+  const server = await RpcServer.startWithDefaults({
     port: +(process.env.PORT || 9999),
     caller: createCaller(services).caller,
     logger: console,
