@@ -18,7 +18,7 @@ const main = async () => {
   };
 
   const services = await createServices();
-  const server = RpcServer.startWithDefaults({
+  const server = await RpcServer.startWithDefaults({
     create: {
       tls: true,
       conf: getSecureContext(),

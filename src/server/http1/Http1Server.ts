@@ -1,5 +1,6 @@
 import * as http from 'http';
 import * as https from 'https';
+import * as tls from 'tls';
 import type * as net from 'net';
 import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 import {Codecs} from '@jsonjoy.com/json-pack/lib/codecs/Codecs';
@@ -75,6 +76,8 @@ export interface Http1CreateHttpServerOpts {
 export interface Http1CreateHttpsServerOpts {
   tls: true;
   conf?: https.ServerOptions;
+  secureContextRefreshInterval?: number;
+  secureContext?: () => tls.SecureContextOptions;
 }
 
 export class Http1Server implements Printable {
@@ -82,13 +85,6 @@ export class Http1Server implements Printable {
     if (opts.tls) return https.createServer(opts.conf || {});
     return http.createServer(opts.conf || {});
   };
-
-  public static start(port: number = 8080, rawServerOpts: Http1CreateServerOpts = {}, opts?: Omit<Http1ServerOpts, 'server'>): Http1Server {
-    const rawServer = Http1Server.create(rawServerOpts);
-    rawServer.listen(port);
-    const server = new Http1Server({...opts, server: rawServer});
-    return server;
-  }
 
   public readonly codecs: RpcCodecs;
   public readonly server: http.Server;
@@ -100,7 +96,7 @@ export class Http1Server implements Printable {
     this.wsEncoder = new WsFrameEncoder(writer);
   }
 
-  public start(): void {
+  public async start(): Promise<void> {
     const server = this.server;
     this.httpMatcher = this.httpRouter.compile();
     this.wsMatcher = this.wsRouter.compile();
@@ -109,6 +105,11 @@ export class Http1Server implements Printable {
     server.on('clientError', (err, socket) => {
       socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
     });
+  }
+
+  public async stop(): Promise<void> {
+    const server = this.server;
+    server.removeAllListeners();
   }
 
   // ------------------------------------------------------------- HTTP routing

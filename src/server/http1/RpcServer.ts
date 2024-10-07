@@ -33,7 +33,7 @@ export interface RpcServerStartOpts extends Omit<RpcServerOpts, 'http1'> {
 }
 
 export class RpcServer implements Printable {
-  public static readonly startWithDefaults = (opts: RpcServerStartOpts): RpcServer => {
+  public static readonly startWithDefaults = async (opts: RpcServerStartOpts): Promise<RpcServer> => {
     const port = opts.port || 8080;
     const logger = opts.logger ?? console;
     const server = Http1Server.create(opts.create);
@@ -44,7 +44,7 @@ export class RpcServer implements Printable {
       logger,
     });
     rpcServer.enableDefaults();
-    http1Server.start();
+    await http1Server.start();
     server.listen(port, () => {
       let host = server.address() || 'localhost';
       if (typeof host === 'object') host = (host as any).address;
