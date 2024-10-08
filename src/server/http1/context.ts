@@ -6,7 +6,11 @@ import type {RpcMessageCodec} from '../../common/codec/types';
 import type {WsServerConnection} from '../ws/server/WsServerConnection';
 import type {ConnectionContext} from '../types';
 
+const rnd32BitUint = (): number => (Math.random() * 0xffffffff) >>> 0;
+
 export class Http1ConnectionContext<Meta = Record<string, unknown>> implements ConnectionContext<Meta> {
+  public readonly id: number = rnd32BitUint();
+
   constructor(
     public readonly req: http.IncomingMessage,
     public readonly res: http.ServerResponse,
@@ -29,6 +33,8 @@ export class Http1ConnectionContext<Meta = Record<string, unknown>> implements C
 }
 
 export class WsConnectionContext<Meta = Record<string, unknown>> implements ConnectionContext<Meta> {
+  public readonly id: number = rnd32BitUint();
+
   constructor(
     public readonly connection: WsServerConnection,
     public path: string,
