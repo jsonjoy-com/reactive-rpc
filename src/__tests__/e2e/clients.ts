@@ -1,12 +1,22 @@
 import {FetchRpcClient} from '../../common/rpc/client/FetchRpcClient';
 import {StreamingRpcClient} from '../../common';
-import {createClient} from '../../browser/createClient';
+import WebSocket from 'ws';
+import {RpcPersistentClient, WebSocketChannel} from '../../common';
 import type {RpcCodec} from '../../common/codec/RpcCodec';
 
 export const setupRpcPersistentClient = (codec: RpcCodec) => {
   const port = +(process.env.PORT || 9999);
   const url = `ws://localhost:${port}/rx`;
-  const client = createClient(codec, url);
+  const client = new RpcPersistentClient({
+    codec,
+    channel: {
+      newChannel: () =>
+        new WebSocketChannel({
+          newSocket: () => new WebSocket(url, [codec.specifier()]) as any,
+        }),
+    },
+  });
+  client.start();
   const call = client.call.bind(client);
   const call$ = client.call$.bind(client);
   const stop = async () => void client.stop();
