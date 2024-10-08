@@ -1,6 +1,6 @@
 import {RpcPersistentClient} from '../common/rpc/RpcPersistentClient';
 import {WebSocketChannel} from '../common/channel/channel';
-import {RpcCodec} from '../common/codec/RpcCodec';
+import type {RpcCodec} from '../common/codec/RpcCodec';
 
 /**
  * Constructs a {@link RpcPersistentClient} with the given codec.
