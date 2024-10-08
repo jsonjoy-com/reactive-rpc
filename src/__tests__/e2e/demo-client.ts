@@ -4,8 +4,7 @@ import {RpcPersistentClient, StreamingRpcClient, WebSocketChannel} from '../../c
 import {FetchRpcClient} from '../../common/rpc/client/FetchRpcClient';
 
 const secure = true;
-const host = 'demo-iasd8921ondk0.jsonjoy.com';
-// const host = '127.0.0.1:8080';
+const host = 'api.jsonjoy.org';
 
 export const setupDemoServerPersistentClient = (codec: RpcCodec) => {
   const url = `ws${secure ? 's' : ''}://${host}/rx`;

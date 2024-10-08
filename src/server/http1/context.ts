@@ -9,7 +9,7 @@ import type {ConnectionContext} from '../types';
 const rnd32BitUint = (): number => (Math.random() * 0xffffffff) >>> 0;
 
 export class Http1ConnectionContext<Meta = Record<string, unknown>> implements ConnectionContext<Meta> {
-  public readonly id: number = rnd32BitUint();
+  public id: number = rnd32BitUint();
 
   constructor(
     public readonly req: http.IncomingMessage,
@@ -33,7 +33,7 @@ export class Http1ConnectionContext<Meta = Record<string, unknown>> implements C
 }
 
 export class WsConnectionContext<Meta = Record<string, unknown>> implements ConnectionContext<Meta> {
-  public readonly id: number = rnd32BitUint();
+  public id: number = rnd32BitUint();
 
   constructor(
     public readonly connection: WsServerConnection,
