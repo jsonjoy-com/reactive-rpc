@@ -1,8 +1,8 @@
-import WebSocket from 'ws';
-import type {RpcCodec} from '../../common/codec/RpcCodec';
-import {RpcPersistentClient, WebSocketChannel} from '../../common';
 import {FetchRpcClient} from '../../common/rpc/client/FetchRpcClient';
 import {StreamingRpcClient} from '../../common';
+import WebSocket from 'ws';
+import {RpcPersistentClient, WebSocketChannel} from '../../common';
+import type {RpcCodec} from '../../common/codec/RpcCodec';
 
 export const setupRpcPersistentClient = (codec: RpcCodec) => {
   const port = +(process.env.PORT || 9999);
