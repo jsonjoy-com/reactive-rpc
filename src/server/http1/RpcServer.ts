@@ -72,7 +72,9 @@ export class RpcServer implements Printable {
   }
 
   public enableHttpPing(): void {
-    this.http1.enableHttpPing();
+    const http1 = this.http1;
+    http1.enableHttpPing();
+    http1.enableKamalPing();
   }
 
   public enableCors(): void {

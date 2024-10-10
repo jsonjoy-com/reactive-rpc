@@ -333,6 +333,16 @@ export class Http1Server implements Printable {
     });
   }
 
+  // The /up endpoint is used by Kamal.
+  public enableKamalPing(path = '/up', response: string | Uint8Array = 'yes') {
+    this.route({
+      path,
+      handler: (ctx) => {
+        ctx.res.end(response);
+      },
+    });
+  }
+
   // ---------------------------------------------------------------- Printable
 
   public toString(tab = ''): string {
