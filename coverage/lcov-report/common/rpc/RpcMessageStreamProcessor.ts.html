@@ -345,11 +345,11 @@
 <a name='L280'></a><a href='#L280'>280</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">14x</span>
 <span class="cline-any cline-yes">14x</span>
 <span class="cline-any cline-yes">14x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">14x</span>
 <span class="cline-any cline-yes">14x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">14x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -398,7 +398,7 @@
 <span class="cline-any cline-yes">202x</span>
 <span class="cline-any cline-yes">202x</span>
 <span class="cline-any cline-yes">202x</span>
-<span class="cline-any cline-yes">1537x</span>
+<span class="cline-any cline-yes">1531x</span>
 <span class="cline-any cline-yes">202x</span>
 <span class="cline-any cline-yes">1564x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -430,7 +430,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1497x</span>
+<span class="cline-any cline-yes">1502x</span>
 <span class="cline-any cline-yes">1509x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -624,11 +624,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import * as msg from '../messages';
 import {TimedQueue} from '../util/TimedQueue';
 import {RpcErrorCodes, RpcError} from './caller/error/RpcError';
-import type {RpcValue} from '../messages/Value';
 import {subscribeCompleteObserver} from '../util/subscribeCompleteObserver';
+import {TypedRpcError} from './caller/error/typed';
+import type {RpcValue} from '../messages/Value';
 import type {RpcCaller} from './caller/RpcCaller';
 import type {Call, RpcApiMap} from './caller/types';
-import {TypedRpcError} from './caller/error/typed';
 &nbsp;
 type Send = (messages: (msg.ReactiveRpcServerMessage | msg.NotificationMessage)[]) =&gt; void;
 &nbsp;
@@ -805,12 +805,12 @@ export class RpcMessageStreamProcessor&lt;Ctx = unknown&gt; {
     let call = this.activeStreamCalls.get(id);
     if (!call) {
       <span class="missing-if-branch" title="if path not taken" >I</span>if (!method) {
-<span class="cstat-no" title="statement not covered" >        this.sendError(id, RpcErrorCodes.NO_METHOD_SPECIFIED);</span>
+<span class="cstat-no" title="statement not covered" >        this.sendError(id, RpcErrorCodes.METHOD_INV);</span>
 <span class="cstat-no" title="statement not covered" >        return;</span>
       }
       const info = this.caller.info(method);
       <span class="missing-if-branch" title="if path not taken" >I</span>if (!info) {
-<span class="cstat-no" title="statement not covered" >        this.sendError(id, RpcErrorCodes.METHOD_NOT_FOUND);</span>
+<span class="cstat-no" title="statement not covered" >        this.sendError(id, RpcErrorCodes.METHOD_UNK);</span>
 <span class="cstat-no" title="statement not covered" >        return;</span>
       }
       if (info.isStreaming) {
@@ -839,12 +839,12 @@ export class RpcMessageStreamProcessor&lt;Ctx = unknown&gt; {
 <span class="cstat-no" title="statement not covered" >      return;</span>
     }
     <span class="missing-if-branch" title="if path not taken" >I</span>if (!method) {
-<span class="cstat-no" title="statement not covered" >      this.sendError(id, RpcErrorCodes.NO_METHOD_SPECIFIED);</span>
+<span class="cstat-no" title="statement not covered" >      this.sendError(id, RpcErrorCodes.METHOD_INV);</span>
 <span class="cstat-no" title="statement not covered" >      return;</span>
     }
     const caller = this.caller;
     if (!caller.exists(method)) {
-      this.sendError(id, RpcErrorCodes.METHOD_NOT_FOUND);
+      this.sendError(id, RpcErrorCodes.METHOD_UNK);
       return;
     }
     const {isStreaming} = caller.info(method);
@@ -868,16 +868,16 @@ export class RpcMessageStreamProcessor&lt;Ctx = unknown&gt; {
 <span class="cstat-no" title="statement not covered" >      return;</span>
     }
 <span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (!method) {</span>
-<span class="cstat-no" title="statement not covered" >      this.sendError(id, RpcErrorCodes.NO_METHOD_SPECIFIED);</span>
+<span class="cstat-no" title="statement not covered" >      this.sendError(id, RpcErrorCodes.METHOD_INV);</span>
 <span class="cstat-no" title="statement not covered" >      return;</span>
     }
 <span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (!this.caller.exists(method)) {</span>
-<span class="cstat-no" title="statement not covered" >      this.sendError(id, RpcErrorCodes.METHOD_NOT_FOUND);</span>
+<span class="cstat-no" title="statement not covered" >      this.sendError(id, RpcErrorCodes.METHOD_UNK);</span>
 <span class="cstat-no" title="statement not covered" >      return;</span>
     }
     const {isStreaming} = <span class="cstat-no" title="statement not covered" >this.caller.info(method);</span>
 <span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (!isStreaming) {</span>
-<span class="cstat-no" title="statement not covered" >      void this.sendError(id, RpcErrorCodes.INVALID_METHOD);</span>
+<span class="cstat-no" title="statement not covered" >      void this.sendError(id, RpcErrorCodes.METHOD_UNK);</span>
 <span class="cstat-no" title="statement not covered" >      return;</span>
     }
     const streamCall = <span class="cstat-no" title="statement not covered" >this.createStreamCall(id, method, ctx);</span>
@@ -895,7 +895,7 @@ export class RpcMessageStreamProcessor&lt;Ctx = unknown&gt; {
 &nbsp;
   public onNotificationMessage(message: msg.NotificationMessage, ctx: Ctx): void {
     const {method, value} = message;
-    <span class="missing-if-branch" title="if path not taken" >I</span>if (!method || method.length &gt; 128) <span class="cstat-no" title="statement not covered" >throw RpcError.fromCode(RpcErrorCodes.INVALID_METHOD);</span>
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (!method || method.length &gt; 128) <span class="cstat-no" title="statement not covered" >throw RpcError.fromErrno(RpcErrorCodes.METHOD_INV);</span>
     const request = value &amp;&amp; typeof value === 'object' ? value<span class="branch-0 cbranch-no" title="branch not covered" >?.d</span>ata : <span class="branch-1 cbranch-no" title="branch not covered" >undefined;</span>
     this.caller.notification(method, request, ctx).catch(<span class="fstat-no" title="function not covered" >() =</span>&gt; {});
   }
@@ -907,7 +907,7 @@ export class RpcMessageStreamProcessor&lt;Ctx = unknown&gt; {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2024-10-10T22:56:30.381Z
+                at 2024-11-01T22:28:12.049Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
