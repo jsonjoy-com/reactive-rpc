@@ -1,6 +1,6 @@
 import {firstValueFrom, from, type Observable, Subject} from 'rxjs';
 import {catchError, finalize, first, map, mergeWith, share, switchMap, take, takeUntil, tap} from 'rxjs/operators';
-import {RpcError, RpcErrorCodes, type RpcErrorValue} from './error/RpcError';
+import {RpcError, RpcErrorCodes} from 'rpc-error';
 import {TypedRpcError} from './error/typed';
 import {RpcValue} from '../../messages/Value';
 import {StaticRpcMethod} from '../methods/StaticRpcMethod';
@@ -8,6 +8,7 @@ import {BufferSubject} from '../../../util/rx/BufferSubject';
 import type {Call} from './types';
 import type {RpcMethod} from '../types';
 import type {StreamingRpcMethod} from '../methods/StreamingRpcMethod';
+import type {RpcErrorValue} from './error/types';
 
 export interface RpcApiCallerOptions<Ctx = unknown> {
   getMethod: (name: string) => undefined | StaticRpcMethod<Ctx> | StreamingRpcMethod<Ctx>;
@@ -51,7 +52,7 @@ export class RpcCaller<Ctx = unknown> {
 
   public getMethodStrict(name: string): StaticRpcMethod<Ctx> | StreamingRpcMethod<Ctx> {
     const method = this.getMethod(name);
-    if (!method) throw TypedRpcError.valueFromCode(RpcErrorCodes.METHOD_NOT_FOUND);
+    if (!method) throw TypedRpcError.valueFromCode(RpcErrorCodes.METHOD_UNK);
     return method;
   }
 

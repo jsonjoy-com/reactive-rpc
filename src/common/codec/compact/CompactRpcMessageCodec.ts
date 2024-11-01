@@ -11,7 +11,7 @@ import type * as types from './types';
 import type {TlvBinaryJsonEncoder} from '@jsonjoy.com/json-pack';
 
 const fromJson = (arr: unknown | unknown[] | types.CompactMessage): msg.ReactiveRpcMessage => {
-  if (!(arr instanceof Array)) throw RpcError.fromCode(RpcErrorCodes.BAD_REQUEST);
+  if (!(arr instanceof Array)) throw RpcError.badRequest();
   const type = arr[0];
   switch (type) {
     case CompactMessageType.RequestComplete: {

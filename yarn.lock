@@ -2829,6 +2829,11 @@ rimraf@^5.0.5:
   dependencies:
     glob "^10.3.7"
 
+rpc-error@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/rpc-error/-/rpc-error-1.1.0.tgz#ce38ef99f416b562da7008cb04d88d34dbacaeff"
+  integrity sha512-RNrbrCi0EOw9kNRqrCVBu7oEvekKt35tzW333mEzZvr4i+WZ/lp4c34l2FtIwmfrqdP+lkubZTdI9aVqN5tTLQ==
+
 rx-use@^1.8.1:
   version "1.8.1"
   resolved "https://registry.yarnpkg.com/rx-use/-/rx-use-1.8.1.tgz#d6dc272eed2197fe785b4b678a7220d856cff1d3"

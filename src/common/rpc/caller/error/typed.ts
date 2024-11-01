@@ -1,6 +1,7 @@
-import {RpcError, type RpcErrorCodes, type RpcErrorValue} from './RpcError';
+import {RpcError, type RpcErrorCodes} from 'rpc-error';
 import {RpcValue} from '../../../messages/Value';
 import {RpcErrorType} from './RpcErrorType';
+import type {RpcErrorValue} from './types';
 
 /**
  * @protected
@@ -21,7 +22,7 @@ export class TypedRpcError {
   }
 
   public static valueFromCode(errno: RpcErrorCodes, message?: string): RpcErrorValue {
-    return TypedRpcError.value(RpcError.fromCode(errno, message));
+    return TypedRpcError.value(RpcError.fromErrno(errno, message));
   }
 
   public static internalErrorValue(originalError: unknown): RpcErrorValue {

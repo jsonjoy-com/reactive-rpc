@@ -20,7 +20,7 @@ import type {RpcCaller} from '../../common/rpc/caller/RpcCaller';
 
 const HDR_BAD_REQUEST = Buffer.from('400 Bad Request', 'utf8');
 const HDR_NOT_FOUND = Buffer.from('404 Not Found', 'utf8');
-const ERR_NOT_FOUND = RpcError.fromCode(RpcErrorCodes.NOT_FOUND, 'Not Found');
+const ERR_NOT_FOUND = RpcError.fromCode('NOT_FOUND', 'Not Found');
 
 const noop = () => {};
 

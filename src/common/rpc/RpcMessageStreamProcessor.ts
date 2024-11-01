@@ -1,11 +1,11 @@
 import * as msg from '../messages';
 import {TimedQueue} from '../util/TimedQueue';
 import {RpcErrorCodes, RpcError} from './caller/error/RpcError';
-import type {RpcValue} from '../messages/Value';
 import {subscribeCompleteObserver} from '../util/subscribeCompleteObserver';
+import {TypedRpcError} from './caller/error/typed';
+import type {RpcValue} from '../messages/Value';
 import type {RpcCaller} from './caller/RpcCaller';
 import type {Call, RpcApiMap} from './caller/types';
-import {TypedRpcError} from './caller/error/typed';
 
 type Send = (messages: (msg.ReactiveRpcServerMessage | msg.NotificationMessage)[]) => void;
 
@@ -182,12 +182,12 @@ export class RpcMessageStreamProcessor<Ctx = unknown> {
     let call = this.activeStreamCalls.get(id);
     if (!call) {
       if (!method) {
-        this.sendError(id, RpcErrorCodes.NO_METHOD_SPECIFIED);
+        this.sendError(id, RpcErrorCodes.METHOD_INV);
         return;
       }
       const info = this.caller.info(method);
       if (!info) {
-        this.sendError(id, RpcErrorCodes.METHOD_NOT_FOUND);
+        this.sendError(id, RpcErrorCodes.METHOD_UNK);
         return;
       }
       if (info.isStreaming) {
@@ -216,12 +216,12 @@ export class RpcMessageStreamProcessor<Ctx = unknown> {
       return;
     }
     if (!method) {
-      this.sendError(id, RpcErrorCodes.NO_METHOD_SPECIFIED);
+      this.sendError(id, RpcErrorCodes.METHOD_INV);
       return;
     }
     const caller = this.caller;
     if (!caller.exists(method)) {
-      this.sendError(id, RpcErrorCodes.METHOD_NOT_FOUND);
+      this.sendError(id, RpcErrorCodes.METHOD_UNK);
       return;
     }
     const {isStreaming} = caller.info(method);
@@ -245,16 +245,16 @@ export class RpcMessageStreamProcessor<Ctx = unknown> {
       return;
     }
     if (!method) {
-      this.sendError(id, RpcErrorCodes.NO_METHOD_SPECIFIED);
+      this.sendError(id, RpcErrorCodes.METHOD_INV);
       return;
     }
     if (!this.caller.exists(method)) {
-      this.sendError(id, RpcErrorCodes.METHOD_NOT_FOUND);
+      this.sendError(id, RpcErrorCodes.METHOD_UNK);
       return;
     }
     const {isStreaming} = this.caller.info(method);
     if (!isStreaming) {
-      void this.sendError(id, RpcErrorCodes.INVALID_METHOD);
+      void this.sendError(id, RpcErrorCodes.METHOD_UNK);
       return;
     }
     const streamCall = this.createStreamCall(id, method, ctx);
@@ -272,7 +272,7 @@ export class RpcMessageStreamProcessor<Ctx = unknown> {
 
   public onNotificationMessage(message: msg.NotificationMessage, ctx: Ctx): void {
     const {method, value} = message;
-    if (!method || method.length > 128) throw RpcError.fromCode(RpcErrorCodes.INVALID_METHOD);
+    if (!method || method.length > 128) throw RpcError.fromErrno(RpcErrorCodes.METHOD_INV);
     const request = value && typeof value === 'object' ? value?.data : undefined;
     this.caller.notification(method, request, ctx).catch(() => {});
   }

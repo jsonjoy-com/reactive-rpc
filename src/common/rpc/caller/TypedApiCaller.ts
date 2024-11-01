@@ -1,4 +1,4 @@
-import {RpcErrorCodes} from './error/RpcError';
+import {RpcErrorCodes} from 'rpc-error';
 import {TypedRpcError} from './error/typed';
 import {RpcCaller, type RpcApiCallerOptions} from './RpcCaller';
 import {FunctionStreamingType, FunctionType} from '@jsonjoy.com/json-type/lib/type/classes';
@@ -85,7 +85,7 @@ export class TypedApiCaller<Types extends TypeMap, Ctx = unknown> extends RpcCal
 
   public get<K extends keyof Types>(id: K): MethodDefinition<Ctx, Types[K]> {
     const method = this.methods.get(id as string) as any;
-    if (!method) throw TypedRpcError.valueFromCode(RpcErrorCodes.METHOD_NOT_FOUND);
+    if (!method) throw TypedRpcError.valueFromCode(RpcErrorCodes.METHOD_UNK);
     return method;
   }
 }
