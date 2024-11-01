@@ -1,8 +1,8 @@
 import * as msg from '../messages';
-import type {RpcErrorValue} from './caller';
 import {validateId, validateMethod} from './validation';
 import {TypedRpcError} from './caller/error/typed';
 import type {RpcCaller} from './caller/RpcCaller';
+import type {RpcErrorValue} from './caller/error/types';
 
 export type IncomingBatchMessage =
   | msg.RequestDataMessage

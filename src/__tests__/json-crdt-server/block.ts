@@ -690,7 +690,7 @@ export const runBlockTests = (_setup: ApiTestSetup, params: {staticOnly?: true} 
         const {call, stop} = await setup();
         const id = getId();
         const get1 = await of(call('block.get', {id}));
-        expect(get1[1]).toMatchObject({message: 'NOT_FOUND'});
+        expect(get1[1]).toMatchObject({code: 'NOT_FOUND'});
         const result = await call('block.pull', {
           id,
           seq: -1,

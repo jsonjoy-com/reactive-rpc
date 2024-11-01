@@ -26,7 +26,7 @@ export class BufferSubject<T> extends Subject<T> {
   public next(value: T): void {
     if (this.isBuffering) {
       if (this.buffer.length >= this.bufferSize) {
-        this.error(RpcError.fromCode(RpcErrorCodes.BUFFER_OVERFLOW));
+        this.error(RpcError.fromErrno(RpcErrorCodes.OVERFLOW));
         return;
       }
       this.buffer.push(value);

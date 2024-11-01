@@ -111,14 +111,14 @@ export class BlocksServices {
   public async get(id: string) {
     const {store} = this;
     const result = await store.get(id);
-    if (!result) throw RpcError.fromCode(RpcErrorCodes.NOT_FOUND);
+    if (!result) throw RpcError.notFound();
     return result;
   }
 
   public async view(id: string) {
     const {store} = this;
     const result = await store.get(id);
-    if (!result) throw RpcError.fromCode(RpcErrorCodes.NOT_FOUND);
+    if (!result) throw RpcError.notFound();
     const model = Model.load(result.block.snapshot.blob);
     return model.view();
   }
@@ -141,7 +141,7 @@ export class BlocksServices {
   ) {
     const {store} = this;
     if (typeof offset !== 'number') offset = await store.seq(id);
-    if (typeof offset !== 'number') throw RpcError.fromCode(RpcErrorCodes.NOT_FOUND);
+    if (typeof offset !== 'number') throw RpcError.notFound();
     let min = 0,
       max = 0;
     if (!limit || Math.round(limit) !== limit) throw RpcError.badRequest('INVALID_LIMIT');
