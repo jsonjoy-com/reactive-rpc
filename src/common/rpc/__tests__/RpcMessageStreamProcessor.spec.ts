@@ -730,7 +730,7 @@ describe('pre-call checks', () => {
         expect(send).toHaveBeenCalledTimes(1);
         const errorValue = send.mock.calls[0][0][0];
         expect(errorValue).toBeInstanceOf(ResponseErrorMessage);
-        expect(errorValue.value.data.message).toBe('BUFFER_OVERFLOW');
+        expect(errorValue.value.data.message).toBe('OVERFLOW');
       });
 
       test('buffer size can be set to 5 for the whole server', async () => {
@@ -766,7 +766,7 @@ describe('pre-call checks', () => {
         await new Promise((r) => setTimeout(r, 1));
         expect(send).toHaveBeenCalledTimes(1);
         expect(send.mock.calls[0][0][0]).toBeInstanceOf(ResponseErrorMessage);
-        expect(send.mock.calls[0][0][0].value.data.message).toBe('BUFFER_OVERFLOW');
+        expect(send.mock.calls[0][0][0].value.data.message).toBe('OVERFLOW');
       });
 
       test('buffer size can be set to 5 per method', async () => {
@@ -802,7 +802,7 @@ describe('pre-call checks', () => {
         await new Promise((r) => setTimeout(r, 1));
         expect(send).toHaveBeenCalledTimes(1);
         expect(send.mock.calls[0][0][0]).toBeInstanceOf(ResponseErrorMessage);
-        expect(send.mock.calls[0][0][0].value.data.message).toBe('BUFFER_OVERFLOW');
+        expect(send.mock.calls[0][0][0].value.data.message).toBe('OVERFLOW');
       });
 
       test('when pre-call checks finish just before buffer is full, can receive more request data', async () => {
@@ -929,9 +929,9 @@ describe('buffering', () => {
     await new Promise((r) => setTimeout(r, 10));
     expect(send).toHaveBeenCalledTimes(1);
     expect(send.mock.calls[0][0][0]).toBeInstanceOf(ResponseErrorMessage);
-    expect(send.mock.calls[0][0][0].value.data.message).toBe('METHOD_NOT_FOUND');
+    expect(send.mock.calls[0][0][0].value.data.message).toBe('METHOD_UNK');
     expect(send.mock.calls[0][0][1]).toBeInstanceOf(ResponseErrorMessage);
-    expect(send.mock.calls[0][0][1].value.data.message).toBe('METHOD_NOT_FOUND');
+    expect(send.mock.calls[0][0][1].value.data.message).toBe('METHOD_UNK');
     expect(send.mock.calls[0][0][0]).toBeInstanceOf(ResponseErrorMessage);
     expect(send.mock.calls[0][0][1]).toBeInstanceOf(ResponseErrorMessage);
   });

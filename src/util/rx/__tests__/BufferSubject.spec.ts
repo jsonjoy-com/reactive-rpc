@@ -33,7 +33,7 @@ test('error when buffer overflows', () => {
   expect(complete).toHaveBeenCalledTimes(0);
 
   expect(error.mock.calls[0][0]).toBeInstanceOf(Error);
-  expect(error.mock.calls[0][0].message).toMatchInlineSnapshot(`"BUFFER_OVERFLOW"`);
+  expect(error.mock.calls[0][0].message).toMatchInlineSnapshot(`"OVERFLOW"`);
 });
 
 test('does not error when buffer was flushed just before overflow', () => {
