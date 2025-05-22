@@ -76,16 +76,16 @@
   },
   "dependencies": {
     "@jsonjoy.com/jit-router": "^1.0.1",
-    "@jsonjoy.com/json-pack": "^1.1.0",
-    "@jsonjoy.com/util": "^1.4.0",
+    "@jsonjoy.com/json-pack": "^1.2.0",
+    "@jsonjoy.com/util": "^1.6.0",
     "abstract-level": "^2.0.0",
     "classic-level": "^1.4.1",
     "fs-zoo": "^1.1.0",
     "memory-level": "^1.0.0",
     "rpc-error": "^1.1.0",
-    "rx-use": "^1.8.1",
-    "sonic-forest": "^1.0.3",
-    "thingies": "^2.4.0"
+    "rx-use": "^1.8.2",
+    "sonic-forest": "^1.2.0",
+    "thingies": "^2.5.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.3",

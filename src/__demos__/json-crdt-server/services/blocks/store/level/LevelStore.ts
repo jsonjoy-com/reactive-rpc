@@ -69,7 +69,7 @@ export class LevelStore implements types.Store {
     const key = this.startKey(id);
     try {
       const blob = await kv.get(key);
-      const snapshot = decoder.decode(blob) as types.StoreSnapshot;
+      const snapshot = decoder.decode(blob as any) as types.StoreSnapshot;
       const batches: types.StoreBatch[] = [];
       if (snapshot.seq < seq) {
         const gte = this.batchKey(id, snapshot.seq + 1);
@@ -187,7 +187,7 @@ export class LevelStore implements types.Store {
     const {encoder, decoder} = codec;
     const key = this.startKey(id);
     await this.mutex.acquire(id + '.trunc', async () => {
-      const start = decoder.decode(await kv.get(key)) as types.StoreSnapshot;
+      const start = decoder.decode((await kv.get(key)) as any) as types.StoreSnapshot;
       if (start.seq >= to) return;
       const gt = this.batchKey(id, start.seq);
       const lte = this.batchKey(id, to);
