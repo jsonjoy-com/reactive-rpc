@@ -1,20 +1,24 @@
 import {RpcError} from './error/RpcError';
 import {RpcCaller, type RpcApiCallerOptions} from './RpcCaller';
-import {type AbsType, FunctionStreamingType, FnType} from '@jsonjoy.com/json-type/lib/type/classes';
 import {printTree} from 'sonic-forest/lib/print/printTree';
 import {StaticRpcMethod, type StaticRpcMethodOptions} from '../methods/StaticRpcMethod';
 import {StreamingRpcMethod, type StreamingRpcMethodOptions} from '../methods/StreamingRpcMethod';
-import type {ObjType, Schema, TypeSystem, ObjectFieldType, TypeOf, SchemaOf, Type} from '@jsonjoy.com/json-type';
+import {ObjectValue, UnObjType, UnObjectValue} from '@jsonjoy.com/json-type/lib/value/ObjectValue';
+import {type AbsType, FunctionStreamingType, FnType} from '@jsonjoy.com/json-type/lib/type/classes';
+import {type ObjType, type Schema, type TypeSystem, type ObjectFieldType, type TypeOf, type SchemaOf, type Type, type t} from '@jsonjoy.com/json-type';
 import type {Printable} from 'sonic-forest/lib/print/types';
-import type {ObjectValue, UnObjType, UnObjectValue} from '@jsonjoy.com/json-type/lib/value/ObjectValue';
 import type {Value} from '@jsonjoy.com/json-type/lib/value/Value';
-import type {Observable} from 'rxjs';
 import type {RpcValue} from '../../messages/Value';
 
 type ObjectFieldToTuple<F> = F extends ObjectFieldType<infer K, infer V> ? [K, V] : never;
 type ToObject<T> = T extends [string, unknown][] ? {[K in T[number] as K[0]]: K[1]} : never;
 type ObjectFieldsToMap<F> = ToObject<{[K in keyof F]: ObjectFieldToTuple<F[K]>}>;
 type ObjectValueToTypeMap<V> = ObjectFieldsToMap<UnObjType<UnObjectValue<V>>>;
+export type ObjectValueToRpcClientMethods<V> = {
+  [K in keyof ObjectValueToTypeMap<V>]:
+    ObjectValueToTypeMap<V>[K] extends FnType<infer Req, infer Res>
+      ? [t.infer<Req>, t.infer<Res>] : never}
+
 
 type MethodReq<F> = F extends FnType<infer Req, any>
   ? TypeOf<SchemaOf<Req>>
@@ -40,7 +44,7 @@ export interface ObjectValueCallerOptions<V extends ObjectValue<ObjType<any>>, C
 }
 
 export class ObjectValueCaller<V extends ObjectValue<ObjType<any>>, Ctx = unknown>
-  extends RpcCaller<Ctx>
+  extends RpcCaller<Ctx, ObjectValueToRpcClientMethods<V>>
   implements Printable
 {
   public readonly router: V;
@@ -90,14 +94,6 @@ export class ObjectValueCaller<V extends ObjectValue<ObjType<any>>, Ctx = unknow
     return method;
   }
 
-  public async call<K extends keyof ObjectValueToTypeMap<V>>(
-    id: K,
-    request: MethodReq<ObjectValueToTypeMap<V>[K]>,
-    ctx: Ctx,
-  ): Promise<RpcValue<MethodRes<ObjectValueToTypeMap<V>[K]>>> {
-    return super.call(id as string, request, ctx) as any;
-  }
-
   public async callSimple<K extends keyof ObjectValueToTypeMap<V>>(
     id: K,
     request: MethodReq<ObjectValueToTypeMap<V>[K]>,
@@ -110,14 +106,6 @@ export class ObjectValueCaller<V extends ObjectValue<ObjType<any>>, Ctx = unknow
       const error = err as RpcValue<RpcError>;
       throw error.data;
     }
-  }
-
-  public call$<K extends keyof ObjectValueToTypeMap<V>>(
-    id: K,
-    request: Observable<MethodReq<ObjectValueToTypeMap<V>[K]>>,
-    ctx: Ctx,
-  ): Observable<RpcValue<MethodRes<ObjectValueToTypeMap<V>[K]>>> {
-    return super.call$(id as string, request, ctx) as any;
   }
 
   // ---------------------------------------------------------------- Printable

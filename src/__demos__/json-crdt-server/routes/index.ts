@@ -8,9 +8,9 @@ import {Services} from '../services/Services';
 import {MemoryStore} from '../services/blocks/store/MemoryStore';
 import {LevelStore} from '../services/blocks/store/level/LevelStore';
 import {ClassicLevel} from 'classic-level';
+import {TypedRpcError} from '../../../common/rpc/caller/error/typed';
 import type {Store} from '../services/blocks/store/types';
 import type {RouteDeps} from './types';
-import {TypedRpcError} from '../../../common/rpc/caller/error/typed';
 
 export const createRouter = (services: Services) => {
   const router = ObjectValue.create(system);
@@ -22,6 +22,8 @@ export const createRouter = (services: Services) => {
   };
   return routes(deps)(router);
 };
+
+// export type JsonCrdtServerRouterObject = ReturnType<typeof createRouter>;
 
 export const createCaller = (services: Services = new Services()) => {
   const router = createRouter(services);

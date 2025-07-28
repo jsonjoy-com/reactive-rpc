@@ -4,7 +4,7 @@ import {filter, first, share, switchMap, takeUntil} from 'rxjs/operators';
 import {StreamingRpcClient, type StreamingRpcClientOptions} from './client/StreamingRpcClient';
 import {PersistentChannel, type PersistentChannelParams} from '../channel';
 import type {RpcCodec} from '../codec/RpcCodec';
-import type {RpcClient, RpcClientMethods, RpcClientNotifications} from './types';
+import type {RpcClient, RpcClientMethods} from './types';
 
 export interface RpcPersistentClientParams {
   channel: PersistentChannelParams;
@@ -28,10 +28,10 @@ export interface RpcPersistentClientParams {
 /**
  * RPC client which automatically reconnects if disconnected.
  */
-export class RpcPersistentClient<Methods extends RpcClientMethods<any> = RpcClientMethods, Notifications extends RpcClientNotifications<any> = RpcClientNotifications> implements RpcClient<Methods, Notifications> {
+export class RpcPersistentClient<Methods extends RpcClientMethods<any> = RpcClientMethods> implements RpcClient<Methods> {
   public channel: PersistentChannel;
-  public rpc?: StreamingRpcClient<Methods, Notifications>;
-  public readonly rpc$ = new ReplaySubject<StreamingRpcClient<Methods, Notifications>>(1);
+  public rpc?: StreamingRpcClient<Methods>;
+  public readonly rpc$ = new ReplaySubject<StreamingRpcClient<Methods>>(1);
 
   constructor(params: RpcPersistentClientParams) {
     const ping = params.ping ?? 15000;
@@ -40,7 +40,7 @@ export class RpcPersistentClient<Methods extends RpcClientMethods<any> = RpcClie
     this.channel = new PersistentChannel(params.channel);
     this.channel.open$.pipe(filter((open) => open)).subscribe(() => {
       const close$ = this.channel.open$.pipe(filter((open) => !open));
-      const client = new StreamingRpcClient<Methods, Notifications>({
+      const client = new StreamingRpcClient<Methods>({
         ...params.client,
         send: (messages: msg.ReactiveRpcClientMessage[]): void => {
           const encoded = codec.encode(messages, codec.req);
@@ -81,7 +81,7 @@ export class RpcPersistentClient<Methods extends RpcClientMethods<any> = RpcClie
     return firstValueFrom(this.call$(method, request));
   }
 
-  public notify<K extends keyof Notifications>(method: K, data: Observable<Notifications[K][0]>): void {
+  public notify<K extends keyof Methods>(method: K, data: Observable<Methods[K][0]>): void {
     this.rpc$.subscribe((rpc) => rpc.notify(method, data));
   }
 

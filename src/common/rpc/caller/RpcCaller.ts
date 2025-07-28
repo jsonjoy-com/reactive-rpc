@@ -5,10 +5,10 @@ import {TypedRpcError} from './error/typed';
 import {RpcValue} from '../../messages/Value';
 import {StaticRpcMethod} from '../methods/StaticRpcMethod';
 import {BufferSubject} from '../../../util/rx/BufferSubject';
-import type {Call} from './types';
-import type {RpcMethod} from '../types';
+import type {Call, Caller, CallerMethods} from './types';
 import type {StreamingRpcMethod} from '../methods/StreamingRpcMethod';
 import type {RpcErrorValue} from './error/types';
+import type {RpcMethod} from '../types';
 
 export interface RpcApiCallerOptions<Ctx = unknown> {
   getMethod: (name: string) => undefined | StaticRpcMethod<Ctx> | StreamingRpcMethod<Ctx>;
@@ -31,7 +31,10 @@ const defaultWrapInternalError = (error: unknown) => TypedRpcError.valueFrom(err
 /**
  * Implements methods to call Reactive-RPC methods on the server.
  */
-export class RpcCaller<Ctx = unknown> {
+export class RpcCaller<
+  Ctx = unknown,
+  Methods extends CallerMethods<any> = CallerMethods
+> implements Caller<Ctx, Methods> {
   protected readonly getMethod: RpcApiCallerOptions<Ctx>['getMethod'];
   protected readonly preCallBufferSize: number;
   protected readonly wrapInternalError: (error: unknown) => unknown;
@@ -87,8 +90,8 @@ export class RpcCaller<Ctx = unknown> {
    * @param ctx Server context object.
    * @returns Response data.
    */
-  public async call(name: string, request: unknown, ctx: Ctx): Promise<RpcValue<unknown>> {
-    const method = this.getMethodStrict(name);
+  public async call<K extends keyof Methods>(name: K, request: Observable<Methods[K][0]>, ctx: Ctx): Promise<Methods[K][1]> {
+    const method = this.getMethodStrict(name as string);
     this.validate(method, request);
     try {
       const preCall = method.onPreCall;
@@ -98,6 +101,10 @@ export class RpcCaller<Ctx = unknown> {
     } catch (error) {
       throw this.wrapInternalError(error);
     }
+  }
+
+  public notify<K extends keyof Methods>(method: K, data: Observable<Methods[K][0]>, ctx: Ctx): void {
+    this.notification(method as string, data, ctx);
   }
 
   public async notification(name: string, request: unknown, ctx: Ctx): Promise<void> {
@@ -135,7 +142,7 @@ export class RpcCaller<Ctx = unknown> {
         const response$: Observable<RpcValue> = from(
           (async () => {
             const request = await firstValueFrom(req$.pipe(first()));
-            return await this.call(name, request, ctx);
+            return await this.call(name, request as any, ctx);
           })(),
         );
         const res$ = new Subject<RpcValue>();
@@ -225,9 +232,9 @@ export class RpcCaller<Ctx = unknown> {
     }
   }
 
-  public call$(name: string, request$: Observable<unknown>, ctx: Ctx): Observable<RpcValue> {
-    const call = this.createCall(name, ctx);
-    request$.subscribe(call.req$);
+  public call$<K extends keyof Methods>(name: K, request$: Observable<Methods[K][0]> | Methods[K][0], ctx: Ctx): Observable<Methods[K][1]> {
+    const call = this.createCall(name as string, ctx);
+    from(request$).subscribe(call.req$);
     return call.res$;
   }
 }

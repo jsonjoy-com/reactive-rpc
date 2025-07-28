@@ -3,7 +3,7 @@ import * as msg from '../../messages';
 import {subscribeCompleteObserver} from '../../util/subscribeCompleteObserver';
 import {TimedQueue} from '../../util/TimedQueue';
 import {RpcValue} from '../../messages/Value';
-import type {RpcClient, RpcClientMethods, RpcClientNotifications} from './types';
+import type {RpcClient, RpcClientMethods} from './types';
 
 /**
  * Configuration parameters for {@link StreamingRpcClient}.
@@ -69,7 +69,7 @@ interface ObserverEntry {
  * });
  * ```
  */
-export class StreamingRpcClient<Methods extends RpcClientMethods<any> = RpcClientMethods, Notifications extends RpcClientNotifications<any> = RpcClientNotifications> implements RpcClient<Methods, Notifications> {
+export class StreamingRpcClient<Methods extends RpcClientMethods<any> = RpcClientMethods> implements RpcClient<Methods> {
   private id = 1;
   public readonly buffer: TimedQueue<msg.ReactiveRpcClientMessage>;
 
@@ -234,7 +234,7 @@ export class StreamingRpcClient<Methods extends RpcClientMethods<any> = RpcClien
    * @param method Remote method name.
    * @param data Static payload data.
    */
-  public notify<K extends keyof Notifications>(method: K, data: Observable<Notifications[K][0]>): void {
+  public notify<K extends keyof Methods>(method: K, data: Observable<Methods[K][0]>): void {
     const value = new RpcValue(data, undefined);
     this.buffer.push(new msg.NotificationMessage(method as string, value));
   }

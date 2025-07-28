@@ -1,11 +1,9 @@
 import type {Observable} from 'rxjs';
 
 export type RpcClientCall<Req = unknown, Res = unknown> = [req: Req, res: Res];
-export type RpcClientNote<Req = unknown> = [req: Req];
 export type RpcClientMethods<T = unknown> = Record<string, RpcClientCall<T, T>>;
-export type RpcClientNotifications<T = unknown> = Record<string, RpcClientNote<T>>;
 
-export interface RpcClient<Methods extends RpcClientMethods<any> = RpcClientMethods, Notifications extends RpcClientNotifications<any> = RpcClientNotifications> {
+export interface RpcClient<Methods extends RpcClientMethods<any> = RpcClientMethods> {
   /**
    * Execute a streaming RPC method.
    *
@@ -28,7 +26,7 @@ export interface RpcClient<Methods extends RpcClientMethods<any> = RpcClientMeth
    * @param method Remote method name.
    * @param data Static payload data.
    */
-  notify<K extends keyof Notifications>(method: K, data: Observable<Notifications[K][0]>): void;
+  notify<K extends keyof Methods>(method: K, data: Observable<Methods[K][0]>): void;
 
   // start(): void;
   // stop(): void;

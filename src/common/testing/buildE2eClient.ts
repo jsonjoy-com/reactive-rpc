@@ -4,7 +4,7 @@ import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 import {ConnectionContext} from '../../server/context';
 import {RpcCodecs} from '../codec/RpcCodecs';
 import {RpcMessageCodecs} from '../codec/RpcMessageCodecs';
-import {RpcMessageStreamProcessor, StreamingRpcClient} from '../rpc';
+import {RpcClient, RpcMessageStreamProcessor, StreamingRpcClient} from '../rpc';
 import type {ReactiveRpcClientMessage, ReactiveRpcMessage, ReactiveRpcServerMessage} from '../messages';
 import type {RpcCaller} from '../rpc/caller/RpcCaller';
 
@@ -60,7 +60,7 @@ export interface BuildE2eClientOptions {
   token?: string;
 }
 
-export const buildE2eClient = <Caller extends RpcCaller<any>>(caller: Caller, opt: BuildE2eClientOptions = {}) => {
+export const buildE2eClient = <Caller extends RpcCaller<any, any>>(caller: Caller, opt: BuildE2eClientOptions = {}) => {
   const writer = opt.writer ?? new Writer(Fuzzer.randomInt2(opt.writerDefaultBufferKb ?? [4, 4]) * 1024);
   const codecs = new RpcCodecs(new Codecs(writer as any), new RpcMessageCodecs());
   const ctx = new ConnectionContext(
@@ -72,21 +72,22 @@ export const buildE2eClient = <Caller extends RpcCaller<any>>(caller: Caller, op
     codecs.value.cbor,
     codecs.messages.binary,
   );
+  type Methods = Caller extends RpcCaller<any, infer Methods> ? Methods : never;
   // biome-ignore lint: client used inside the function
-  let client: StreamingRpcClient;
+  let client: RpcClient<Methods>;
   const streamProcessor = new RpcMessageStreamProcessor({
     caller,
     send: (messages: ReactiveRpcMessage[]) => {
       const encoded = ctx.msgCodec.encode(ctx.resCodec, messages);
       setTimeout(() => {
         const decoded = ctx.msgCodec.decodeBatch(ctx.resCodec, encoded);
-        client.onMessages(decoded as ReactiveRpcServerMessage[]);
+        (client as StreamingRpcClient<Methods>).onMessages(decoded as ReactiveRpcServerMessage[]);
       }, 1);
     },
     bufferSize: Fuzzer.randomInt2(opt.serverBufferSize ?? [1, 1]),
     bufferTime: Fuzzer.randomInt2(opt.serverBufferTime ?? [0, 0]),
   });
-  client = new StreamingRpcClient({
+  client = new StreamingRpcClient<Methods>({
     send: (messages: ReactiveRpcClientMessage[]) => {
       const encoded = ctx.msgCodec.encode(ctx.reqCodec, messages);
       setTimeout(() => {

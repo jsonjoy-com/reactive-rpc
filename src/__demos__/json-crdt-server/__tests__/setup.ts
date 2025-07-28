@@ -6,17 +6,23 @@ import {Services} from '../services/Services';
 import {ClassicLevel} from 'classic-level';
 import {MemoryStore} from '../services/blocks/store/MemoryStore';
 import type {Store} from '../services/blocks/store/types';
+import {ObjectValueCaller, ObjectValueToRpcClientMethods} from '../../../common/rpc/caller/ObjectValueCaller';
+import {RpcCaller} from '../../../common/rpc/caller/RpcCaller';
 
 export const setup = async (store: Store = new MemoryStore(), close?: () => Promise<void>) => {
   const services = new Services({store});
   const {caller} = createCaller(services);
-  const {client} = buildE2eClient(caller, {
+  type Value = (typeof caller) extends ObjectValueCaller<infer Value, any> ? Value : never;
+  type Methods = ObjectValueToRpcClientMethods<Value>;
+  type Caller = RpcCaller<any, Methods>;
+  const {client} = buildE2eClient<Caller>(caller, {
     writerDefaultBufferKb: [1, 32],
     clientBufferSize: [1, 3],
     clientBufferTime: [1, 10],
     serverBufferSize: [1, 3],
     serverBufferTime: [1, 10],
   });
+  // client.call('')
   const call = client.call.bind(client);
   const call$ = client.call$.bind(client);
   const stop = async (): Promise<void> => {

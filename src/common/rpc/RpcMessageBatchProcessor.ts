@@ -82,8 +82,8 @@ export class RpcMessageBatchProcessor<Ctx = unknown> {
     try {
       const value = message.value;
       const data = value ? value.data : undefined;
-      const result = await this.caller.call(method, data, ctx);
-      return new msg.ResponseCompleteMessage(id, result);
+      const result = await this.caller.call(method, data as any, ctx);
+      return new msg.ResponseCompleteMessage(id, result as any);
     } catch (error) {
       throw new msg.ResponseErrorMessage(id, error as RpcErrorValue);
     }

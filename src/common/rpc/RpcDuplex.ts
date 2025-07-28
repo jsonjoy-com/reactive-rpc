@@ -2,18 +2,18 @@ import type {Observable} from 'rxjs';
 import * as msg from '../messages';
 import type {StreamingRpcClient} from './client/StreamingRpcClient';
 import type {RpcMessageStreamProcessor} from './RpcMessageStreamProcessor';
-import type {RpcClient, RpcClientMethods, RpcClientNotifications} from './client';
+import type {RpcClient, RpcClientMethods} from './client';
 
-export interface RpcDuplexParams<Ctx = unknown, Methods extends RpcClientMethods<any> = RpcClientMethods, Notifications extends RpcClientNotifications<any> = RpcClientNotifications> {
-  client: StreamingRpcClient<Methods, Notifications>;
+export interface RpcDuplexParams<Ctx = unknown, Methods extends RpcClientMethods<any> = RpcClientMethods> {
+  client: StreamingRpcClient<Methods>;
   server: RpcMessageStreamProcessor<Ctx>;
 }
 
-export class RpcDuplex<Ctx = unknown, Methods extends RpcClientMethods<any> = RpcClientMethods, Notifications extends RpcClientNotifications<any> = RpcClientNotifications> implements RpcClient<Methods, Notifications> {
-  public readonly client: StreamingRpcClient<Methods, Notifications>;
+export class RpcDuplex<Ctx = unknown, Methods extends RpcClientMethods<any> = RpcClientMethods> implements RpcClient<Methods> {
+  public readonly client: StreamingRpcClient<Methods>;
   public readonly server: RpcMessageStreamProcessor<Ctx>;
 
-  public constructor(params: RpcDuplexParams<Ctx, Methods, Notifications>) {
+  public constructor(params: RpcDuplexParams<Ctx, Methods>) {
     this.client = params.client;
     this.server = params.server;
   }
@@ -43,7 +43,7 @@ export class RpcDuplex<Ctx = unknown, Methods extends RpcClientMethods<any> = Rp
     return this.client.call(method, request);
   }
 
-  public notify<K extends keyof Notifications>(method: K, data: Observable<Notifications[K][0]>): void {
+  public notify<K extends keyof Methods>(method: K, data: Observable<Methods[K][0]>): void {
     this.client.notify(method, data);
   }
 

@@ -117,8 +117,9 @@ export class RpcMessageStreamProcessor<Ctx = unknown> {
 
   protected execStaticCall(id: number, name: string, request: unknown, ctx: Ctx): void {
     this.caller
-      .call(name, request, ctx)
-      .then((value: RpcValue) => this.sendCompleteMessage(id, value))
+      .call(name, request as any, ctx)
+      // .then((value: RpcValue) => this.sendCompleteMessage(id, value))
+      .then((value: any) => this.sendCompleteMessage(id, value))
       .catch((value: RpcValue) => this.sendErrorMessage(id, value));
   }
 
