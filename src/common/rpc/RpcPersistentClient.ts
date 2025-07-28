@@ -4,6 +4,7 @@ import {filter, first, share, switchMap, takeUntil} from 'rxjs/operators';
 import {StreamingRpcClient, type StreamingRpcClientOptions} from './client/StreamingRpcClient';
 import {PersistentChannel, type PersistentChannelParams} from '../channel';
 import type {RpcCodec} from '../codec/RpcCodec';
+import type {RpcClient, RpcClientMethods, RpcClientNotifications} from './types';
 
 export interface RpcPersistentClientParams {
   channel: PersistentChannelParams;
@@ -27,10 +28,10 @@ export interface RpcPersistentClientParams {
 /**
  * RPC client which automatically reconnects if disconnected.
  */
-export class RpcPersistentClient {
+export class RpcPersistentClient<Methods extends RpcClientMethods<any> = RpcClientMethods, Notifications extends RpcClientNotifications<any> = RpcClientNotifications> implements RpcClient<Methods, Notifications> {
   public channel: PersistentChannel;
-  public rpc?: StreamingRpcClient;
-  public readonly rpc$ = new ReplaySubject<StreamingRpcClient>(1);
+  public rpc?: StreamingRpcClient<Methods, Notifications>;
+  public readonly rpc$ = new ReplaySubject<StreamingRpcClient<Methods, Notifications>>(1);
 
   constructor(params: RpcPersistentClientParams) {
     const ping = params.ping ?? 15000;
@@ -39,7 +40,7 @@ export class RpcPersistentClient {
     this.channel = new PersistentChannel(params.channel);
     this.channel.open$.pipe(filter((open) => open)).subscribe(() => {
       const close$ = this.channel.open$.pipe(filter((open) => !open));
-      const client = new StreamingRpcClient({
+      const client = new StreamingRpcClient<Methods, Notifications>({
         ...params.client,
         send: (messages: msg.ReactiveRpcClientMessage[]): void => {
           const encoded = codec.encode(messages, codec.req);
@@ -58,7 +59,7 @@ export class RpcPersistentClient {
         timer(ping, ping)
           .pipe(takeUntil(close$))
           .subscribe(() => {
-            client.notify(params.pingMethod || '.ping', undefined);
+            client.notify(params.pingMethod || '.ping', undefined as any);
           });
       }
 
@@ -68,7 +69,7 @@ export class RpcPersistentClient {
     });
   }
 
-  public call$(method: string, data: unknown | Observable<unknown>): Observable<unknown> {
+  public call$<K extends keyof Methods>(method: K, data: Observable<Methods[K][0]> | Methods[K][0]): Observable<Methods[K][1]> {
     return this.rpc$.pipe(
       first(),
       switchMap((rpc) => rpc.call$(method, data as any)),
@@ -76,11 +77,11 @@ export class RpcPersistentClient {
     );
   }
 
-  public call(method: string, data: unknown): Promise<unknown> {
-    return firstValueFrom(this.call$(method, data));
+  public async call<K extends keyof Methods>(method: K, request: Observable<Methods[K][0]>): Promise<Methods[K][1]> {
+    return firstValueFrom(this.call$(method, request));
   }
 
-  public notify(method: string, data: unknown): void {
+  public notify<K extends keyof Notifications>(method: K, data: Observable<Notifications[K][0]>): void {
     this.rpc$.subscribe((rpc) => rpc.notify(method, data));
   }
 

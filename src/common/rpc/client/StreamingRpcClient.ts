@@ -3,7 +3,7 @@ import * as msg from '../../messages';
 import {subscribeCompleteObserver} from '../../util/subscribeCompleteObserver';
 import {TimedQueue} from '../../util/TimedQueue';
 import {RpcValue} from '../../messages/Value';
-import type {RpcClient} from './types';
+import type {RpcClient, RpcClientMethods, RpcClientNotifications} from './types';
 
 /**
  * Configuration parameters for {@link StreamingRpcClient}.
@@ -69,7 +69,7 @@ interface ObserverEntry {
  * });
  * ```
  */
-export class StreamingRpcClient implements RpcClient {
+export class StreamingRpcClient<Methods extends RpcClientMethods<any> = RpcClientMethods, Notifications extends RpcClientNotifications<any> = RpcClientNotifications> implements RpcClient<Methods, Notifications> {
   private id = 1;
   public readonly buffer: TimedQueue<msg.ReactiveRpcClientMessage>;
 
@@ -173,9 +173,7 @@ export class StreamingRpcClient implements RpcClient {
    * @param method RPC method name.
    * @param data RPC method static payload or stream of data.
    */
-  public call$(method: string, data: unknown): Observable<unknown>;
-  public call$(method: string, data: Observable<unknown>): Observable<unknown>;
-  public call$(method: string, data: unknown | Observable<unknown>): Observable<unknown> {
+  public call$<K extends keyof Methods>(method: K, data: Observable<Methods[K][0]> | Methods[K][0]): Observable<Methods[K][1]> {
     const id = this.id++;
     if (this.id >= 0xffff) this.id = 1;
     if (this.calls.has(id)) return this.call$(method, data as any);
@@ -195,25 +193,25 @@ export class StreamingRpcClient implements RpcClient {
         next: (value) => {
           const messageMethod = firstMessageSent ? '' : method;
           firstMessageSent = true;
-          const message = new msg.RequestDataMessage(id, messageMethod, new RpcValue(value, undefined));
+          const message = new msg.RequestDataMessage(id, messageMethod as string, new RpcValue(value, undefined));
           this.buffer.push(message);
         },
         error: (error) => {
           cleanup();
           const messageMethod = firstMessageSent ? '' : method;
-          const message = new msg.RequestErrorMessage(id, messageMethod, new RpcValue(error, undefined));
+          const message = new msg.RequestErrorMessage(id, messageMethod as string, new RpcValue(error, undefined));
           this.buffer.push(message);
         },
         complete: (value) => {
           cleanup();
           const messageMethod = firstMessageSent ? '' : method;
-          const message = new msg.RequestCompleteMessage(id, messageMethod, new RpcValue(value, undefined));
+          const message = new msg.RequestCompleteMessage(id, messageMethod as string, new RpcValue(value, undefined));
           this.buffer.push(message);
         },
       });
       data.subscribe(req$);
     } else {
-      this.buffer.push(new msg.RequestCompleteMessage(id, method, new RpcValue(data, undefined)));
+      this.buffer.push(new msg.RequestCompleteMessage(id, method as string, new RpcValue(data, undefined)));
       req$.complete();
       cleanup();
     }
@@ -226,7 +224,7 @@ export class StreamingRpcClient implements RpcClient {
     });
   }
 
-  public async call(method: string, request: unknown): Promise<unknown> {
+  public async call<K extends keyof Methods>(method: K, request: Observable<Methods[K][0]>): Promise<Methods[K][1]> {
     return await firstValueFrom(this.call$(method, request));
   }
 
@@ -236,9 +234,9 @@ export class StreamingRpcClient implements RpcClient {
    * @param method Remote method name.
    * @param data Static payload data.
    */
-  public notify(method: string, data: undefined | unknown): void {
+  public notify<K extends keyof Notifications>(method: K, data: Observable<Notifications[K][0]>): void {
     const value = new RpcValue(data, undefined);
-    this.buffer.push(new msg.NotificationMessage(method, value));
+    this.buffer.push(new msg.NotificationMessage(method as string, value));
   }
 
   /**

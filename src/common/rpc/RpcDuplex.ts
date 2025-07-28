@@ -2,17 +2,18 @@ import type {Observable} from 'rxjs';
 import * as msg from '../messages';
 import type {StreamingRpcClient} from './client/StreamingRpcClient';
 import type {RpcMessageStreamProcessor} from './RpcMessageStreamProcessor';
+import type {RpcClient, RpcClientMethods, RpcClientNotifications} from './client';
 
-export interface RpcDuplexParams<Ctx = unknown> {
-  client: StreamingRpcClient;
+export interface RpcDuplexParams<Ctx = unknown, Methods extends RpcClientMethods<any> = RpcClientMethods, Notifications extends RpcClientNotifications<any> = RpcClientNotifications> {
+  client: StreamingRpcClient<Methods, Notifications>;
   server: RpcMessageStreamProcessor<Ctx>;
 }
 
-export class RpcDuplex<Ctx = unknown> {
-  public readonly client: StreamingRpcClient;
+export class RpcDuplex<Ctx = unknown, Methods extends RpcClientMethods<any> = RpcClientMethods, Notifications extends RpcClientNotifications<any> = RpcClientNotifications> implements RpcClient<Methods, Notifications> {
+  public readonly client: StreamingRpcClient<Methods, Notifications>;
   public readonly server: RpcMessageStreamProcessor<Ctx>;
 
-  public constructor(params: RpcDuplexParams<Ctx>) {
+  public constructor(params: RpcDuplexParams<Ctx, Methods, Notifications>) {
     this.client = params.client;
     this.server = params.server;
   }
@@ -34,17 +35,15 @@ export class RpcDuplex<Ctx = unknown> {
     else if (message instanceof msg.RequestUnsubscribeMessage) this.client.onRequestUnsubscribe(message);
   }
 
-  public call$(method: string, data: unknown): Observable<unknown>;
-  public call$(method: string, data: Observable<unknown>): Observable<unknown>;
-  public call$(method: string, data: unknown | Observable<unknown>): Observable<unknown> {
+  public call$<K extends keyof Methods>(method: K, data: Observable<Methods[K][0]> | Methods[K][0]): Observable<Methods[K][1]> {
     return this.client.call$(method, data as any);
   }
 
-  public call(method: string, data: unknown): Promise<unknown> {
-    return this.client.call(method, data);
+  public async call<K extends keyof Methods>(method: K, request: Observable<Methods[K][0]>): Promise<Methods[K][1]> {
+    return this.client.call(method, request);
   }
 
-  public notify(method: string, data: undefined | unknown): void {
+  public notify<K extends keyof Notifications>(method: K, data: Observable<Notifications[K][0]>): void {
     this.client.notify(method, data);
   }
 
