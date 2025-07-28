@@ -15,8 +15,7 @@ import type {Http1ConnectionContext, WsConnectionContext} from './context';
 import type {RpcCaller} from '../../common/rpc/caller/RpcCaller';
 import type {ServerLogger} from './types';
 import type {ConnectionContext} from '../types';
-import type {ObjectValue} from '@jsonjoy.com/json-type/lib/value/ObjectValue';
-import type {ObjectType} from '@jsonjoy.com/json-type/lib/type/classes';
+import type {ObjType, ObjectValue} from '@jsonjoy.com/json-type';
 
 const DEFAULT_MAX_PAYLOAD = 4 * 1024 * 1024;
 
@@ -204,7 +203,7 @@ export class RpcServer implements Printable {
     const caller = this.opts.caller;
     let responseBody: Uint8Array = Buffer.from('{}');
     if (caller instanceof ObjectValueCaller) {
-      const api = caller.router as ObjectValue<ObjectType<any>>;
+      const api = caller.router as ObjectValue<ObjType<any>>;
       const schema = {
         value: api.type.getSchema(),
         types: api.type.system?.exportTypes(),

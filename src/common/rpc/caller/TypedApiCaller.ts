@@ -1,7 +1,7 @@
 import {RpcErrorCodes} from 'rpc-error';
 import {TypedRpcError} from './error/typed';
 import {RpcCaller, type RpcApiCallerOptions} from './RpcCaller';
-import {FunctionStreamingType, FunctionType} from '@jsonjoy.com/json-type/lib/type/classes';
+import {FunctionStreamingType, FnType} from '@jsonjoy.com/json-type/lib/type/classes';
 import {StaticRpcMethod, type StaticRpcMethodOptions} from '../methods/StaticRpcMethod';
 import {StreamingRpcMethod, type StreamingRpcMethodOptions} from '../methods/StreamingRpcMethod';
 import type {SchemaOf, TypeMap, TypeOf, TypeSystem} from '@jsonjoy.com/json-type';
@@ -10,19 +10,19 @@ export interface TypedApiCallerOptions<Ctx = unknown> extends Omit<RpcApiCallerO
   system: TypeSystem;
 }
 
-type MethodReq<F> = F extends FunctionType<infer Req, any>
+type MethodReq<F> = F extends FnType<infer Req, any>
   ? TypeOf<SchemaOf<Req>>
   : F extends FunctionStreamingType<infer Req, any>
     ? TypeOf<SchemaOf<Req>>
     : never;
 
-type MethodRes<F> = F extends FunctionType<any, infer Res>
+type MethodRes<F> = F extends FnType<any, infer Res>
   ? TypeOf<SchemaOf<Res>>
   : F extends FunctionStreamingType<any, infer Res>
     ? TypeOf<SchemaOf<Res>>
     : never;
 
-type MethodDefinition<Ctx, F> = F extends FunctionType<any, any>
+type MethodDefinition<Ctx, F> = F extends FnType<any, any>
   ? StaticRpcMethodOptions<Ctx, MethodReq<F>, MethodRes<F>>
   : F extends FunctionStreamingType<any, any>
     ? StreamingRpcMethodOptions<Ctx, MethodReq<F>, MethodRes<F>>
@@ -47,8 +47,8 @@ export class TypedApiCaller<Types extends TypeMap, Ctx = unknown> extends RpcCal
     const definition = definition_ as any;
     if (this.methods.has(id as string)) throw new Error(`Method [id = ${id as string}] is already implemented.`);
     const alias = this.system.resolve(id as string);
-    const type = alias.type as FunctionType<any, any> | FunctionStreamingType<any, any>;
-    if (!(type instanceof FunctionType || type instanceof FunctionStreamingType))
+    const type = alias.type as FnType<any, any> | FunctionStreamingType<any, any>;
+    if (!(type instanceof FnType || type instanceof FunctionStreamingType))
       throw new Error(`Type [alias = ${alias.id}] is not a function.`);
     const validator = type.validator('boolean');
     const customValidator = definition.validate;
@@ -62,7 +62,7 @@ export class TypedApiCaller<Types extends TypeMap, Ctx = unknown> extends RpcCal
           const error = validator(req);
           if (error) throw TypedRpcError.valueFromCode(RpcErrorCodes.BAD_REQUEST);
         };
-    const isStaticMethodAlias = alias.type instanceof FunctionType;
+    const isStaticMethodAlias = alias.type instanceof FnType;
     const isStreamingMethodAlias = alias.type instanceof FunctionStreamingType;
     const method = isStaticMethodAlias
       ? new StaticRpcMethod({

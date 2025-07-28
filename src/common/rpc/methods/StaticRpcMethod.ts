@@ -24,7 +24,7 @@ export class StaticRpcMethod<Ctx = unknown, Req = unknown, Res = unknown> implem
     this.req = req;
     this.res = res;
     const responseIsVoid =
-      !!res && res.getTypeName() === 'const' && (res.getSchema() as ConstSchema).value === undefined;
+      !!res && res.getTypeName() === 'con' && (res.getSchema() as ConstSchema).value === undefined;
     this.acceptsNotifications = responseIsVoid;
     this.call = call;
     this.call$ = (request$, ctx) => from((async () => this.call(await firstValueFrom(request$), ctx))());

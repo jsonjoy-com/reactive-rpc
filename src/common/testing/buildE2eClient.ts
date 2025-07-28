@@ -4,10 +4,9 @@ import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 import {ConnectionContext} from '../../server/context';
 import {RpcCodecs} from '../codec/RpcCodecs';
 import {RpcMessageCodecs} from '../codec/RpcMessageCodecs';
+import {RpcMessageStreamProcessor, StreamingRpcClient} from '../rpc';
 import type {ReactiveRpcClientMessage, ReactiveRpcMessage, ReactiveRpcServerMessage} from '../messages';
-import {RpcMessageStreamProcessor, StreamingRpcClient, type TypedRpcClient} from '../rpc';
 import type {RpcCaller} from '../rpc/caller/RpcCaller';
-import type {CallerToMethods} from '../types';
 
 export interface BuildE2eClientOptions {
   /**
@@ -98,8 +97,7 @@ export const buildE2eClient = <Caller extends RpcCaller<any>>(caller: Caller, op
     bufferSize: Fuzzer.randomInt2(opt.clientBufferSize ?? [1, 1]),
     bufferTime: Fuzzer.randomInt2(opt.clientBufferTime ?? [0, 0]),
   });
-  const typedClient = client as TypedRpcClient<CallerToMethods<Caller>>;
   return {
-    client: typedClient,
+    client,
   };
 };

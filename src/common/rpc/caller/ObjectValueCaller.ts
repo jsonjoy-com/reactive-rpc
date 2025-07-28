@@ -1,12 +1,12 @@
 import {RpcError} from './error/RpcError';
 import {RpcCaller, type RpcApiCallerOptions} from './RpcCaller';
-import {type AbstractType, FunctionStreamingType, FunctionType} from '@jsonjoy.com/json-type/lib/type/classes';
+import {type AbsType, FunctionStreamingType, FnType} from '@jsonjoy.com/json-type/lib/type/classes';
 import {printTree} from 'sonic-forest/lib/print/printTree';
 import {StaticRpcMethod, type StaticRpcMethodOptions} from '../methods/StaticRpcMethod';
 import {StreamingRpcMethod, type StreamingRpcMethodOptions} from '../methods/StreamingRpcMethod';
-import type {ObjectType, Schema, TypeSystem, ObjectFieldType, TypeOf, SchemaOf, Type} from '@jsonjoy.com/json-type';
+import type {ObjType, Schema, TypeSystem, ObjectFieldType, TypeOf, SchemaOf, Type} from '@jsonjoy.com/json-type';
 import type {Printable} from 'sonic-forest/lib/print/types';
-import type {ObjectValue, UnObjectType, UnObjectValue} from '@jsonjoy.com/json-type/lib/value/ObjectValue';
+import type {ObjectValue, UnObjType, UnObjectValue} from '@jsonjoy.com/json-type/lib/value/ObjectValue';
 import type {Value} from '@jsonjoy.com/json-type/lib/value/Value';
 import type {Observable} from 'rxjs';
 import type {RpcValue} from '../../messages/Value';
@@ -14,32 +14,32 @@ import type {RpcValue} from '../../messages/Value';
 type ObjectFieldToTuple<F> = F extends ObjectFieldType<infer K, infer V> ? [K, V] : never;
 type ToObject<T> = T extends [string, unknown][] ? {[K in T[number] as K[0]]: K[1]} : never;
 type ObjectFieldsToMap<F> = ToObject<{[K in keyof F]: ObjectFieldToTuple<F[K]>}>;
-type ObjectValueToTypeMap<V> = ObjectFieldsToMap<UnObjectType<UnObjectValue<V>>>;
+type ObjectValueToTypeMap<V> = ObjectFieldsToMap<UnObjType<UnObjectValue<V>>>;
 
-type MethodReq<F> = F extends FunctionType<infer Req, any>
+type MethodReq<F> = F extends FnType<infer Req, any>
   ? TypeOf<SchemaOf<Req>>
   : F extends FunctionStreamingType<infer Req, any>
     ? TypeOf<SchemaOf<Req>>
     : never;
 
-type MethodRes<F> = F extends FunctionType<any, infer Res>
+type MethodRes<F> = F extends FnType<any, infer Res>
   ? TypeOf<SchemaOf<Res>>
   : F extends FunctionStreamingType<any, infer Res>
     ? TypeOf<SchemaOf<Res>>
     : never;
 
-type MethodDefinition<Ctx, F> = F extends FunctionType<any, any>
+type MethodDefinition<Ctx, F> = F extends FnType<any, any>
   ? StaticRpcMethodOptions<Ctx, MethodReq<F>, MethodRes<F>>
   : F extends FunctionStreamingType<any, any>
     ? StreamingRpcMethodOptions<Ctx, MethodReq<F>, MethodRes<F>>
     : never;
 
-export interface ObjectValueCallerOptions<V extends ObjectValue<ObjectType<any>>, Ctx = unknown>
+export interface ObjectValueCallerOptions<V extends ObjectValue<ObjType<any>>, Ctx = unknown>
   extends Omit<RpcApiCallerOptions<Ctx>, 'getMethod'> {
   router: V;
 }
 
-export class ObjectValueCaller<V extends ObjectValue<ObjectType<any>>, Ctx = unknown>
+export class ObjectValueCaller<V extends ObjectValue<ObjType<any>>, Ctx = unknown>
   extends RpcCaller<Ctx>
   implements Printable
 {
@@ -64,15 +64,15 @@ export class ObjectValueCaller<V extends ObjectValue<ObjectType<any>>, Ctx = unk
     let method = this.methods.get(id as string) as any;
     if (method) return method;
     const fn = this.router.get(<string>id) as Value<Type>;
-    if (!fn || !(fn.type instanceof FunctionType || fn.type instanceof FunctionStreamingType)) {
+    if (!fn || !(fn.type instanceof FnType || fn.type instanceof FunctionStreamingType)) {
       return undefined;
     }
-    const fnType = fn.type as FunctionType<Type, Type> | FunctionStreamingType<Type, Type>;
+    const fnType = fn.type as FnType<Type, Type> | FunctionStreamingType<Type, Type>;
     const {req, res} = fnType;
     const call = fn.data;
     const validator = fnType.req.validator('object');
-    const requestSchema = (fnType.req as AbstractType<Schema>).getSchema();
-    const isRequestVoid = requestSchema.kind === 'const' && requestSchema.value === undefined;
+    const requestSchema = (fnType.req as AbsType<Schema>).getSchema();
+    const isRequestVoid = requestSchema.kind === 'con' && requestSchema.value === undefined;
     const validate = isRequestVoid
       ? () => {}
       : (req: unknown) => {
@@ -83,7 +83,7 @@ export class ObjectValueCaller<V extends ObjectValue<ObjectType<any>>, Ctx = unk
           }
         };
     method =
-      fnType instanceof FunctionType
+      fnType instanceof FnType
         ? new StaticRpcMethod({req, res, validate, call})
         : new StreamingRpcMethod({req, res, validate, call$: call});
     this.methods.set(id as string, method as any);
