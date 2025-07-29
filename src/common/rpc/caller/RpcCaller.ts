@@ -1,17 +1,17 @@
 import {firstValueFrom, from, type Observable, Subject} from 'rxjs';
-import {catchError, finalize, first, map, mergeWith, share, switchMap, take, takeUntil, tap} from 'rxjs/operators';
+import {catchError, finalize, first, mergeWith, share, switchMap, take, takeUntil, tap} from 'rxjs/operators';
 import {RpcError, RpcErrorCodes} from 'rpc-error';
-import {TypedRpcError} from './error/typed';
-import {RpcValue} from '../../messages/Value';
-import {StaticRpcMethod} from '../methods/StaticRpcMethod';
 import {BufferSubject} from '../../../util/rx/BufferSubject';
-import type {Call, Caller, CallerMethods} from './types';
-import type {StreamingRpcMethod} from '../methods/StreamingRpcMethod';
-import type {RpcErrorValue} from './error/types';
-import type {RpcMethod} from '../types';
+import {Call} from './Call';
+import {StreamingProcedure, Procedure} from './procedures';
+import {printTree} from 'sonic-forest/lib/print/printTree';
+import type {Printable} from 'sonic-forest/lib/print/types';
+import type {Caller, ProcedureReq, ProcedureRes, Procedures, ProceduresCtx} from './types';
 
-export interface RpcApiCallerOptions<Ctx = unknown> {
-  getMethod: (name: string) => undefined | StaticRpcMethod<Ctx> | StreamingRpcMethod<Ctx>;
+const defaultWrapInternalError = (error: unknown) => RpcError.internal(error);
+
+export interface RpcApiCallerOptions<P extends Procedures = Procedures> {
+  procedures: P;
 
   /**
    * When call `request$` is a multi-value observable and request data is coming
@@ -24,46 +24,39 @@ export interface RpcApiCallerOptions<Ctx = unknown> {
   wrapInternalError?: (error: unknown) => unknown;
 }
 
-const INVALID_REQUEST_ERROR_VALUE = TypedRpcError.value(RpcError.badRequest());
-
-const defaultWrapInternalError = (error: unknown) => TypedRpcError.valueFrom(error);
-
 /**
  * Implements methods to call Reactive-RPC methods on the server.
  */
-export class RpcCaller<
-  Ctx = unknown,
-  Methods extends CallerMethods<any> = CallerMethods
-> implements Caller<Ctx, Methods> {
-  protected readonly getMethod: RpcApiCallerOptions<Ctx>['getMethod'];
+export class RpcCaller<P extends Procedures<any> = Procedures> implements Caller<P>, Printable {
+  protected readonly procedures: P;
   protected readonly preCallBufferSize: number;
   protected readonly wrapInternalError: (error: unknown) => unknown;
 
   constructor({
-    getMethod,
+    procedures,
     preCallBufferSize = 10,
     wrapInternalError = defaultWrapInternalError,
-  }: RpcApiCallerOptions<Ctx>) {
-    this.getMethod = getMethod;
+  }: RpcApiCallerOptions<P>) {
+    this.procedures = procedures;
     this.preCallBufferSize = preCallBufferSize;
     this.wrapInternalError = wrapInternalError;
   }
 
   public exists(name: string): boolean {
-    return !!this.getMethod(name);
+    return name in this.procedures;
   }
 
-  public getMethodStrict(name: string): StaticRpcMethod<Ctx> | StreamingRpcMethod<Ctx> {
-    const method = this.getMethod(name);
-    if (!method) throw TypedRpcError.valueFromCode(RpcErrorCodes.METHOD_UNK);
-    return method;
+  public getMethodStrict<K extends keyof P>(name: K): P[K] {
+    const method = this.procedures[name];
+    if (method instanceof Procedure) return method;
+    throw RpcError.fromErrno(RpcErrorCodes.METHOD_UNK);
   }
 
-  public info(name: string): Pick<RpcMethod, 'pretty' | 'isStreaming'> {
+  public info(name: string): Pick<Procedure, 'pretty' | 'rx'> {
     return this.getMethodStrict(name);
   }
 
-  protected validate(method: StaticRpcMethod<Ctx> | StreamingRpcMethod<Ctx>, request: unknown): void {
+  protected validate(method: Procedure, request: unknown): void {
     const validate = method.validate;
     if (!validate) return;
     try {
@@ -74,50 +67,8 @@ export class RpcCaller<
     }
   }
 
-  protected wrapValidationError(error: unknown): RpcErrorValue {
-    return TypedRpcError.valueFrom(error, INVALID_REQUEST_ERROR_VALUE);
-  }
-
-  /**
-   * "call" executes degenerate version of RPC where both request and response data
-   * are simple single value.
-   *
-   * It is a separate implementation from "call$" for performance and complexity
-   * reasons.
-   *
-   * @param name Method name.
-   * @param request Request data.
-   * @param ctx Server context object.
-   * @returns Response data.
-   */
-  public async call<K extends keyof Methods>(name: K, request: Observable<Methods[K][0]>, ctx: Ctx): Promise<Methods[K][1]> {
-    const method = this.getMethodStrict(name as string);
-    this.validate(method, request);
-    try {
-      const preCall = method.onPreCall;
-      if (preCall) await preCall(ctx, request);
-      const data = await method.call(request, ctx);
-      return new RpcValue(data, method.res);
-    } catch (error) {
-      throw this.wrapInternalError(error);
-    }
-  }
-
-  public notify<K extends keyof Methods>(method: K, data: Observable<Methods[K][0]>, ctx: Ctx): void {
-    this.notification(method as string, data, ctx);
-  }
-
-  public async notification(name: string, request: unknown, ctx: Ctx): Promise<void> {
-    const method = this.getMethodStrict(name);
-    if (!(method instanceof StaticRpcMethod)) return;
-    if (!method.acceptsNotifications) return;
-    this.validate(method, request);
-    try {
-      if (method.onPreCall) await method.onPreCall(ctx, request);
-      await method.call(request, ctx);
-    } catch (error) {
-      throw this.wrapInternalError(error);
-    }
+  protected wrapValidationError(error: unknown): RpcError {
+    return RpcError.badRequest(void 0, void 0, error);
   }
 
   /**
@@ -129,23 +80,25 @@ export class RpcCaller<
    * - [x] Pre-call request buffer is overflown.
    * - [x] Due to inactivity timeout.
    */
-  public createCall(name: string, ctx: Ctx): Call {
-    const req$ = new Subject<unknown>();
+  public createCall<K extends keyof P>(name: K, ctx: ProceduresCtx<P>): Call<ProcedureReq<P[K]>, ProcedureRes<P[K]>> {
+    type Req = ProcedureReq<P[K]>;
+    type Res = ProcedureRes<P[K]>;
+    const req$ = new Subject<Req>();
     const reqUnsubscribe$ = new Subject<null>();
     const stop$ = new Subject<null>();
     try {
       // This throws when Reactive-RPC method does not exist.
-      const method = this.getMethodStrict(name);
+      const method = this.getMethodStrict(name as string);
 
       // When Reactive-RPC method is "static".
-      if (!method.isStreaming) {
-        const response$: Observable<RpcValue> = from(
+      if (!method.rx) {
+        const response$: Observable<Res> = from(
           (async () => {
             const request = await firstValueFrom(req$.pipe(first()));
             return await this.call(name, request as any, ctx);
           })(),
         );
-        const res$ = new Subject<RpcValue>();
+        const res$ = new Subject<Res>();
         response$.subscribe(res$);
 
         // Format errors using custom error formatter.
@@ -155,11 +108,11 @@ export class RpcCaller<
           }),
         );
 
-        return {req$, reqUnsubscribe$, stop$, res$: $resWithErrorsFormatted.pipe(takeUntil(stop$))};
+        return new Call(req$, reqUnsubscribe$, stop$, $resWithErrorsFormatted.pipe(takeUntil(stop$)));
       }
 
       // Here we are sure the call will be streaming.
-      const methodStreaming = method;
+      const methodStreaming = method as {} as StreamingProcedure;
 
       // Validate all incoming stream requests.
       const requestValidated$ = req$.pipe(
@@ -187,12 +140,11 @@ export class RpcCaller<
       requestValidated$.subscribe(requestBuffered$);
 
       // Main call execution.
-      const methodResponseType = method.res;
       const result$ = requestBuffered$.pipe(
         // First, execute pre-call checks with only the first request.
         take(1),
         switchMap((request) => {
-          return methodStreaming.onPreCall ? from(methodStreaming.onPreCall(ctx, request)) : from([0]);
+          return methodStreaming.preCall ? (from(methodStreaming.preCall(ctx, request)) as Observable<ProcedureReq<P[K]>>) : from([0]);
         }),
         // Execute the actual RPC call and flush request buffer.
         switchMap(() => {
@@ -200,7 +152,6 @@ export class RpcCaller<
             requestBuffered$.flush();
           });
           return method.call$(requestBuffered$, ctx).pipe(
-            map((response) => new RpcValue(response, methodResponseType)),
             finalize(() => {
               error$.complete();
             }),
@@ -218,23 +169,76 @@ export class RpcCaller<
           error$.complete();
         }),
         catchError((error) => {
-          throw TypedRpcError.valueFrom(error);
+          throw this.wrapInternalError(error);
         }),
       );
 
-      return {req$, reqUnsubscribe$, stop$, res$: $resWithErrorsFormatted.pipe(takeUntil(stop$))};
+      return new Call(req$, reqUnsubscribe$, stop$, $resWithErrorsFormatted.pipe(takeUntil(stop$)));
     } catch (error) {
-      const errorFormatted = TypedRpcError.valueFrom(error);
-      req$.error(errorFormatted);
-      const res$ = new Subject<RpcValue>();
-      res$.error(errorFormatted);
-      return {req$, reqUnsubscribe$, stop$, res$: res$.pipe(takeUntil(stop$))};
+      req$.error(error);
+      const res$ = new Subject<ProcedureRes<P[K]>>();
+      res$.error(error);
+      return new Call(req$, reqUnsubscribe$, stop$, res$.pipe(takeUntil(stop$)));
     }
   }
 
-  public call$<K extends keyof Methods>(name: K, request$: Observable<Methods[K][0]> | Methods[K][0], ctx: Ctx): Observable<Methods[K][1]> {
-    const call = this.createCall(name as string, ctx);
-    from(request$).subscribe(call.req$);
+  /** -------------------------------------------------------- {@link Caller} */
+
+  /**
+   * "call" executes degenerate version of RPC where both request and response data
+   * are simple single value.
+   *
+   * It is a separate implementation from "call$" for performance and complexity
+   * reasons.
+   *
+   * @param name Method name.
+   * @param request Request data.
+   * @param ctx Server context object.
+   * @returns Response data.
+   */
+  public async call<K extends keyof P>(name: K, request: ProcedureReq<P[K]>, ctx: ProceduresCtx<P>): Promise<ProcedureRes<P[K]>> {
+    const method = this.getMethodStrict(name as string);
+    this.validate(method, request);
+    try {
+      const preCall = method.preCall;
+      if (preCall) await preCall(ctx, request);
+      const data = await method.call(request, ctx);
+      return data;
+    } catch (error) {
+      throw this.wrapInternalError(error);
+    }
+  }
+
+  public call$<K extends keyof P>(name: K, request$: Observable<ProcedureReq<P[K]>> | ProcedureReq<P[K]>, ctx: ProceduresCtx<P>): Observable<ProcedureRes<P[K]>> {
+    const call = this.createCall(name, ctx);
+    (from(request$) as Observable<ProcedureReq<P[K]>>).subscribe(call.req$);
     return call.res$;
+  }
+
+  public async notify<K extends keyof P>(name: K, request: ProcedureReq<P[K]>, ctx: ProceduresCtx<P>): Promise<void> {
+    const method = this.getMethodStrict(name as string);
+    this.validate(method, request);
+    try {
+      if (method.preCall) await method.preCall(ctx, request);
+      await method.call(request, ctx);
+    } catch (error) {
+      throw this.wrapInternalError(error);
+    }
+  }
+
+  /** ----------------------------------------------------- {@link Printable} */
+
+  public toString(tab = ''): string {
+    return (
+      `${this.constructor.name}` +
+      printTree(
+        tab,
+        [...Object.entries(this.procedures)].filter(x => x[1] instanceof Procedure).map(
+          ([name, method]) =>
+            () =>
+              `${name}${method.rx ? ' (Rx)' : ''}`,
+        ),
+      )
+    );
   }
 }
