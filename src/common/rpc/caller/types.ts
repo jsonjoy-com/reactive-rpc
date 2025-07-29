@@ -1,26 +1,13 @@
-import type {Observable, Observer, Subject} from 'rxjs';
-import type {IStaticRpcMethod, IStreamingRpcMethod} from '../methods/types';
-import type {RpcValue} from '../../messages/Value';
+import type {Observable} from 'rxjs';
+import type {Procedure} from './procedures';
 
-export type RpcApiMap<Ctx = unknown> = {
-  [name: string]: IStaticRpcMethod<Ctx, any, any> | IStreamingRpcMethod<Ctx, any, any>;
-};
+export type Procedures<Ctx = unknown> = Record<string, Procedure<any, any, Ctx>>;
+export type ProceduresCtx<P extends Procedures> = P extends Procedures<infer Ctx> ? Ctx : unknown;
+export type ProcedureReq<P> = P extends Procedure<infer Req, any, any> ? Req : never;
+export type ProcedureRes<P> = P extends Procedure<any, infer Res, any> ? Res : never;
 
-/**
- * Represents an in-flight call.
- */
-export interface Call<Req = unknown, Res = unknown> {
-  req$: Observer<Req>;
-  reqUnsubscribe$: Observable<null>;
-  stop$: Subject<null>;
-  res$: Observable<RpcValue<Res>>;
-}
-
-export type CallerCall<Req = unknown, Res = unknown> = [req: Req, res: Res];
-export type CallerMethods<T = unknown> = Record<string, CallerCall<T, T>>;
-
-export interface Caller<Ctx = unknown, Methods extends CallerMethods<any> = CallerMethods> {
-  call<K extends keyof Methods>(name: K, request: Observable<Methods[K][0]>, ctx: Ctx): Promise<Methods[K][1]>;
-  call$<K extends keyof Methods>(name: K, request$: Observable<Methods[K][0]> | Methods[K][0], ctx: Ctx): Observable<Methods[K][1]>;
-  notify<K extends keyof Methods>(method: K, data: Observable<Methods[K][0]>, ctx: Ctx): void;
+export interface Caller<P extends Procedures = Procedures> {
+  call<K extends keyof P>(name: K, request: ProcedureReq<P[K]>, ctx: ProceduresCtx<P>): Promise<ProcedureRes<P[K]>>;
+  call$<K extends keyof P>(name: K, request$: Observable<ProcedureReq<P[K]>> | ProcedureReq<P[K]>, ctx: ProceduresCtx<P>): Observable<ProcedureRes<P[K]>>;
+  notify<K extends keyof P>(method: K, data: ProcedureReq<P[K]>, ctx: ProceduresCtx<P>): Promise<void>;
 }
