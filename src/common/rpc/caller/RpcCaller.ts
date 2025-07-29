@@ -3,14 +3,14 @@ import {catchError, finalize, first, mergeWith, share, switchMap, take, takeUnti
 import {RpcError, RpcErrorCodes} from 'rpc-error';
 import {BufferSubject} from '../../../util/rx/BufferSubject';
 import {Call} from './Call';
-import {StreamingProcedure, Procedure} from './procedures';
+import {RxProcedure, Procedure} from './procedures';
 import {printTree} from 'sonic-forest/lib/print/printTree';
 import type {Printable} from 'sonic-forest/lib/print/types';
-import type {Caller, ProcedureReq, ProcedureRes, Procedures, ProceduresCtx} from './types';
+import type {Caller, ProcedureReq, ProcedureRes, Procedures} from './types';
 
 const defaultWrapInternalError = (error: unknown) => RpcError.internal(error);
 
-export interface RpcApiCallerOptions<P extends Procedures = Procedures> {
+export interface RpcCallerOptions<P extends Procedures<any> = Procedures> {
   procedures: P;
 
   /**
@@ -27,7 +27,7 @@ export interface RpcApiCallerOptions<P extends Procedures = Procedures> {
 /**
  * Implements methods to call Reactive-RPC methods on the server.
  */
-export class RpcCaller<P extends Procedures<any> = Procedures> implements Caller<P>, Printable {
+export class RpcCaller<P extends Procedures<any> = Procedures, Ctx = unknown> implements Caller<P>, Printable {
   protected readonly procedures: P;
   protected readonly preCallBufferSize: number;
   protected readonly wrapInternalError: (error: unknown) => unknown;
@@ -36,7 +36,7 @@ export class RpcCaller<P extends Procedures<any> = Procedures> implements Caller
     procedures,
     preCallBufferSize = 10,
     wrapInternalError = defaultWrapInternalError,
-  }: RpcApiCallerOptions<P>) {
+  }: RpcCallerOptions<P>) {
     this.procedures = procedures;
     this.preCallBufferSize = preCallBufferSize;
     this.wrapInternalError = wrapInternalError;
@@ -80,7 +80,7 @@ export class RpcCaller<P extends Procedures<any> = Procedures> implements Caller
    * - [x] Pre-call request buffer is overflown.
    * - [x] Due to inactivity timeout.
    */
-  public createCall<K extends keyof P>(name: K, ctx: ProceduresCtx<P>): Call<ProcedureReq<P[K]>, ProcedureRes<P[K]>> {
+  public createCall<K extends keyof P>(name: K, ctx: Ctx): Call<ProcedureReq<P[K]>, ProcedureRes<P[K]>> {
     type Req = ProcedureReq<P[K]>;
     type Res = ProcedureRes<P[K]>;
     const req$ = new Subject<Req>();
@@ -112,7 +112,7 @@ export class RpcCaller<P extends Procedures<any> = Procedures> implements Caller
       }
 
       // Here we are sure the call will be streaming.
-      const methodStreaming = method as {} as StreamingProcedure;
+      const methodStreaming = method as {} as RxProcedure;
 
       // Validate all incoming stream requests.
       const requestValidated$ = req$.pipe(
@@ -196,7 +196,7 @@ export class RpcCaller<P extends Procedures<any> = Procedures> implements Caller
    * @param ctx Server context object.
    * @returns Response data.
    */
-  public async call<K extends keyof P>(name: K, request: ProcedureReq<P[K]>, ctx: ProceduresCtx<P>): Promise<ProcedureRes<P[K]>> {
+  public async call<K extends keyof P>(name: K, request: ProcedureReq<P[K]>, ctx: Ctx): Promise<ProcedureRes<P[K]>> {
     const method = this.getMethodStrict(name as string);
     this.validate(method, request);
     try {
@@ -209,13 +209,13 @@ export class RpcCaller<P extends Procedures<any> = Procedures> implements Caller
     }
   }
 
-  public call$<K extends keyof P>(name: K, request$: Observable<ProcedureReq<P[K]>> | ProcedureReq<P[K]>, ctx: ProceduresCtx<P>): Observable<ProcedureRes<P[K]>> {
-    const call = this.createCall(name, ctx);
+  public call$<K extends keyof P>(name: K, request$: Observable<ProcedureReq<P[K]>>, ctx: Ctx): Observable<ProcedureRes<P[K]>> {
+    const call = this.createCall(name, ctx as Ctx);
     (from(request$) as Observable<ProcedureReq<P[K]>>).subscribe(call.req$);
     return call.res$;
   }
 
-  public async notify<K extends keyof P>(name: K, request: ProcedureReq<P[K]>, ctx: ProceduresCtx<P>): Promise<void> {
+  public async notify<K extends keyof P>(name: K, request: ProcedureReq<P[K]>, ctx: Ctx): Promise<void> {
     const method = this.getMethodStrict(name as string);
     this.validate(method, request);
     try {

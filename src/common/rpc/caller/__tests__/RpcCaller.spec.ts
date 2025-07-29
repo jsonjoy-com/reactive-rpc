@@ -13,13 +13,13 @@ const setup = () => {
 describe('.call()', () => {
   test('can execute "ping"', async () => {
     const {caller} = setup();
-    const res = await caller.call('ping', undefined, {});
+    const res = await caller.call('ping', undefined);
     expect(res).toBe('pong');
   });
 
   test('can execute "double"', async () => {
     const {caller} = setup();
-    const res = (await caller.call('double', {num: 5}, {})) as any;
+    const res = (await caller.call('double', {num: 5})) as any;
     expect(res.num).toBe(10);
   });
 
@@ -35,6 +35,12 @@ describe('.call()', () => {
     const [, error] = await of(caller.call('test', {}, {}));
     expect(error).toEqual(RpcError.internal('lol'));
   });
+
+  test('can specify a context', async () => {
+    const {caller} = setup();
+    const res = await caller.call('getIp', void 0, {ip: '1.2.3.4'});
+    expect(res).toBe('1.2.3.4');
+  });
 });
 
 describe('.notify()', () => {
@@ -46,6 +52,14 @@ describe('.notify()', () => {
     await caller.notify('notificationSetValue', {value: 456}, {});
     const val2 = await caller.call('getValue', undefined, {});
     expect((val2 as any).value).toBe(456);
+  });
+
+
+  test('can specify a context', async () => {
+    const {caller} = setup();
+    await caller.call('notificationSetValueFromCtx', void 0, {ip: '1.2.3.4'});
+    const len = await caller.call('getValue', undefined, {});
+    expect(len.value).toBe('1.2.3.4'.length);
   });
 });
 
@@ -71,7 +85,7 @@ describe('.call$()', () => {
   test('wraps errors into internal RpcError values', async () => {
     const caller = new RpcCaller({
       procedures: {
-        test: Procedure.streaming(() => {
+        test: Procedure.rx(() => {
           const subject = new Rx.Subject();
           subject.error('lol');
           return subject;
@@ -80,7 +94,13 @@ describe('.call$()', () => {
     });
     const [, error1] = await of(caller.call('test', {}, {}));
     expect(error1).toEqual(RpcError.internal('lol'));
-    const [, error2] = await of(Rx.firstValueFrom(caller.call$('test', Rx.of(undefined), {})));
+    const [, error2] = await of(Rx.firstValueFrom(caller.call$('test', Rx.of(void 0), {})));
     expect(error2).toEqual(RpcError.internal('lol'));
+  });
+
+  test('can specify a context', async () => {
+    const {caller} = setup();
+    const res = await Rx.firstValueFrom(caller.call$('getIp', Rx.of(void 0), {ip: '1.1.1.1'}));
+    expect(res).toBe('1.1.1.1');
   });
 });

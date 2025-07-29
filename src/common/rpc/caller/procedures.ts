@@ -1,39 +1,41 @@
-import {t, type Type} from "@jsonjoy.com/json-type";
+// import {t, type Type} from "@jsonjoy.com/json-type";
 import {firstValueFrom, from, of, switchMap, take, type Observable, isObservable} from "rxjs";
 
-const defaultType = t.any;
+// const defaultType = t.any;
 
 export abstract class Procedure<Req = unknown, Res = unknown, Ctx = unknown> {
   public static readonly new = <Req = unknown, Res = unknown, Ctx = unknown>(
-    call: (request: Req, ctx: Ctx) => Res | Promise<Res> | Observable<Res>,
+    fn: (this: Ctx, request: Req) => Res | Promise<Res> | Observable<Res>,
     validate: ((request: Req) => void) | undefined = undefined,
     preCall: ((ctx: Ctx, request: Req) => Promise<void>) | undefined = undefined,
-  ): StreamingProcedure<Req, Res, Ctx> => {
-    const streamingCall = (req: Observable<Req>, ctx: Ctx) => req.pipe(
-      take(1),
-      switchMap(r => {
-        const res = call(r, ctx);
-        if (isObservable(res)) return res;
-        if (res instanceof Promise) return res;
-        return Promise.resolve(res);
-      })
-    );
-    return new StreamingProcedure<Req, Res, Ctx>(streamingCall, validate, preCall);
+  ): RxProcedure<Req, Res, Ctx> => {
+    const streamingCall = function(this: Ctx, req: Observable<Req>) {
+      return req.pipe(
+        take(1),
+        switchMap(r => {
+          const res = fn.call(this, r);
+          if (isObservable(res)) return res;
+          if (res instanceof Promise) return res;
+          return Promise.resolve(res);
+        })
+      );
+    };
+    return new RxProcedure<Req, Res, Ctx>(streamingCall, validate, preCall);
   };
 
   public static readonly unary = <Req = unknown, Res = unknown, Ctx = unknown>(
-    call: (request: Req, ctx: Ctx) => Promise<Res>,
+    fn: (this: Ctx, request: Req) => Promise<Res>,
     validate: ((request: Req) => void) | undefined = undefined,
     preCall: ((ctx: Ctx, request: Req) => Promise<void>) | undefined = undefined,
   ): UnaryProcedure<Req, Res, Ctx> =>
-    new UnaryProcedure<Req, Res, Ctx>(call, validate, preCall);
+    new UnaryProcedure<Req, Res, Ctx>(fn, validate, preCall);
 
-  public static readonly streaming = <Req = unknown, Res = unknown, Ctx = unknown>(
-    _call$: (request$: Observable<Req>, ctx: Ctx) => Observable<Res>,
+  public static readonly rx = <Req = unknown, Res = unknown, Ctx = unknown>(
+    fn: (this: Ctx, request$: Observable<Req>) => Observable<Res>,
     validate: ((request: Req) => void) | undefined = undefined,
     preCall: ((ctx: Ctx, request: Req) => Promise<void>) | undefined = undefined,
-  ): StreamingProcedure<Req, Res, Ctx> =>
-    new StreamingProcedure<Req, Res, Ctx>(_call$, validate, preCall);
+  ): RxProcedure<Req, Res, Ctx> =>
+    new RxProcedure<Req, Res, Ctx>(fn, validate, preCall);
 
   /**
    * Specifies if request or response of the method could be a stream.
@@ -45,15 +47,15 @@ export abstract class Procedure<Req = unknown, Res = unknown, Ctx = unknown> {
    */
   pretty: boolean = false;
 
-  /**
-   * JSON Type of the request.
-   */
-  req: Type = defaultType;
+  // /**
+  //  * JSON Type of the request.
+  //  */
+  // req: Type = defaultType;
 
-  /**
-   * JSON Type of the response.
-   */
-  res: Type = defaultType;
+  // /**
+  //  * JSON Type of the response.
+  //  */
+  // res: Type = defaultType;
 
   /**
    * Validation logic. Should throw if request is invalid, not throw otherwise.
@@ -104,7 +106,7 @@ export class UnaryProcedure<Req = unknown, Res = unknown, Ctx = unknown> extends
   rx: boolean = false;
 
   constructor(
-    private readonly _call: (request: Req, ctx: Ctx) => Promise<Res>,
+    private readonly fn: (this: Ctx, request: Req) => Promise<Res>,
     public readonly validate: ((request: Req) => void) | undefined,
     public readonly preCall: ((ctx: Ctx, request: Req) => Promise<void>) | undefined,
   ) {
@@ -112,7 +114,7 @@ export class UnaryProcedure<Req = unknown, Res = unknown, Ctx = unknown> extends
   }
 
   call(request: Req, ctx: Ctx): Promise<Res> {
-    return this._call(request, ctx);
+    return this.fn.call(ctx, request);
   }
 
   call$(request$: Observable<Req>, ctx: Ctx): Observable<Res> {
@@ -124,7 +126,7 @@ export class UnaryProcedure<Req = unknown, Res = unknown, Ctx = unknown> extends
  * Procedure which receives a stream of request values and returns a stream of
  * response values.
  */
-export class StreamingProcedure<Req = unknown, Res = unknown, Ctx = unknown> extends Procedure<Req, Res, Ctx> {
+export class RxProcedure<Req = unknown, Res = unknown, Ctx = unknown> extends Procedure<Req, Res, Ctx> {
   rx: boolean = true;
 
   /**
@@ -137,7 +139,7 @@ export class StreamingProcedure<Req = unknown, Res = unknown, Ctx = unknown> ext
   preCallBufferSize: number = 0;
 
   constructor(
-    private readonly _call$: (request$: Observable<Req>, ctx: Ctx) => Observable<Res>,
+    private readonly fn: (this: Ctx, request$: Observable<Req>) => Observable<Res>,
     public readonly validate: ((request: Req) => void) | undefined,
     public readonly preCall: ((ctx: Ctx, request: Req) => Promise<void>) | undefined,
   ) {
@@ -145,10 +147,10 @@ export class StreamingProcedure<Req = unknown, Res = unknown, Ctx = unknown> ext
   }
 
   call(request: Req, ctx: Ctx): Promise<Res> {
-    return firstValueFrom(this._call$(of(request), ctx))
+    return firstValueFrom(this.fn.call(ctx, of(request)))
   }
 
   call$(request$: Observable<Req>, ctx: Ctx): Observable<Res> {
-    return this._call$(request$, ctx);
+    return this.fn.call(ctx, request$);
   }
 }
