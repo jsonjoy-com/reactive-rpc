@@ -4,8 +4,16 @@ import {RpcError} from '../caller';
 import {Procedure} from '../caller/procedures';
 import {RpcCaller} from '../caller/RpcCaller';
 
+export interface SampleCtx {
+  ip?: string;
+}
+
 export const procedures = {
-  ping: Procedure.new(() => 'pong'),
+  ping: Procedure.new<void, 'pong', SampleCtx>(() => 'pong'),
+
+  getIp: Procedure.new<void, string, SampleCtx>(function (this: SampleCtx) {
+    return this.ip ?? '';
+  }),
 
   delay: Procedure.unary(async ({timeout = 10}: {timeout?: number} = {}) => {
     await new Promise((r) => setTimeout(r, timeout));
@@ -19,9 +27,13 @@ export const procedures = {
     valueHolder.value = value;
   }),
 
+  notificationSetValueFromCtx: Procedure.new(function (this: SampleCtx) {
+    valueHolder.value = this?.ip?.length ?? 0;
+  }),
+
   getValue: Procedure.new(() => ({value: valueHolder.value})),
 
-  delayStreaming: Procedure.streaming<{timeout?: number}, {done: true; timeout: number}>((req$) =>
+  delayStreaming: Procedure.rx<{timeout?: number}, {done: true; timeout: number}>((req$) =>
     req$.pipe(
       take(1),
       switchMap(({timeout = 10}: {timeout?: number} = {}) =>
@@ -57,7 +69,7 @@ export const procedures = {
     };
   }),
 
-  streamError: Procedure.streaming(() =>
+  streamError: Procedure.rx(() =>
     from(
       (async () => {
         throw RpcError.internal(null, 'Stream always errors');
@@ -65,9 +77,9 @@ export const procedures = {
     )
   ),
 
-  utilTimer: Procedure.streaming(() => timer(10, 10)),
+  utilTimer: Procedure.rx(() => timer(10, 10)),
 
-  'util.info': Procedure.streaming(() =>
+  'util.info': Procedure.rx(() =>
     from([
       {
         commit: 'AAAAAAAAAAAAAAAAAAA',
@@ -76,9 +88,9 @@ export const procedures = {
     ])
   ),
 
-  'util.timer': Procedure.streaming(() => timer(10, 10)),
+  'util.timer': Procedure.rx(() => timer(10, 10)),
 
-  count: Procedure.streaming<{count: number}, number>((request$) =>
+  count: Procedure.rx<{count: number}, number>((request$) =>
     request$.pipe(
       switchMap(
         ({count}: {count: number}) =>
@@ -104,7 +116,7 @@ export const procedures = {
     return {bar: foo + foo};
   }),
 
-  doubleStringWithValidation2: Procedure.streaming<{foo: string}, {bar: string}>((req$) =>
+  doubleStringWithValidation2: Procedure.rx<{foo: string}, {bar: string}>((req$) =>
     req$.pipe(
       map(({foo}: {foo: string}) => {
         if (typeof foo !== 'string') throw RpcError.validation('"foo" property missing.');
@@ -113,12 +125,12 @@ export const procedures = {
     )
   ),
 
-  passthroughStream: Procedure.streaming((req$) => req$),
+  passthroughStream: Procedure.rx((req$) => req$),
 };
 
 // Helper for value state
 const valueHolder = { value: 0 };
 
-export const createRpcCaller = () => new RpcCaller<typeof procedures>({
+export const createRpcCaller = () => new RpcCaller<SampleCtx | void, typeof procedures>({
   procedures,
 });

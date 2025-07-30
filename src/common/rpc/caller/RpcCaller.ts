@@ -27,7 +27,7 @@ export interface RpcCallerOptions<P extends Procedures<any> = Procedures> {
 /**
  * Implements methods to call Reactive-RPC methods on the server.
  */
-export class RpcCaller<P extends Procedures<any> = Procedures, Ctx = unknown> implements Caller<P>, Printable {
+export class RpcCaller<Ctx = unknown, P extends Procedures<any> = Procedures<Ctx>> implements Caller<Ctx, P>, Printable {
   protected readonly procedures: P;
   protected readonly preCallBufferSize: number;
   protected readonly wrapInternalError: (error: unknown) => unknown;
