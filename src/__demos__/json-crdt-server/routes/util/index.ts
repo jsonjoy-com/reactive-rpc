@@ -1,3 +1,5 @@
+import {objToModule} from '@jsonjoy.com/json-type/lib/typescript/converter';
+import {toText} from '@jsonjoy.com/json-type/lib/typescript/toText';
 import type {RouteDeps, Router, RouterBase} from '../types';
 
 export const ping =
@@ -6,8 +8,8 @@ export const ping =
     const Request = t.undef;
     const Response = t.Const(<const>'pong');
     const Func = t.Function(Request, Response);
-    return r.prop('util.ping', Func, async () => {
-      return 'pong';
+    return r.add('util.ping', Func, async () => {
+      return 'pong' as const;
     });
   };
 
@@ -17,7 +19,9 @@ export const echo =
     const Request = t.any;
     const Response = t.any;
     const Func = t.Function(Request, Response);
-    return r.prop('util.echo', Func, async (msg) => msg);
+    return r.add('util.echo', Func, async function(this: {}, msg: any) {
+      return msg;
+    });
   };
 
 export const info =
@@ -25,18 +29,18 @@ export const info =
   <R extends RouterBase>(r: Router<R>) => {
     const Request = t.any;
     const Response = t.Object(
-      t.prop('now', t.num),
-      t.prop(
+      t.Key('now', t.num),
+      t.Key(
         'stats',
         t.Object(
-          t.prop('pubsub', t.Object(t.prop('channels', t.num), t.prop('observers', t.num))),
-          t.prop('presence', t.Object(t.prop('rooms', t.num), t.prop('entries', t.num), t.prop('observers', t.num))),
-          t.prop('blocks', t.Object(t.prop('blocks', t.num), t.prop('batches', t.num))),
+          t.Key('pubsub', t.Object(t.Key('channels', t.num), t.Key('observers', t.num))),
+          t.Key('presence', t.Object(t.Key('rooms', t.num), t.Key('entries', t.num), t.Key('observers', t.num))),
+          t.Key('blocks', t.Object(t.Key('blocks', t.num), t.Key('batches', t.num))),
         ),
       ),
     );
     const Func = t.Function(Request, Response);
-    return r.prop('util.info', Func, async () => {
+    return r.add('util.info', Func, async () => {
       return {
         now: Date.now(),
         stats: {
@@ -52,11 +56,11 @@ export const schema =
   ({t, router}: RouteDeps) =>
   <R extends RouterBase>(r: Router<R>) => {
     const Request = t.any;
-    const Response = t.Object(t.prop('typescript', t.str));
+    const Response = t.Object(t.Key('typescript', t.str));
     const Func = t.Function(Request, Response);
-    return r.prop('util.schema', Func, async () => {
+    return r.add('util.schema', Func, async () => {
       return {
-        typescript: router.toTypeScript(),
+        typescript: toText(objToModule(router.type)),
       };
     });
   };
@@ -66,7 +70,7 @@ export const util =
   <R extends RouterBase>(r: Router<R>) =>
     // biome-ignore format: each on its own line
     ( ping(d)
-  ( echo(d)
-  ( info(d)
-  ( schema(d)
-  ( r )))));
+    ( echo(d)
+    ( info(d)
+    ( schema(d)
+    ( r )))));

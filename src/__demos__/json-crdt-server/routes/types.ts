@@ -1,14 +1,14 @@
-import type {ObjType, TypeSystem} from '@jsonjoy.com/json-type';
-import type {ObjectValue} from '@jsonjoy.com/json-type/lib/value/ObjectValue';
+import type {ObjType, ModuleType} from '@jsonjoy.com/json-type';
+import type {ObjValue} from '@jsonjoy.com/json-type/lib/value/ObjValue';
 import type {TypeBuilder} from '@jsonjoy.com/json-type/lib/type/TypeBuilder';
 import type {Services} from '../services/Services';
 
 export interface RouteDeps {
   services: Services;
-  system: TypeSystem;
+  system: ModuleType;
   t: TypeBuilder;
-  router: ObjectValue<any>;
+  router: ObjValue<any>;
 }
 
 export type RouterBase = ObjType<any>;
-export type Router<R extends RouterBase> = ObjectValue<R>;
+export type Router<R extends RouterBase> = ObjValue<R>;

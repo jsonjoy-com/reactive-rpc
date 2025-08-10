@@ -10,15 +10,15 @@ export const update =
   <R extends RouterBase>(r: Router<R>) => {
     const Request = t
       .Object(
-        t.prop('room', t.str).options({
+        t.Key('room', t.str).options({
           title: 'Room ID',
           description: 'The ID of the room to update.',
         }),
-        t.prop('id', t.str).options({
+        t.Key('id', t.str).options({
           title: 'ID of the entry',
           description: 'The ID of the entry to update.',
         }),
-        t.prop('data', t.any).options({
+        t.Key('data', t.any).options({
           title: 'Entry data',
           description: 'A map of key-value pairs to update. The object is merged with the existing entry data, if any.',
         }),
@@ -45,8 +45,8 @@ export const update =
 
     const Response = t
       .Object(
-        t.prop('entry', t.Ref<typeof PresenceEntry>('PresenceEntry')),
-        t.prop('time', t.num).options({
+        t.Key('entry', t.Ref<typeof PresenceEntry>('PresenceEntry')),
+        t.Key('time', t.num).options({
           title: 'Current time',
           description: 'The current server time in milliseconds since the UNIX epoch.',
         }),
@@ -64,7 +64,7 @@ export const update =
         `Every time the entry is updated, the TTL is reset to ${ttl} seconds.`,
     });
 
-    return r.prop('presence.update', Func, async ({room, id, data}) => {
+    return r.add('presence.update', Func, async ({room, id, data}) => {
       const entry = (await services.presence.update(room, id, ttl * 1000, data)) as ResolveType<typeof PresenceEntry>;
       return {
         entry,

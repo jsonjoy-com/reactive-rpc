@@ -4,11 +4,11 @@ export const publish =
   ({t, services}: RouteDeps) =>
   <R extends RouterBase>(r: Router<R>) => {
     const Request = t.Object(
-      t.prop('channel', t.str).options({
+      t.Key('channel', t.str).options({
         title: 'Channel name',
         description: 'The name of the channel to publish to.',
       }),
-      t.prop('message', t.any).options({
+      t.Key('message', t.any).options({
         title: 'Message',
         description: 'The message to publish to the channel. Can be any JSON/CBOR value.',
       }),
@@ -28,7 +28,7 @@ export const publish =
         'The most efficient way to publish a message is to send a primitive or a `Uint8Array` buffer.',
     });
 
-    return r.prop('pubsub.publish', Func, async ({channel, message}) => {
+    return r.add('pubsub.publish', Func, async ({channel, message}) => {
       services.pubsub.publish(channel, message);
       return {};
     });

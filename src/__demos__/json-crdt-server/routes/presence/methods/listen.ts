@@ -6,15 +6,15 @@ export const listen =
   ({t, services}: RouteDeps) =>
   <R extends RouterBase>(r: Router<R>) => {
     const Request = t.Object(
-      t.prop('room', t.str).options({
+      t.Key('room', t.str).options({
         title: 'Room ID',
         description: 'The ID of the room to subscribe to.',
       }),
     );
 
     const Response = t.Object(
-      t.prop('entries', t.Array(t.Ref<typeof PresenceEntry>('PresenceEntry'))),
-      t.prop('time', t.num).options({
+      t.Key('entries', t.Array(t.Ref<typeof PresenceEntry>('PresenceEntry'))),
+      t.Key('time', t.num).options({
         title: 'Current time',
         description: 'The current server time in milliseconds since the UNIX epoch.',
       }),
@@ -29,7 +29,7 @@ export const listen =
         'a presence entry is updated or deleted. ',
     });
 
-    return r.prop('presence.listen', Func, (req$) => {
+    return r.add('presence.listen', Func, (req$) => {
       return req$.pipe(
         switchMap((req) => services.presence.listen$(req.room)),
         map((entries: TPresenceEntry[]) => ({

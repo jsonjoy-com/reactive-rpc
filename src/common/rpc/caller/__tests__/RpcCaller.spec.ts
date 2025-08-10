@@ -1,5 +1,5 @@
 import * as Rx from 'rxjs';
-import {createRpcCaller} from '../../__tests__/fixtures';
+import {createRpcCaller} from '../../__tests__/RpcCaller.fixtures';
 import {RpcCaller} from '../RpcCaller';
 import {Procedure} from '../procedures';
 import {of} from 'thingies';

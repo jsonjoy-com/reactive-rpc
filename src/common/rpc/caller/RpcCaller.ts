@@ -3,8 +3,8 @@ import {catchError, finalize, first, mergeWith, share, switchMap, take, takeUnti
 import {RpcError, RpcErrorCodes} from 'rpc-error';
 import {BufferSubject} from '../../../util/rx/BufferSubject';
 import {Call} from './Call';
-import {RxProcedure, Procedure} from './procedures';
 import {printTree} from 'sonic-forest/lib/print/printTree';
+import {type RxProcedure, Procedure} from './procedures';
 import type {Printable} from 'sonic-forest/lib/print/types';
 import type {Caller, ProcedureReq, ProcedureRes, Procedures} from './types';
 
@@ -27,16 +27,14 @@ export interface RpcCallerOptions<P extends Procedures<any> = Procedures> {
 /**
  * Implements methods to call Reactive-RPC methods on the server.
  */
-export class RpcCaller<Ctx = unknown, P extends Procedures<any> = Procedures<Ctx>> implements Caller<Ctx, P>, Printable {
+export class RpcCaller<Ctx = unknown, P extends Procedures<any> = Procedures<Ctx>>
+  implements Caller<Ctx, P>, Printable
+{
   protected readonly procedures: P;
   protected readonly preCallBufferSize: number;
   protected readonly wrapInternalError: (error: unknown) => unknown;
 
-  constructor({
-    procedures,
-    preCallBufferSize = 10,
-    wrapInternalError = defaultWrapInternalError,
-  }: RpcCallerOptions<P>) {
+  constructor({procedures, preCallBufferSize = 10, wrapInternalError = defaultWrapInternalError}: RpcCallerOptions<P>) {
     this.procedures = procedures;
     this.preCallBufferSize = preCallBufferSize;
     this.wrapInternalError = wrapInternalError;
@@ -144,7 +142,9 @@ export class RpcCaller<Ctx = unknown, P extends Procedures<any> = Procedures<Ctx
         // First, execute pre-call checks with only the first request.
         take(1),
         switchMap((request) => {
-          return methodStreaming.preCall ? (from(methodStreaming.preCall(ctx, request)) as Observable<ProcedureReq<P[K]>>) : from([0]);
+          return methodStreaming.preCall
+            ? (from(methodStreaming.preCall(ctx, request)) as Observable<ProcedureReq<P[K]>>)
+            : from([0]);
         }),
         // Execute the actual RPC call and flush request buffer.
         switchMap(() => {
@@ -209,7 +209,11 @@ export class RpcCaller<Ctx = unknown, P extends Procedures<any> = Procedures<Ctx
     }
   }
 
-  public call$<K extends keyof P>(name: K, request$: Observable<ProcedureReq<P[K]>>, ctx: Ctx): Observable<ProcedureRes<P[K]>> {
+  public call$<K extends keyof P>(
+    name: K,
+    request$: Observable<ProcedureReq<P[K]>>,
+    ctx: Ctx,
+  ): Observable<ProcedureRes<P[K]>> {
     const call = this.createCall(name, ctx as Ctx);
     (from(request$) as Observable<ProcedureReq<P[K]>>).subscribe(call.req$);
     return call.res$;
@@ -233,11 +237,13 @@ export class RpcCaller<Ctx = unknown, P extends Procedures<any> = Procedures<Ctx
       `${this.constructor.name}` +
       printTree(
         tab,
-        [...Object.entries(this.procedures)].filter(x => x[1] instanceof Procedure).map(
-          ([name, method]) =>
-            () =>
-              `${name}${method.rx ? ' (Rx)' : ''}`,
-        ),
+        [...Object.entries(this.procedures)]
+          .filter((x) => x[1] instanceof Procedure)
+          .map(
+            ([name, method]) =>
+              () =>
+                `${name}${method.rx ? ' (Rx)' : ''}`,
+          ),
       )
     );
   }

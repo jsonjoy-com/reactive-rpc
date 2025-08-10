@@ -49,7 +49,7 @@ export const procedures = {
         done: true,
         timeout,
       })),
-    )
+    ),
   ),
 
   double: Procedure.unary(async ({num}: {num: number}) => {
@@ -74,7 +74,7 @@ export const procedures = {
       (async () => {
         throw RpcError.internal(null, 'Stream always errors');
       })(),
-    )
+    ),
   ),
 
   utilTimer: Procedure.rx(() => timer(10, 10)),
@@ -85,7 +85,7 @@ export const procedures = {
         commit: 'AAAAAAAAAAAAAAAAAAA',
         sha1: 'BBBBBBBBBBBBBBBBBBB',
       },
-    ])
+    ]),
   ),
 
   'util.timer': Procedure.rx(() => timer(10, 10)),
@@ -108,7 +108,7 @@ export const procedures = {
             };
           }),
       ),
-    )
+    ),
   ),
 
   doubleStringWithValidation: Procedure.unary(async ({foo}: {foo: string}) => {
@@ -121,16 +121,17 @@ export const procedures = {
       map(({foo}: {foo: string}) => {
         if (typeof foo !== 'string') throw RpcError.validation('"foo" property missing.');
         return {bar: foo + foo};
-      })
-    )
+      }),
+    ),
   ),
 
   passthroughStream: Procedure.rx((req$) => req$),
 };
 
 // Helper for value state
-const valueHolder = { value: 0 };
+const valueHolder = {value: 0};
 
-export const createRpcCaller = () => new RpcCaller<SampleCtx | void, typeof procedures>({
-  procedures,
-});
+export const createRpcCaller = () =>
+  new RpcCaller<SampleCtx | void, typeof procedures>({
+    procedures,
+  });

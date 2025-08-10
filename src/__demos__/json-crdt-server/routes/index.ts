@@ -3,7 +3,7 @@ import {RpcError} from '../../../common/rpc/caller';
 import {RpcValue} from '../../../common/messages/Value';
 import {ObjectValueCaller} from '../../../common/rpc/caller/ObjectValueCaller';
 import {system} from './system';
-import {ObjectValue} from '@jsonjoy.com/json-type/lib/value/ObjectValue';
+import {ObjValue} from '@jsonjoy.com/json-type';
 import {Services} from '../services/Services';
 import {MemoryStore} from '../services/blocks/store/MemoryStore';
 import {LevelStore} from '../services/blocks/store/level/LevelStore';
@@ -13,7 +13,7 @@ import type {Store} from '../services/blocks/store/types';
 import type {RouteDeps} from './types';
 
 export const createRouter = (services: Services) => {
-  const router = ObjectValue.create(system);
+  const router = ObjValue.new(system);
   const deps: RouteDeps = {
     services,
     router,
