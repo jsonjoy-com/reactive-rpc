@@ -6,6 +6,7 @@ import {printTree} from 'tree-dump/lib/printTree';
 import {Procedure} from './procedures';
 import {ObjValue} from '@jsonjoy.com/json-type';
 import {t, Schema, KeyType, Type} from '@jsonjoy.com/json-type';
+import {ValidatorCodegen} from '@jsonjoy.com/json-type/lib/codegen/validator/ValidatorCodegen';
 import {type AbsType, FnRxType, FnType} from '@jsonjoy.com/json-type/lib/type/classes';
 import type {UnObjType, UnObjValue} from '@jsonjoy.com/json-type/lib/value/ObjValue';
 import type {Caller, ProcedureReq, ProcedureRes, Procedures} from './types';
@@ -32,7 +33,7 @@ export interface ObjectValueCallerOptions<V extends ObjValue<any>, Ctx = unknown
 }
 
 const fnValueToProcedure = <V extends Value<any>>(fn: V) => {
-  const validator = fn.type.req.validator('object');
+  const validator = ValidatorCodegen.get({type: fn.type.req, errors: 'object'});
   const requestSchema = (fn.type.req as AbsType<Schema>).getSchema();
   const isRequestVoid = requestSchema.kind === 'con' && requestSchema.value === undefined;
   const validate = isRequestVoid
@@ -98,7 +99,7 @@ export class TypedCaller<Ctx, V extends ObjValue<any>, P extends ObjectValueToPr
     return value as ProcedureRes<P[K]>;
   }
 
-  public call$<K extends keyof P>(name: K, request$: Rx.Observable<ProcedureReq<P[K]>>, ctx: Ctx) {
+  public call$<K extends keyof P>(name: K, request$: Rx.Observable<ProcedureReq<P[K]>>, ctx: Ctx): Rx.Observable<ProcedureRes<P[K]>> {
     return Rx.of(this.getResType(name as any) as Type).pipe(
       Rx.switchMap((type) => this.rpc.call$(name as any, request$, ctx).pipe(
         Rx.map(data => new Value(type, data)))
@@ -107,7 +108,8 @@ export class TypedCaller<Ctx, V extends ObjValue<any>, P extends ObjectValueToPr
   }
 
   public notify<K extends keyof P>(name: K, request: ProcedureReq<P[K]>, ctx: Ctx): Promise<void> {
-    return this.rpc.call(name as any, request, ctx);
+    this.getResType(name as any);
+    return this.rpc.notify(name as any, request, ctx);
   }
 
   /** ----------------------------------------------------- {@link Printable} */
