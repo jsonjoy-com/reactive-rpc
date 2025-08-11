@@ -1,5 +1,5 @@
 import * as Rx from 'rxjs';
-import {createRpcCaller} from '../../__tests__/RpcCaller.fixtures';
+import {createRpcCaller} from './RpcCaller.fixtures';
 import {RpcCaller} from '../RpcCaller';
 import {Procedure} from '../procedures';
 import {of} from 'thingies';
@@ -39,7 +39,7 @@ describe('.call()', () => {
   test('can specify a context', async () => {
     const {caller} = setup();
     const res = await caller.call('getIp', void 0, {ip: '1.2.3.4'});
-    expect(res).toBe('1.2.3.4');
+    expect(res.ip).toBe('1.2.3.4');
   });
 });
 
@@ -101,6 +101,6 @@ describe('.call$()', () => {
   test('can specify a context', async () => {
     const {caller} = setup();
     const res = await Rx.firstValueFrom(caller.call$('getIp', Rx.of(void 0), {ip: '1.1.1.1'}));
-    expect(res).toBe('1.1.1.1');
+    expect(res.ip).toBe('1.1.1.1');
   });
 });

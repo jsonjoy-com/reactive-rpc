@@ -3,9 +3,9 @@ import {catchError, finalize, first, mergeWith, share, switchMap, take, takeUnti
 import {RpcError, RpcErrorCodes} from 'rpc-error';
 import {BufferSubject} from '../../../util/rx/BufferSubject';
 import {Call} from './Call';
-import {printTree} from 'sonic-forest/lib/print/printTree';
+import {printTree} from 'tree-dump/lib/printTree';
 import {type RxProcedure, Procedure} from './procedures';
-import type {Printable} from 'sonic-forest/lib/print/types';
+import type {Printable} from 'tree-dump/lib/types';
 import type {Caller, ProcedureReq, ProcedureRes, Procedures} from './types';
 
 const defaultWrapInternalError = (error: unknown) => RpcError.internal(error);
@@ -215,7 +215,8 @@ export class RpcCaller<Ctx = unknown, P extends Procedures<any> = Procedures<Ctx
     ctx: Ctx,
   ): Observable<ProcedureRes<P[K]>> {
     const call = this.createCall(name, ctx as Ctx);
-    (from(request$) as Observable<ProcedureReq<P[K]>>).subscribe(call.req$);
+    // (from(request$) as Observable<ProcedureReq<P[K]>>).subscribe(call.req$);
+    request$.subscribe(call.req$);
     return call.res$;
   }
 

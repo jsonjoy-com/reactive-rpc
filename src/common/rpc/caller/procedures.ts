@@ -1,19 +1,18 @@
-// import {t, type Type} from "@jsonjoy.com/json-type";
 import {firstValueFrom, from, of, switchMap, take, type Observable, isObservable} from "rxjs";
-
-// const defaultType = t.any;
 
 export abstract class Procedure<Req = unknown, Res = unknown, Ctx = unknown> {
   public static readonly new = <Req = unknown, Res = unknown, Ctx = unknown>(
-    fn: (this: Ctx, request: Req) => Res | Promise<Res> | Observable<Res>,
+    fn: Res | ((request: Req, ctx: Ctx) => Res | Promise<Res> | Observable<Res>),
     validate: ((request: Req) => void) | undefined = undefined,
     preCall: ((ctx: Ctx, request: Req) => Promise<void>) | undefined = undefined,
-  ): RxProcedure<Req, Res, Ctx> => {
-    const streamingCall = function(this: Ctx, req: Observable<Req>) {
+  ) => {
+    if (typeof fn !== 'function')
+      return Procedure.unary(async () => (fn as Res), validate, preCall);
+    const streamingCall = (req: Observable<Req>, ctx: Ctx) => {
       return req.pipe(
         take(1),
         switchMap(r => {
-          const res = fn.call(this, r);
+          const res = (fn as ((request: Req, ctx: Ctx) => Res | Promise<Res> | Observable<Res>))(r, ctx);
           if (isObservable(res)) return res;
           if (res instanceof Promise) return res;
           return Promise.resolve(res);
@@ -24,14 +23,14 @@ export abstract class Procedure<Req = unknown, Res = unknown, Ctx = unknown> {
   };
 
   public static readonly unary = <Req = unknown, Res = unknown, Ctx = unknown>(
-    fn: (this: Ctx, request: Req) => Promise<Res>,
+    fn: (request: Req, ctx: Ctx) => Promise<Res>,
     validate: ((request: Req) => void) | undefined = undefined,
     preCall: ((ctx: Ctx, request: Req) => Promise<void>) | undefined = undefined,
   ): UnaryProcedure<Req, Res, Ctx> =>
     new UnaryProcedure<Req, Res, Ctx>(fn, validate, preCall);
 
   public static readonly rx = <Req = unknown, Res = unknown, Ctx = unknown>(
-    fn: (this: Ctx, request$: Observable<Req>) => Observable<Res>,
+    fn: (request$: Observable<Req>, ctx: Ctx) => Observable<Res>,
     validate: ((request: Req) => void) | undefined = undefined,
     preCall: ((ctx: Ctx, request: Req) => Promise<void>) | undefined = undefined,
   ): RxProcedure<Req, Res, Ctx> =>
@@ -46,16 +45,6 @@ export abstract class Procedure<Req = unknown, Res = unknown, Ctx = unknown> {
    * Whether to pretty print the response.
    */
   pretty: boolean = false;
-
-  // /**
-  //  * JSON Type of the request.
-  //  */
-  // req: Type = defaultType;
-
-  // /**
-  //  * JSON Type of the response.
-  //  */
-  // res: Type = defaultType;
 
   /**
    * Validation logic. Should throw if request is invalid, not throw otherwise.
@@ -73,7 +62,7 @@ export abstract class Procedure<Req = unknown, Res = unknown, Ctx = unknown> {
    *
    * @param ctx Request context object.
    * @param request Request payload, the first emitted value in case of
-   *                streaming request.
+   *     streaming request.
    */
   abstract preCall: ((ctx: Ctx, request: Req) => Promise<void>) | undefined;
 
@@ -106,15 +95,15 @@ export class UnaryProcedure<Req = unknown, Res = unknown, Ctx = unknown> extends
   rx: boolean = false;
 
   constructor(
-    private readonly fn: (this: Ctx, request: Req) => Promise<Res>,
+    private readonly fn: (request: Req, ctx: Ctx) => Promise<Res>,
     public readonly validate: ((request: Req) => void) | undefined,
     public readonly preCall: ((ctx: Ctx, request: Req) => Promise<void>) | undefined,
   ) {
     super();
   }
 
-  call(request: Req, ctx: Ctx): Promise<Res> {
-    return this.fn.call(ctx, request);
+  async call(request: Req, ctx: Ctx): Promise<Res> {
+    return await this.fn(request, ctx);
   }
 
   call$(request$: Observable<Req>, ctx: Ctx): Observable<Res> {
@@ -139,18 +128,18 @@ export class RxProcedure<Req = unknown, Res = unknown, Ctx = unknown> extends Pr
   preCallBufferSize: number = 0;
 
   constructor(
-    private readonly fn: (this: Ctx, request$: Observable<Req>) => Observable<Res>,
+    private readonly fn: (request$: Observable<Req>, ctx: Ctx) => Observable<Res>,
     public readonly validate: ((request: Req) => void) | undefined,
     public readonly preCall: ((ctx: Ctx, request: Req) => Promise<void>) | undefined,
   ) {
     super();
   }
 
-  call(request: Req, ctx: Ctx): Promise<Res> {
-    return firstValueFrom(this.fn.call(ctx, of(request)))
+  async call(request: Req, ctx: Ctx): Promise<Res> {
+    return await firstValueFrom(this.fn(of(request), ctx));
   }
 
   call$(request$: Observable<Req>, ctx: Ctx): Observable<Res> {
-    return this.fn.call(ctx, request$);
+    return this.fn(request$, ctx);
   }
 }

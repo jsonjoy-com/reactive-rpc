@@ -1,18 +1,18 @@
 import {timer, from, Observable} from 'rxjs';
 import {map, switchMap, take} from 'rxjs/operators';
-import {RpcError} from '../caller';
-import {Procedure} from '../caller/procedures';
-import {RpcCaller} from '../caller/RpcCaller';
+import {RpcError} from '..';
+import {Procedure} from '../procedures';
+import {RpcCaller} from '../RpcCaller';
 
 export interface SampleCtx {
   ip?: string;
 }
 
 export const procedures = {
-  ping: Procedure.new<void, 'pong', SampleCtx>(() => 'pong'),
+  ping: Procedure.new<void, 'pong', SampleCtx>('pong'),
 
-  getIp: Procedure.new<void, string, SampleCtx>(function (this: SampleCtx) {
-    return this.ip ?? '';
+  getIp: Procedure.new<void, {ip: string}, SampleCtx>((inp, ctx: SampleCtx) => {
+    return {ip: ctx.ip ?? ''};
   }),
 
   delay: Procedure.unary(async ({timeout = 10}: {timeout?: number} = {}) => {
@@ -27,8 +27,8 @@ export const procedures = {
     valueHolder.value = value;
   }),
 
-  notificationSetValueFromCtx: Procedure.new(function (this: SampleCtx) {
-    valueHolder.value = this?.ip?.length ?? 0;
+  notificationSetValueFromCtx: Procedure.new(function (inp, ctx: SampleCtx) {
+    valueHolder.value = ctx?.ip?.length ?? 0;
   }),
 
   getValue: Procedure.new(() => ({value: valueHolder.value})),
