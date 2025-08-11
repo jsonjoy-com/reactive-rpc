@@ -1,5 +1,5 @@
-import type {Printable} from 'sonic-forest/lib/print/types';
-import {printTree} from 'sonic-forest/lib/print/printTree';
+import type {Printable} from 'tree-dump/lib/types';
+import {printTree} from 'tree-dump/lib/printTree';
 import {type Http1CreateServerOpts, Http1Server, type Http1ServerOpts} from './Http1Server';
 import {RpcError} from '../../common/rpc/caller';
 import {

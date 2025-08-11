@@ -86,7 +86,8 @@
     "rpc-error": "^1.1.0",
     "rx-use": "^1.8.2",
     "sonic-forest": "^1.2.1",
-    "thingies": "^2.5.0"
+    "thingies": "^2.5.0",
+    "tree-dump": "^1.0.3"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.3",
