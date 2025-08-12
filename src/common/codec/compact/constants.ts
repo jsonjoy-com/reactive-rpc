@@ -1,4 +1,4 @@
-export enum CompactMessageType {
+export const enum CompactMessageType {
   RequestData = 0,
   RequestComplete = 1,
   RequestError = 2,

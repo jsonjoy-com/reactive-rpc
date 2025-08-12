@@ -1,4 +1,4 @@
-import {StaticRpcClient, type StaticRpcClientOptions} from './StaticRpcClient';
+import {UnaryClient, type StaticRpcClientOptions} from './StaticRpcClient';
 import {EncodedStaticRpcClient} from './EncodedStaticRpcClient';
 import type {RpcMessageCodec} from '../../codec/types';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
@@ -30,7 +30,7 @@ export class FetchRpcClient implements RpcClient {
     if (reqCodec.id !== resCodec.id) contentType += `-${resCodec.id}`;
     const currentFetch = options.fetch || fetch;
     this.client = new EncodedStaticRpcClient({
-      client: new StaticRpcClient({
+      client: new UnaryClient({
         bufferSize: options.bufferSize,
         bufferTime: options.bufferTime,
       }),

@@ -1,5 +1,5 @@
 import type * as msg from '../../messages';
-import type {StaticRpcClient} from './StaticRpcClient';
+import type {UnaryClient} from './StaticRpcClient';
 import type {RpcMessageCodec} from '../../codec/types';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
 import type {Observable} from 'rxjs';
@@ -10,11 +10,11 @@ export interface StaticRpcClientOptions {
   msgCodec: RpcMessageCodec;
   reqCodec: JsonValueCodec;
   resCodec?: JsonValueCodec;
-  client: StaticRpcClient;
+  client: UnaryClient;
 }
 
 export class EncodedStaticRpcClient implements RpcClient {
-  public readonly client: StaticRpcClient;
+  public readonly client: UnaryClient;
 
   constructor({send, msgCodec, reqCodec, resCodec = reqCodec, client}: StaticRpcClientOptions) {
     this.client = client;

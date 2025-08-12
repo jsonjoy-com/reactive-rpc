@@ -27,7 +27,4 @@ export interface RpcClient<Methods extends RpcClientMethods<any> = RpcClientMeth
    * @param data Static payload data.
    */
   notify<K extends keyof Methods>(method: K, data: Observable<Methods[K][0]>): void;
-
-  // start(): void;
-  // stop(): void;
 }

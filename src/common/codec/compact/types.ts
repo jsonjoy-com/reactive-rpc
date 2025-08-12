@@ -26,15 +26,21 @@ export type CompactResponseCompleteMessage<Data = unknown> =
 export type CompactResponseErrorMessage<Data = unknown> = [CompactMessageType.ResponseError, Id, Data];
 export type CompactResponseUnsubscribeMessage = [CompactMessageType.ResponseUnsubscribe, Id];
 
-export type CompactMessage<Data = unknown> =
+export type CompactClientMessage<Data = unknown> =
   | CompactNotificationMessage<Data>
   | CompactRequestDataMessage<Data>
   | CompactRequestCompleteMessage<Data>
   | CompactRequestErrorMessage<Data>
-  | CompactRequestUnsubscribeMessage
+  | CompactRequestUnsubscribeMessage;
+
+export type CompactServerMessage<Data = unknown> =
   | CompactResponseDataMessage<Data>
   | CompactResponseCompleteMessage<Data>
   | CompactResponseErrorMessage<Data>
   | CompactResponseUnsubscribeMessage;
+
+export type CompactMessage<Data = unknown> =
+  | CompactClientMessage<Data>
+  | CompactServerMessage<Data>;
 
 export type CompactMessageBatch = (CompactMessage | CompactMessageBatch)[];
