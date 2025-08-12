@@ -4,7 +4,7 @@ import {RpcError, RpcErrorCodes} from 'rpc-error';
 import {BufferSubject} from '../../../util/rx/BufferSubject';
 import {Call} from './Call';
 import {printTree} from 'tree-dump/lib/printTree';
-import {type RxProcedure, Procedure} from './procedures';
+import {type RxProcedure, Procedure} from '../procedures';
 import type {Printable} from 'tree-dump/lib/types';
 import type {Caller, ProcedureReq, ProcedureRes, Procedures} from './types';
 

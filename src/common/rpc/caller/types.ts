@@ -1,5 +1,5 @@
 import type {Observable} from 'rxjs';
-import type {Procedure} from './procedures';
+import type {Procedure} from '../procedures';
 
 export type Procedures<Ctx = unknown> = Record<string, Procedure<any, any, Ctx>>;
 export type ProceduresCtx<P extends Procedures> = P extends Procedures<infer Ctx> ? Ctx : unknown;

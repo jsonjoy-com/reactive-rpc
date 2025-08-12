@@ -1,7 +1,7 @@
 import * as Rx from 'rxjs';
 import {createRpcCaller} from './RpcCaller.fixtures';
 import {RpcCaller} from '../RpcCaller';
-import {Procedure} from '../procedures';
+import {Procedure} from '../../procedures';
 import {of} from 'thingies';
 import {RpcError} from 'rpc-error';
 

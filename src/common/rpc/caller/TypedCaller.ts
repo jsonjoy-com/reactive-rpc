@@ -1,10 +1,10 @@
 import * as Rx from 'rxjs';
 import {Value} from '@jsonjoy.com/json-type/lib/value/Value';
+import {ObjValue} from '@jsonjoy.com/json-type';
 import {RpcError} from './error/RpcError';
 import {RpcCaller, type RpcCallerOptions} from './RpcCaller';
 import {printTree} from 'tree-dump/lib/printTree';
-import {Procedure} from './procedures';
-import {ObjValue} from '@jsonjoy.com/json-type';
+import {Procedure} from '../procedures';
 import {t, Schema, KeyType, Type} from '@jsonjoy.com/json-type';
 import {ValidatorCodegen} from '@jsonjoy.com/json-type/lib/codegen/validator/ValidatorCodegen';
 import {type AbsType, FnRxType, FnType} from '@jsonjoy.com/json-type/lib/type/classes';
