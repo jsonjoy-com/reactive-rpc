@@ -1,5 +1,5 @@
 import {Subject, type Subscription, type Subscriber} from 'rxjs';
-import {RpcError, RpcErrorCodes} from '../../common/rpc/caller';
+import {RpcError, RpcErrorCodes} from '../../common/caller';
 
 export class BufferSubject<T> extends Subject<T> {
   private buffer: T[] = [];

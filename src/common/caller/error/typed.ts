@@ -1,5 +1,5 @@
 import {RpcError, type RpcErrorCodes} from 'rpc-error';
-import {RpcValue} from '../../../messages/Value';
+import {RpcValue} from '../../messages/Value';
 import {RpcErrorType} from './RpcErrorType';
 import type {RpcErrorValue} from './types';
 
