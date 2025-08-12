@@ -103,6 +103,12 @@ export class UnaryClient<Methods extends RpcClientMethods<any> = RpcClientMethod
     return await future.promise;
   }
 
+  /**
+   * Send a one-way notification message without expecting any response.
+   *
+   * @param method Remote method name.
+   * @param data Static payload data.
+   */
   public notify<K extends keyof Methods>(method: K, data: Observable<Methods[K][0]>): void {
     const msg: compact.CompactNotificationMessage = [CompactMessageType.Notification, method as string, data];
     this.buffer.push(msg);

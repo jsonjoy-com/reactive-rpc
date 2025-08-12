@@ -31,13 +31,14 @@ export type CompactClientMessage<Data = unknown> =
   | CompactRequestDataMessage<Data>
   | CompactRequestCompleteMessage<Data>
   | CompactRequestErrorMessage<Data>
-  | CompactRequestUnsubscribeMessage;
+  | CompactResponseUnsubscribeMessage;
 
-export type CompactServerMessage<Data = unknown> =
+  export type CompactServerMessage<Data = unknown> =
+  | CompactNotificationMessage<Data>
   | CompactResponseDataMessage<Data>
   | CompactResponseCompleteMessage<Data>
   | CompactResponseErrorMessage<Data>
-  | CompactResponseUnsubscribeMessage;
+  | CompactRequestUnsubscribeMessage;
 
 export type CompactMessage<Data = unknown> =
   | CompactClientMessage<Data>

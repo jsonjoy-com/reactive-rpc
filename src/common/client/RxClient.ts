@@ -1,19 +1,33 @@
 import {firstValueFrom, isObservable, Observable, type Observer, Subject} from 'rxjs';
-import * as msg from '../../messages';
-import {subscribeCompleteObserver} from '../../util/subscribeCompleteObserver';
-import {TimedQueue} from '../../util/TimedQueue';
-import {RpcValue} from '../../messages/Value';
+import {subscribeCompleteObserver} from '../util/subscribeCompleteObserver';
+import {TimedQueue} from '../util/TimedQueue';
+import {CompactMessageType} from '../codec/compact/constants';
+import type * as compact from '../codec/compact';
 import type {RpcClient, RpcClientMethods} from './types';
 
 /**
- * Configuration parameters for {@link StreamingRpcClient}.
+ * An in-flight RPC call record.
  */
-export interface StreamingRpcClientOptions {
+class Call {
+  constructor(
+    /* In-between observable for request stream. */
+    public readonly req$: Subject<unknown>,
+    /* In-between observable for response stream. */
+    public readonly res$: Subject<unknown>,
+    /** Whether response stream was finalized by server. */
+    public resFinalized: boolean,
+  ) {}
+}
+
+/**
+ * Configuration parameters for {@link RxClient}.
+ */
+export interface RxClientOptions {
   /**
    * Method to be called by client when it wants to send messages to the server.
    * This is usually connected to your WebSocket "send" method.
    */
-  send: (messages: msg.ReactiveRpcClientMessage[]) => void;
+  send: (messages: compact.CompactClientMessage[]) => void;
 
   /**
    * Number of messages to keep in buffer before sending them to the server.
@@ -28,15 +42,8 @@ export interface StreamingRpcClientOptions {
    * to the server. Defaults to 10 milliseconds.
    */
   bufferTime?: number;
-}
 
-interface ObserverEntry {
-  /* In-between observable for request stream. */
-  req$: Subject<unknown>;
-  /* In-between observable for response stream. */
-  res$: Subject<unknown>;
-  /** Whether response stream was finalized by server. */
-  resFinalized?: boolean;
+  onNotification?: (method: string, data: unknown) => void;
 }
 
 /**
@@ -69,20 +76,23 @@ interface ObserverEntry {
  * });
  * ```
  */
-export class StreamingRpcClient<Methods extends RpcClientMethods<any> = RpcClientMethods> implements RpcClient<Methods> {
+export class RxClient<Methods extends RpcClientMethods<any> = RpcClientMethods> implements RpcClient<Methods> {
   private id = 1;
-  public readonly buffer: TimedQueue<msg.ReactiveRpcClientMessage>;
+  public readonly buffer: TimedQueue<compact.CompactClientMessage>;
 
   /**
    * In-flight RPC calls.
    */
-  private readonly calls = new Map<number, ObserverEntry>();
+  private readonly calls = new Map<number, Call>();
 
-  constructor({send, bufferSize = 100, bufferTime = 10}: StreamingRpcClientOptions) {
+  private _notif: (method: string, data: unknown) => void;
+
+  constructor({send, bufferSize = 100, bufferTime = 10, onNotification = () => {}}: RxClientOptions) {
     this.buffer = new TimedQueue();
     this.buffer.itemLimit = bufferSize;
     this.buffer.timeLimit = bufferTime;
     this.buffer.onFlush = send;
+    this._notif = onNotification;
   }
 
   /**
@@ -100,7 +110,7 @@ export class StreamingRpcClient<Methods extends RpcClientMethods<any> = RpcClien
    *
    * @param messages List of messages from server.
    */
-  public onMessages(messages: msg.ReactiveRpcServerMessage[]): void {
+  public onMessages(messages: compact.CompactServerMessage[]): void {
     const length = messages.length;
     for (let i = 0; i < length; i++) this.onMessage(messages[i]);
   }
@@ -110,48 +120,38 @@ export class StreamingRpcClient<Methods extends RpcClientMethods<any> = RpcClien
    *
    * @param messages A message from the server.
    */
-  public onMessage(message: msg.ReactiveRpcServerMessage): void {
-    if (message instanceof msg.ResponseCompleteMessage) {
-      this.onResponseComplete(message);
-      return;
-    } else if (message instanceof msg.ResponseDataMessage) {
-      this.onResponseData(message);
-      return;
-    } else if (message instanceof msg.ResponseErrorMessage) {
-      this.onResponseError(message);
-      return;
-    }
-    // else if (message instanceof RequestUnsubscribeMessage) {this.onRequestUnsubscribe(message); return;}
-    this.onRequestUnsubscribe(message);
+  public onMessage(message: compact.CompactServerMessage): void {
+    const type = message[0];
+    if (type === CompactMessageType.ResponseComplete) this.onResponseComplete(message);
+    else if (type === CompactMessageType.ResponseData) this.onResponseData(message);
+    else if (type === CompactMessageType.ResponseError) this.onResponseError(message);
+    else if (type === CompactMessageType.RequestUnsubscribe) this.onRequestUnsubscribe(message);
+    else if (type === CompactMessageType.Notification) this._notif(message[1], message[2]);
+    else console.warn('Unknown message type', type, message);
   }
 
-  public onResponseComplete(message: msg.ResponseCompleteMessage): void {
-    const {id, value} = message;
+  public onResponseComplete([, id, data]: compact.CompactResponseCompleteMessage): void {
     const call = this.calls.get(id);
     if (!call) return;
     call.resFinalized = true;
-    const data = value ? value.data : undefined;
-    if (data !== undefined) call.res$.next(data);
+    if (data !== void 0) call.res$.next(data);
     call.res$.complete();
   }
 
-  public onResponseData(message: msg.ResponseDataMessage): void {
-    const {id, value} = message;
+  public onResponseData([, id, data]: compact.CompactResponseDataMessage): void {
     const call = this.calls.get(id);
     if (!call) return;
-    call.res$.next(value.data);
+    call.res$.next(data);
   }
 
-  public onResponseError(message: msg.ResponseErrorMessage): void {
-    const {id, value} = message;
+  public onResponseError([, id, data]: compact.CompactResponseErrorMessage): void {
     const call = this.calls.get(id);
     if (!call) return;
     call.resFinalized = true;
-    call.res$.error(value.data);
+    call.res$.error(data);
   }
 
-  public onRequestUnsubscribe(message: msg.RequestUnsubscribeMessage): void {
-    const {id} = message;
+  public onRequestUnsubscribe([, id]: compact.CompactRequestUnsubscribeMessage): void {
     const call = this.calls.get(id);
     if (!call) return;
     call.req$.complete();
@@ -185,7 +185,7 @@ export class StreamingRpcClient<Methods extends RpcClientMethods<any> = RpcClien
       if (finalizedStreams === 2) this.calls.delete(id);
     };
     res$.subscribe({error: cleanup, complete: cleanup});
-    const entry: ObserverEntry = {req$, res$};
+    const entry = new Call(req$, res$, false);
     this.calls.set(id, entry);
     if (isObservable(data)) {
       let firstMessageSent = false;
@@ -193,32 +193,37 @@ export class StreamingRpcClient<Methods extends RpcClientMethods<any> = RpcClien
         next: (value) => {
           const messageMethod = firstMessageSent ? '' : method;
           firstMessageSent = true;
-          const message = new msg.RequestDataMessage(id, messageMethod as string, new RpcValue(value, undefined));
+          const message: compact.CompactRequestDataMessage = [CompactMessageType.RequestData, id, messageMethod as string, value];
           this.buffer.push(message);
         },
         error: (error) => {
           cleanup();
           const messageMethod = firstMessageSent ? '' : method;
-          const message = new msg.RequestErrorMessage(id, messageMethod as string, new RpcValue(error, undefined));
+          // TODO: Should normalize error to RpcError or POJO...
+          const message: compact.CompactRequestErrorMessage = [CompactMessageType.RequestError, id, messageMethod as string, error];
           this.buffer.push(message);
         },
         complete: (value) => {
           cleanup();
           const messageMethod = firstMessageSent ? '' : method;
-          const message = new msg.RequestCompleteMessage(id, messageMethod as string, new RpcValue(value, undefined));
+          const message: compact.CompactRequestCompleteMessage = [CompactMessageType.RequestComplete, id, messageMethod as string, value];
           this.buffer.push(message);
         },
       });
       data.subscribe(req$);
     } else {
-      this.buffer.push(new msg.RequestCompleteMessage(id, method as string, new RpcValue(data, undefined)));
+      const message: compact.CompactRequestCompleteMessage = [CompactMessageType.RequestComplete, id, method as string, data];
+      this.buffer.push(message);
       req$.complete();
       cleanup();
     }
     return new Observable<unknown>((observer: Observer<unknown>) => {
       res$.subscribe(observer);
       return () => {
-        if (!entry.resFinalized) this.buffer.push(new msg.ResponseUnsubscribeMessage(id));
+        if (!entry.resFinalized) {
+          const message: compact.CompactResponseUnsubscribeMessage = [CompactMessageType.ResponseUnsubscribe, id];
+          this.buffer.push(message);
+        }
         res$.complete();
       };
     });
@@ -235,8 +240,8 @@ export class StreamingRpcClient<Methods extends RpcClientMethods<any> = RpcClien
    * @param data Static payload data.
    */
   public notify<K extends keyof Methods>(method: K, data: Observable<Methods[K][0]>): void {
-    const value = new RpcValue(data, undefined);
-    this.buffer.push(new msg.NotificationMessage(method as string, value));
+    const message: compact.CompactNotificationMessage = [CompactMessageType.Notification, method as string, data];
+    this.buffer.push(message);
   }
 
   /**
