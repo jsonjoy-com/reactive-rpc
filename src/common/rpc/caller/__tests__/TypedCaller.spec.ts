@@ -1,5 +1,6 @@
 import * as Rx from 'rxjs';
 import {createTypedCaller} from './TypedCaller.fixtures';
+import {RpcError} from 'rpc-error';
 
 describe('.call()', () => {
   test('can execute simple call with "str" response', async () => {
@@ -24,6 +25,16 @@ describe('.call()', () => {
     const caller = createTypedCaller();
     const res = await caller.call('getIp', void 0, {ip: '1.2.3.4'});
     expect(res.data.ip).toBe('1.2.3.4');
+  });
+
+  test('wraps error into RpcError', async () => {
+    const caller = createTypedCaller();
+    try {
+      await caller.call('error', {}, {});
+      throw new Error('should not reach here');
+    } catch (error) {
+      expect(error).toEqual(RpcError.internal('lol'));
+    }
   });
 });
 
@@ -63,5 +74,15 @@ describe('.call$()', () => {
     const caller = createTypedCaller();
     const res = await Rx.firstValueFrom(caller.call$('getIp', Rx.of(void 0), {ip: '1.1.1.1'}));
     expect(res.data.ip).toBe('1.1.1.1');
+  });
+
+  test('wraps error into RpcError', async () => {
+    const caller = createTypedCaller();
+    try {
+      await Rx.firstValueFrom(caller.call$('error', Rx.of({}), {}));
+      throw new Error('should not reach here');
+    } catch (error) {
+      expect(error).toEqual(RpcError.internal('lol'));
+    }
   });
 });
