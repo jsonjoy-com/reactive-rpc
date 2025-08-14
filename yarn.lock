@@ -705,6 +705,19 @@
     hyperdyperid "^1.2.0"
     thingies "^2.5.0"
 
+"@jsonjoy.com/json-pack@^1.10.1":
+  version "1.10.1"
+  resolved "https://registry.yarnpkg.com/@jsonjoy.com/json-pack/-/json-pack-1.10.1.tgz#a9e9c79605d66c83662c6b9b588bf6f85ca0e325"
+  integrity sha512-XgVydQHFY0mZXJhG8yKVFoXO1295IdKQf/YE2jDlbp+1TUVB9p/Bul34E5HcqB/bH+0Rx1HIgqmmZm57MK0dhQ==
+  dependencies:
+    "@jsonjoy.com/base64" "^1.1.2"
+    "@jsonjoy.com/buffers" "^1.0.0"
+    "@jsonjoy.com/codegen" "^1.0.0"
+    "@jsonjoy.com/json-pointer" "^1.0.1"
+    "@jsonjoy.com/util" "^1.9.0"
+    hyperdyperid "^1.2.0"
+    thingies "^2.5.0"
+
 "@jsonjoy.com/json-pointer@^1.0.0", "@jsonjoy.com/json-pointer@^1.0.1":
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/@jsonjoy.com/json-pointer/-/json-pointer-1.0.1.tgz#3b710158e8a212708a2886ea5e38d92e2ea4f4a0"
