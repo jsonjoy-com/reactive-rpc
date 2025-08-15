@@ -76,8 +76,8 @@
   },
   "dependencies": {
     "@jsonjoy.com/jit-router": "^1.0.1",
-    "@jsonjoy.com/json-pack": "^1.10.1",
-    "@jsonjoy.com/json-type": "^2.4.1",
+    "@jsonjoy.com/json-pack": "^1.11.0",
+    "@jsonjoy.com/json-type": "^2.5.0",
     "@jsonjoy.com/util": "^1.9.0",
     "abstract-level": "^2.0.0",
     "classic-level": "^1.4.1",

@@ -1,10 +1,11 @@
-import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
+import type {CompactMessage} from '../codec/compact';
+import type {Type, Value} from '@jsonjoy.com/json-type';
 import type * as msg from './messages';
 
 /**
  * Messages that client can send.
  */
-export type ReactiveRpcClientMessage =
+export type RpcClientMessage =
   | msg.NotificationMessage
   | msg.RequestDataMessage
   | msg.RequestCompleteMessage
@@ -14,7 +15,7 @@ export type ReactiveRpcClientMessage =
 /**
  * Messages with which server can respond.
  */
-export type ReactiveRpcServerMessage =
+export type RpcServerMessage =
   | msg.ResponseDataMessage
   | msg.ResponseCompleteMessage
   | msg.ResponseErrorMessage
@@ -23,11 +24,15 @@ export type ReactiveRpcServerMessage =
 /**
  * All Reactive RPC messages.
  */
-export type ReactiveRpcMessage = ReactiveRpcClientMessage | ReactiveRpcServerMessage;
+export type RpcMessage = RpcClientMessage | RpcServerMessage;
 
-export interface Message<P = unknown> {
-  value?: undefined | unknown;
-  validate(): void;
-  toCompact(): P;
-  encodeBinary(codec: JsonValueCodec): void;
+export interface Message {
+  value?: Value | undefined;
+  /**
+   * The type of the message `value`.
+   */
+  type?: Type | undefined;
+  // validate(): void;
+  toCompact(): CompactMessage<unknown>;
+  // encodeBinary(codec: JsonValueCodec): void;
 }

@@ -1,10 +1,10 @@
 import {JsonJsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/json';
 import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
-import {JsonRpc2RpcMessageCodec} from '..';
-import type {ReactiveRpcMessage} from '../../../messages';
+import {JsonRpc2TypedMsgStreamCodec} from '..';
+import type {RpcMessage} from '../../../messages';
 import {messages} from '../../../messages/__tests__/fixtures';
 
-const filteredMessages: [string, ReactiveRpcMessage][] = [
+const filteredMessages: [string, RpcMessage][] = [
   ['notification1', messages.notification1],
   ['notification2', messages.notification2],
   ['notification3', messages.notification3],
@@ -26,17 +26,20 @@ const filteredMessages: [string, ReactiveRpcMessage][] = [
   ['resError2', messages.resError2],
 ];
 
-const codec = new JsonRpc2RpcMessageCodec();
+const codec = new JsonRpc2TypedMsgStreamCodec();
 const valueCodec = new JsonJsonValueCodec(new Writer(24));
 
 describe('encode, decode', () => {
   for (const [name, message] of filteredMessages) {
     test(name, () => {
       // console.log(message);
-      codec.encodeBatch(valueCodec, [message]);
+      codec.writeBatch(valueCodec, [message]);
       const encoded = valueCodec.encoder.writer.flush();
+      // console.log(encoded);
       // console.log(Buffer.from(encoded).toString('utf8'));
-      const [decoded] = codec.decodeBatch(valueCodec, encoded);
+      const [decoded] = codec.readChunk(valueCodec, encoded);
+      // console.log(decoded);
+      // console.log(message);
       expect(decoded).toStrictEqual(message);
     });
   }
