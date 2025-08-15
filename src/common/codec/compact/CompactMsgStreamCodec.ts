@@ -1,55 +1,14 @@
 import {RpcMessageFormat} from '../constants';
-import {RpcError, RpcErrorCodes} from '../../rpc/caller/error/RpcError';
+import {RpcError} from 'rpc-error';
 import * as msg from '../../messages';
+import {toMessage} from './toMessage';
+import {getTypeEncoder} from '../util';
 import {CompactMessageType} from './constants';
-import {RpcValue} from '../../messages/Value';
-import {TypedRpcError} from '../../rpc/caller/error/typed';
 import type {JsonEncoder} from '@jsonjoy.com/json-pack/lib/json/JsonEncoder';
-import type {RpcMessageCodec} from '../types';
+import type {MsgStreamCodec} from '../types';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
 import type * as types from './types';
 import type {TlvBinaryJsonEncoder} from '@jsonjoy.com/json-pack';
-
-const fromJson = (arr: unknown | unknown[] | types.CompactMessage): msg.ReactiveRpcMessage => {
-  if (!(arr instanceof Array)) throw RpcError.badRequest();
-  const type = arr[0];
-  switch (type) {
-    case CompactMessageType.RequestComplete: {
-      const data = arr[3];
-      const value = data === undefined ? data : new RpcValue(data, undefined);
-      return new msg.RequestCompleteMessage(arr[1], arr[2], value);
-    }
-    case CompactMessageType.RequestData: {
-      const data = arr[3];
-      const value = data === undefined ? data : new RpcValue(data, undefined);
-      return new msg.RequestDataMessage(arr[1], arr[2], value);
-    }
-    case CompactMessageType.RequestError: {
-      return new msg.RequestErrorMessage(arr[1], arr[2], new RpcValue(arr[3], undefined));
-    }
-    case CompactMessageType.RequestUnsubscribe: {
-      return new msg.RequestUnsubscribeMessage(arr[1]);
-    }
-    case CompactMessageType.ResponseComplete: {
-      const data = arr[2];
-      const value = data === undefined ? data : new RpcValue(data, undefined);
-      return new msg.ResponseCompleteMessage(arr[1], value);
-    }
-    case CompactMessageType.ResponseData: {
-      return new msg.ResponseDataMessage(arr[1], new RpcValue(arr[2], undefined));
-    }
-    case CompactMessageType.ResponseError: {
-      return new msg.ResponseErrorMessage(arr[1], new RpcValue(arr[2], undefined));
-    }
-    case CompactMessageType.ResponseUnsubscribe: {
-      return new msg.ResponseUnsubscribeMessage(arr[1]);
-    }
-    case CompactMessageType.Notification: {
-      return new msg.NotificationMessage(arr[1], new RpcValue(arr[2], undefined));
-    }
-  }
-  throw TypedRpcError.value(RpcError.validation('Unknown message type'));
-};
 
 const encodeCompactWithNameAndPayload = (
   codec: JsonValueCodec,
@@ -66,7 +25,7 @@ const encodeCompactWithNameAndPayload = (
     encoder.writeUInteger(msg.id);
     encoder.writeAsciiStr(msg.method);
     if (hasValue) {
-      if (value.type) value.type.encoder(codec.format)(value.data, encoder);
+      if (value.type) getTypeEncoder(codec, value.type)(value.data, encoder);
       else encoder.writeAny(value.data);
     }
   } else if (
@@ -84,7 +43,7 @@ const encodeCompactWithNameAndPayload = (
     const hasValue = value !== undefined;
     if (hasValue) {
       jsonEncoder.writeArrSeparator();
-      if (value.type) value.type.encoder(codec.format)(value.data, encoder);
+      if (value.type) getTypeEncoder(codec, value.type)(value.data, encoder);
       else jsonEncoder.writeAny(value.data);
     }
     jsonEncoder.writeEndArr();
@@ -106,7 +65,7 @@ const encodeCompactWithPayload = (
     encoder.writeUInteger(msg.id);
     if (hasValue) {
       if (value.type) {
-        value.type.encoder(codec.format)(value.data, encoder);
+        getTypeEncoder(codec, value.type)(value.data, encoder);
       } else encoder.writeAny(value.data);
     }
   } else if (
@@ -122,18 +81,18 @@ const encodeCompactWithPayload = (
     const hasValue = value !== undefined;
     if (hasValue) {
       jsonEncoder.writeArrSeparator();
-      if (value.type) value.type.encoder(codec.format)(value.data, jsonEncoder);
+      if (value.type) getTypeEncoder(codec, value.type)(value.data, jsonEncoder);
       else encoder.writeAny(value.data);
     }
     jsonEncoder.writeEndArr();
   } else encoder.writeArr(msg.toCompact());
 };
 
-export class CompactRpcMessageCodec implements RpcMessageCodec {
+export class CompactMsgStreamCodec implements MsgStreamCodec {
   id = 'rx.compact';
   format = RpcMessageFormat.Compact;
 
-  public encodeMessage(codec: JsonValueCodec, message: msg.ReactiveRpcMessage): void {
+  public write(codec: JsonValueCodec, message: msg.RpcMessage): void {
     if (message instanceof msg.NotificationMessage) {
       const encoder = codec.encoder;
       if (typeof (encoder as any as TlvBinaryJsonEncoder).writeArrHdr === 'function') {
@@ -144,7 +103,7 @@ export class CompactRpcMessageCodec implements RpcMessageCodec {
         encoder.writeUInteger(CompactMessageType.Notification);
         encoder.writeAsciiStr(message.method);
         if (hasValue) {
-          if (value.type) value.type.encoder(codec.format)(value.data, encoder);
+          if (value.type) getTypeEncoder(codec, value.type)(value.data, encoder);
           else encoder.writeAny(value.data);
         }
       } else if (
@@ -160,7 +119,7 @@ export class CompactRpcMessageCodec implements RpcMessageCodec {
         const hasValue = value !== undefined;
         if (hasValue) {
           jsonEncoder.writeArrSeparator();
-          if (value.type) value.type.encoder(codec.format)(value.data, jsonEncoder);
+          if (value.type) getTypeEncoder(codec, value.type)(value.data, jsonEncoder);
           else encoder.writeAny(value.data);
         }
         jsonEncoder.writeEndArr();
@@ -186,13 +145,13 @@ export class CompactRpcMessageCodec implements RpcMessageCodec {
     }
   }
 
-  public encodeBatch(jsonCodec: JsonValueCodec, batch: msg.ReactiveRpcMessage[]): void {
+  public writeBatch(jsonCodec: JsonValueCodec, batch: msg.RpcMessage[]): void {
     const encoder = jsonCodec.encoder;
     if (typeof (encoder as any as TlvBinaryJsonEncoder).writeArrHdr === 'function') {
       const binaryEncoder = encoder as any as TlvBinaryJsonEncoder;
       const length = batch.length;
       binaryEncoder.writeArrHdr(length);
-      for (let i = 0; i < length; i++) this.encodeMessage(jsonCodec, batch[i]);
+      for (let i = 0; i < length; i++) this.write(jsonCodec, batch[i]);
     } else if (
       typeof (encoder as any as JsonEncoder).writeStartArr === 'function' &&
       typeof (encoder as any as JsonEncoder).writeArrSeparator === 'function'
@@ -202,10 +161,10 @@ export class CompactRpcMessageCodec implements RpcMessageCodec {
       const last = length - 1;
       jsonEncoder.writeStartArr();
       for (let i = 0; i < last; i++) {
-        this.encodeMessage(jsonCodec, batch[i]);
+        this.write(jsonCodec, batch[i]);
         jsonEncoder.writeArrSeparator();
       }
-      if (length > 0) this.encodeMessage(jsonCodec, batch[last]);
+      if (length > 0) this.write(jsonCodec, batch[last]);
       jsonEncoder.writeEndArr();
     } else {
       const jsonMessages: types.CompactMessage[] = [];
@@ -216,29 +175,30 @@ export class CompactRpcMessageCodec implements RpcMessageCodec {
     }
   }
 
-  public encode(jsonCodec: JsonValueCodec, batch: msg.ReactiveRpcMessage[]): Uint8Array {
+  public encode(jsonCodec: JsonValueCodec, batch: msg.RpcMessage[]): Uint8Array {
     const encoder = jsonCodec.encoder;
     const writer = encoder.writer;
     writer.reset();
-    this.encodeBatch(jsonCodec, batch);
+    this.writeBatch(jsonCodec, batch);
     return writer.flush();
   }
 
-  public decodeBatch(jsonCodec: JsonValueCodec, uint8: Uint8Array): msg.ReactiveRpcMessage[] {
-    const decoder = jsonCodec.decoder;
-    const value = decoder.read(uint8);
+  public read(codec: JsonValueCodec): msg.RpcMessage[] {
+    const decoder = codec.decoder;
+    const value = decoder.readAny();
     if (!(value instanceof Array)) throw RpcError.badRequest();
-    if (typeof value[0] === 'number') return [fromJson(value as unknown[])];
-    const result: msg.ReactiveRpcMessage[] = [];
+    if (typeof value[0] === 'number') return [toMessage(value as unknown[])];
+    const result: msg.RpcMessage[] = [];
     const length = value.length;
     for (let i = 0; i < length; i++) {
       const item = value[i];
-      result.push(fromJson(item as unknown));
+      result.push(toMessage(item as unknown));
     }
     return result;
   }
 
-  public fromJson(compact: types.CompactMessage): msg.ReactiveRpcMessage {
-    return fromJson(compact);
+  public readChunk(jsonCodec: JsonValueCodec, uint8: Uint8Array): msg.RpcMessage[] {
+    jsonCodec.decoder.reader.reset(uint8);
+    return this.read(jsonCodec);
   }
 }

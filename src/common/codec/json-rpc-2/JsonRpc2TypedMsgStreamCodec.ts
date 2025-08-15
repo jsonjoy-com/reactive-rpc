@@ -1,7 +1,4 @@
 import {EncodingFormat} from '@jsonjoy.com/json-pack/lib/constants';
-import {CborCodegen} from '@jsonjoy.com/json-type/lib/codegen/binary/cbor/CborCodegen';
-import {MsgPackCodegen} from '@jsonjoy.com/json-type/lib/codegen/binary/msgpack/MsgPackCodegen';
-import {JsonCodegen} from '@jsonjoy.com/json-type/lib/codegen/binary/json/JsonCodegen';
 import {RpcMessageFormat} from '../constants';
 import {RpcError} from '../../error';
 import * as msg from '../../messages';
@@ -10,30 +7,13 @@ import {toMessage} from './toMessage';
 import type {TlvBinaryJsonEncoder} from '@jsonjoy.com/json-pack/lib/types';
 import type {JsonJsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/json';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
-import type {CompiledBinaryEncoder} from '@jsonjoy.com/json-type/lib/codegen/types';
 import type {MsgStreamCodec} from '../types';
-import type {Type} from '@jsonjoy.com/json-type';
+import {getTypeEncoder} from '../util';
 
 const RESPONSE_TYPE = schema.JsonRpc2Response.type;
 const ERROR_TYPE = schema.JsonRpc2Error.type;
 const NOTIFICATION_TYPE = schema.JsonRpc2Notification.type;
 const REQUEST_TYPE = schema.JsonRpc2Request.type;
-
-const getEncoder = (codec: JsonValueCodec, type: Type): CompiledBinaryEncoder => {
-  switch (codec.format) {
-    case EncodingFormat.Cbor: {
-      return CborCodegen.get(type);
-    }
-    case EncodingFormat.MsgPack: {
-      return MsgPackCodegen.get(type);
-    }
-    case EncodingFormat.Json: {
-      return JsonCodegen.get(type);
-    }
-    default:
-      throw new Error('UNK_CODEC');
-  }
-};
 
 export class JsonRpc2TypedMsgStreamCodec implements MsgStreamCodec {
   id = 'json2.verbose';
@@ -45,7 +25,7 @@ export class JsonRpc2TypedMsgStreamCodec implements MsgStreamCodec {
         id: message.id,
         result: message.value,
       } as schema.JsonRpc2ResponseMessage;
-      const encoder = getEncoder(jsonCodec, RESPONSE_TYPE);
+      const encoder = getTypeEncoder(jsonCodec, RESPONSE_TYPE);
       encoder(pojo, jsonCodec.encoder);
     } else if (message instanceof msg.ResponseErrorMessage) {
       const error = message.value.data;
@@ -69,14 +49,14 @@ export class JsonRpc2TypedMsgStreamCodec implements MsgStreamCodec {
           },
         } as schema.JsonRpc2ErrorMessage;
       }
-      const encoder = getEncoder(jsonCodec, ERROR_TYPE);
+      const encoder = getTypeEncoder(jsonCodec, ERROR_TYPE);
       encoder(pojo, jsonCodec.encoder);
     } else if (message instanceof msg.NotificationMessage) {
       const pojo: schema.JsonRpc2NotificationMessage = {
         method: message.method,
         params: message.value,
       } as schema.JsonRpc2NotificationMessage;
-      const encoder = getEncoder(jsonCodec, NOTIFICATION_TYPE);
+      const encoder = getTypeEncoder(jsonCodec, NOTIFICATION_TYPE);
       encoder(pojo, jsonCodec.encoder);
     } else if (
       message instanceof msg.RequestCompleteMessage ||
@@ -89,7 +69,7 @@ export class JsonRpc2TypedMsgStreamCodec implements MsgStreamCodec {
         method: message.method,
         params: message.value,
       };
-      const encoder = getEncoder(jsonCodec, REQUEST_TYPE);
+      const encoder = getTypeEncoder(jsonCodec, REQUEST_TYPE);
       encoder(pojo, jsonCodec.encoder);
     }
   }
@@ -123,6 +103,14 @@ export class JsonRpc2TypedMsgStreamCodec implements MsgStreamCodec {
         }
       }
     }
+  }
+
+  public encode(jsonCodec: JsonValueCodec, batch: msg.RpcMessage[]): Uint8Array {
+    const encoder = jsonCodec.encoder;
+    const writer = encoder.writer;
+    writer.reset();
+    this.writeBatch(jsonCodec, batch);
+    return writer.flush();
   }
 
   public read(jsonCodec: JsonValueCodec): msg.RpcMessage[] {

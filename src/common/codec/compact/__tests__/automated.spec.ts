@@ -3,6 +3,7 @@ import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 import {compactMessages} from './compact-messages';
 import {CompactRpcMessageCodec} from '..';
 import {messages} from '../../../messages/__tests__/fixtures';
+import {toMessage} from '../toMessage';
 
 const codec = new CompactRpcMessageCodec();
 const writer = new Writer(8 * Math.round(Math.random() * 100));
@@ -11,7 +12,7 @@ const cborCodec = new CborJsonValueCodec(writer);
 describe('hydrate, encode, decode', () => {
   for (const [name, compact] of Object.entries(compactMessages)) {
     test(name, () => {
-      const message = codec.fromJson(compact);
+      const message = toMessage(compact);
       codec.encodeBatch(cborCodec, [message]);
       const encoded = cborCodec.encoder.writer.flush();
       const [decoded] = codec.decodeBatch(cborCodec, encoded);
