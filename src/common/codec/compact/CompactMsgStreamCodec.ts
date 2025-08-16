@@ -66,7 +66,9 @@ const encodeCompactWithPayload = (
     if (hasValue) {
       if (value.type) {
         getTypeEncoder(codec, value.type)(value.data, encoder);
-      } else encoder.writeAny(value.data);
+      } else {
+        encoder.writeAny(value.data);
+      }
     }
   } else if (
     typeof (encoder as any as JsonEncoder).writeStartArr === 'function' &&
