@@ -1,4 +1,4 @@
-export enum BinaryMessageType {
+export const enum BinaryMessageType {
   Notification = 0b000,
   RequestData = 0b001,
   RequestComplete = 0b010,

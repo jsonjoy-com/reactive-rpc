@@ -1,27 +1,24 @@
 import {
   NotificationMessage,
-  type ReactiveRpcMessage,
+  type RpcMessage,
   RequestDataMessage,
   RequestUnsubscribeMessage,
   ResponseDataMessage,
 } from '../../../messages';
-import {RpcValue} from '../../../messages/Value';
 import {CborJsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/cbor';
+import {unknown} from '@jsonjoy.com/json-type';
 import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
+import {BinaryMsgStreamCodec} from '../BinaryMsgStreamCodec';
 
+const codec = new BinaryMsgStreamCodec();
 const cborCodec = new CborJsonValueCodec(new Writer(64));
-const encoder = cborCodec.encoder;
-const val = <T>(v: T) => new RpcValue<T>(v, undefined);
-const encode = (msg: ReactiveRpcMessage) => {
-  msg.encodeBinary(cborCodec);
-  return encoder.writer.flush();
+const encode = (msg: RpcMessage) => {
+  return codec.encode(cborCodec, [msg]);
 };
 
 describe('notification message', () => {
   test('encodes notification message with no method and no payload', () => {
-    cborCodec.encoder.writer.x0 = 61;
-    cborCodec.encoder.writer.x = 61;
-    const msg = new NotificationMessage('', val(undefined));
+    const msg = new NotificationMessage('', unknown(undefined));
     const buf = encode(msg);
     expect(buf).toMatchInlineSnapshot(`
       Uint8Array [
@@ -34,7 +31,7 @@ describe('notification message', () => {
   });
 
   test('encodes notification message with no payload', () => {
-    const msg = new NotificationMessage('abc', val(undefined));
+    const msg = new NotificationMessage('abc', unknown(undefined));
     const buf = encode(msg);
     expect(buf).toMatchInlineSnapshot(`
       Uint8Array [
@@ -50,7 +47,7 @@ describe('notification message', () => {
   });
 
   test('encodes notification message with payload', () => {
-    const msg = new NotificationMessage('abc', val(123));
+    const msg = new NotificationMessage('abc', unknown(123));
     const buf = encode(msg);
     expect(buf).toMatchInlineSnapshot(`
       Uint8Array [
@@ -71,7 +68,7 @@ describe('notification message', () => {
 describe('request', () => {
   describe('data message', () => {
     test('empty method name', () => {
-      const msg = new RequestDataMessage(0x0abc, '', val(undefined));
+      const msg = new RequestDataMessage(0x0abc, '', unknown(undefined));
       const buf = encode(msg);
       expect(buf).toMatchInlineSnapshot(`
         Uint8Array [
@@ -85,7 +82,7 @@ describe('request', () => {
     });
 
     test('no payload', () => {
-      const msg = new RequestDataMessage(0x1, 'foo', val(undefined));
+      const msg = new RequestDataMessage(0x1, 'foo', unknown(undefined));
       const buf = encode(msg);
       expect(buf).toMatchInlineSnapshot(`
         Uint8Array [
@@ -104,7 +101,7 @@ describe('request', () => {
     test('with payload', () => {
       cborCodec.encoder.writer.x0 = 49;
       cborCodec.encoder.writer.x = 49;
-      const msg = new RequestDataMessage(0x1, 'aaa', val('bbb'));
+      const msg = new RequestDataMessage(0x1, 'aaa', unknown('bbb'));
       const buf = encode(msg);
       expect(buf).toMatchInlineSnapshot(`
         Uint8Array [
@@ -146,7 +143,7 @@ describe('response', () => {
     test('encodes a data message', () => {
       cborCodec.encoder.writer.x0 = 49;
       cborCodec.encoder.writer.x = 49;
-      const msg = new ResponseDataMessage(0x3, val('bbb'));
+      const msg = new ResponseDataMessage(0x3, unknown('bbb'));
       const buf = encode(msg);
       expect(buf).toMatchInlineSnapshot(`
         Uint8Array [

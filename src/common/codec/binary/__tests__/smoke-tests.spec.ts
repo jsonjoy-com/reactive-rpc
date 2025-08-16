@@ -3,7 +3,7 @@ import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
 import {Codecs} from '@jsonjoy.com/json-pack/lib/codecs/Codecs';
 import {
   NotificationMessage,
-  type ReactiveRpcMessage,
+  type RpcMessage,
   RequestCompleteMessage,
   RequestDataMessage,
   RequestErrorMessage,
@@ -23,7 +23,7 @@ const codec = new BinaryRpcMessageCodec();
 const codecList = [codecs.cbor, codecs.msgpack, codecs.json];
 
 for (const jsonCodec of codecList) {
-  const assertMessage = (message: ReactiveRpcMessage) => {
+  const assertMessage = (message: RpcMessage) => {
     const encoded = codec.encode(jsonCodec, [message]);
     const decoded = codec.decodeBatch(jsonCodec, encoded);
     expect(decoded).toStrictEqual([message]);

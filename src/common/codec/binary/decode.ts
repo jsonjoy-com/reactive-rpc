@@ -1,7 +1,7 @@
 import {Uint8ArrayCut} from '@jsonjoy.com/util/lib/buffers/Uint8ArrayCut';
 import {
   NotificationMessage,
-  type ReactiveRpcMessage,
+  type RpcMessage,
   RequestCompleteMessage,
   RequestDataMessage,
   RequestErrorMessage,
@@ -11,11 +11,11 @@ import {
   ResponseErrorMessage,
   ResponseUnsubscribeMessage,
 } from '../../messages';
-import {RpcValue} from '../../messages/Value';
 import {BinaryMessageType} from './constants';
+import {unknown} from '@jsonjoy.com/json-type';
 import type {Reader} from '@jsonjoy.com/util/lib/buffers/Reader';
 
-export const decode = (reader: Reader): ReactiveRpcMessage => {
+export const decode = (reader: Reader): RpcMessage => {
   const word = reader.u32();
   const type = word >>> 29;
   switch (type) {
@@ -24,7 +24,7 @@ export const decode = (reader: Reader): ReactiveRpcMessage => {
       const x = word >>> 8;
       const name = reader.ascii(z);
       const cut = new Uint8ArrayCut(reader.uint8, reader.x, x);
-      const value = new RpcValue(cut, undefined);
+      const value = unknown(cut);
       reader.skip(x);
       return new NotificationMessage(name, value);
     }
@@ -52,7 +52,7 @@ export const decode = (reader: Reader): ReactiveRpcMessage => {
         reader.skip(x);
       }
       const cut = new Uint8ArrayCut(reader.uint8, cutStart, x);
-      const value = new RpcValue(cut, undefined);
+      const value = unknown(cut);
       switch (type) {
         case BinaryMessageType.RequestData:
           return new RequestDataMessage(y, name, value);
@@ -85,7 +85,7 @@ export const decode = (reader: Reader): ReactiveRpcMessage => {
         reader.skip(x);
       }
       const cut = new Uint8ArrayCut(reader.uint8, cutStart, x);
-      const value = new RpcValue(cut, undefined);
+      const value = unknown(cut);
       switch (type) {
         case BinaryMessageType.ResponseData:
           return new ResponseDataMessage(y, value);

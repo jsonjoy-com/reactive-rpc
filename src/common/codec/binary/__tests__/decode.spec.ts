@@ -1,6 +1,6 @@
 import {
   NotificationMessage,
-  type ReactiveRpcMessage,
+  type RpcMessage,
   RequestCompleteMessage,
   RequestDataMessage,
   RequestUnsubscribeMessage,
@@ -20,7 +20,7 @@ const codec = new CborJsonValueCodec(new Writer(64));
 const encoder = codec.encoder;
 const decoder = codec.decoder;
 const val = <T>(v: T) => new RpcValue<T>(v, undefined);
-const assertMessage = (msg: ReactiveRpcMessage) => {
+const assertMessage = (msg: RpcMessage) => {
   encoder.writer.reset();
   msg.encodeBinary(codec);
   const encoded = encoder.writer.flush();
