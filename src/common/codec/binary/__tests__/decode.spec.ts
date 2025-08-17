@@ -1,38 +1,21 @@
-import {
-  NotificationMessage,
-  type RpcMessage,
-  RequestCompleteMessage,
-  RequestDataMessage,
-  RequestUnsubscribeMessage,
-  ResponseCompleteMessage,
-  ResponseDataMessage,
-  ResponseErrorMessage,
-  ResponseUnsubscribeMessage,
-} from '../../../messages';
-import {RpcValue} from '../../../messages/Value';
-import {decode} from '../decode';
-import {Reader} from '@jsonjoy.com/util/lib/buffers/Reader';
-import type {Uint8ArrayCut} from '@jsonjoy.com/util/lib/buffers/Uint8ArrayCut';
+import {NotificationMessage, RequestCompleteMessage, RequestDataMessage, RequestUnsubscribeMessage, ResponseCompleteMessage, ResponseDataMessage, ResponseErrorMessage, ResponseUnsubscribeMessage, type RpcMessage} from '../../../messages';
+// import {decode} from '../decode';
+// import {Reader} from '@jsonjoy.com/util/lib/buffers/Reader';
+// import type {Uint8ArrayCut} from '@jsonjoy.com/util/lib/buffers/Uint8ArrayCut';
 import {CborJsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/cbor';
 import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
+import {unknown} from '@jsonjoy.com/json-type';
+import {BinaryMsgStreamCodec} from '../BinaryMsgStreamCodec';
 
-const codec = new CborJsonValueCodec(new Writer(64));
-const encoder = codec.encoder;
-const decoder = codec.decoder;
-const val = <T>(v: T) => new RpcValue<T>(v, undefined);
+const msgCodec = new BinaryMsgStreamCodec();
+const valueCodec = new CborJsonValueCodec(new Writer(64));
+// const encoder = valueCodec.encoder;
+// const decoder = valueCodec.decoder;
+const val = <T>(v: T) => unknown(v);
 const assertMessage = (msg: RpcMessage) => {
-  encoder.writer.reset();
-  msg.encodeBinary(codec);
-  const encoded = encoder.writer.flush();
-  const reader = new Reader();
-  reader.reset(encoded);
-  const decoded = decode(reader);
-  // console.log(decoded);
-  if ((decoded as any).value) {
-    const cut = (decoded as any).value.data as Uint8ArrayCut;
-    const arr = cut.uint8.subarray(cut.start, cut.start + cut.size);
-    (decoded as any).value.data = arr.length ? decoder.decode(arr) : undefined;
-  }
+  const encoded = msgCodec.encode(valueCodec, [msg]);
+  valueCodec.decoder.reader.reset(encoded);
+  const [decoded] = msgCodec.read(valueCodec);
   expect(decoded).toEqual(msg);
 };
 

@@ -5,7 +5,7 @@ Reactive-RPC protocol.
 
 | No.       | Message                | Message ID   | Method name | Payload    |
 |-----------|------------------------|--------------|-------------|------------|
-| 1         | Notification           | No           | Yes         | Maybe      |
+| 1         | Notification            | No           | Yes         | Maybe      |
 | 2         | Request Data           | Yes          | Yes         | Yes        |
 | 3         | Request Complete       | Yes          | Maybe       | Maybe      |
 | 4         | Request Error          | Yes          | Maybe       | Yes        |

@@ -1,9 +1,11 @@
 import {BinaryJsonEncoder} from '@jsonjoy.com/json-pack';
+import {unknown, Value} from '@jsonjoy.com/json-type';
 import {RpcMessageFormat} from '../constants';
 import * as msg from '../../messages';
 import {getTypeEncoder} from '../util';
-import {Value} from '@jsonjoy.com/json-type';
+import {decode} from './decode';
 import {BinaryMessageType} from './constants';
+import type {Uint8ArrayCut} from '@jsonjoy.com/util/lib/buffers/Uint8ArrayCut';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
 import type {MsgStreamCodec} from '../types';
 
@@ -143,27 +145,39 @@ export class BinaryMsgStreamCodec implements MsgStreamCodec {
   }
 
   public read(codec: JsonValueCodec): msg.RpcMessage[] {
-    throw new Error('not implemented');
-    // const decoder = codec.decoder;
-    // const reader = decoder.reader;
-    // const messages: msg.RpcMessage[] = [];
-    // while (reader.x < size) {
-    //   const message = decode(reader);
-    //   messages.push(message);
-    // }
-    // const length = messages.length;
-    // for (let i = 0; i < length; i++) {
-    //   const message = messages[i];
-    //   const value = (message as any).value;
-    //   if (value) {
-    //     const cut = value.data as Uint8ArrayCut;
-    //     const arr = cut.uint8.subarray(cut.start, cut.start + cut.size);
-    //     const data = arr.length ? decoder.read(arr) : undefined;
-    //     if (data === undefined) (message as any).value = undefined;
-    //     else value.data = data;
-    //   }
-    // }
-    // return messages;
+    const decoder = codec.decoder;
+    const reader = decoder.reader;
+    const messages: msg.RpcMessage[] = [];
+    while (reader.x < reader.uint8.length) {
+      const message = decode(reader);
+      messages.push(message);
+    }
+    const length = messages.length;
+    for (let i = 0; i < length; i++) {
+      const message = messages[i];
+      if (message instanceof msg.NotificationMessage
+        || message instanceof msg.RequestCompleteMessage
+        || message instanceof msg.RequestDataMessage
+        || message instanceof msg.RequestErrorMessage
+        || message instanceof msg.ResponseCompleteMessage
+        || message instanceof msg.ResponseDataMessage
+        || message instanceof msg.ResponseErrorMessage
+      ) {
+        const value = message.value;
+        if (value) {
+          const cut = value.data as Uint8ArrayCut;
+          if (!cut || cut.size === 0) message.value = unknown(undefined);
+          else {
+            const arr = cut.uint8.subarray(cut.start, cut.start + cut.size);
+            const data = arr.length ? decoder.read(arr) : undefined;
+            if (data === undefined) message.value = unknown(undefined);
+            else value.data = data;
+          }
+        } else
+          message.value = unknown(undefined);
+      }
+    }
+    return messages;
   }
 
   public readChunk(jsonCodec: JsonValueCodec, uint8: Uint8Array): msg.RpcMessage[] {

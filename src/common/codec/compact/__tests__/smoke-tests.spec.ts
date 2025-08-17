@@ -14,7 +14,6 @@ import {
   ResponseUnsubscribeMessage,
 } from '../../../messages';
 import {t, unknown, Value} from '@jsonjoy.com/json-type';
-import {RpcError} from 'rpc-error';
 
 const writer = new Writer(8 * Math.round(Math.random() * 100));
 const codecs = new Codecs(writer);

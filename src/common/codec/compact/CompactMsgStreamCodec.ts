@@ -132,7 +132,6 @@ export class CompactMsgStreamCodec implements MsgStreamCodec {
       encodeCompactWithNameAndPayload(codec, CompactMessageType.RequestComplete, message);
     } else if (message instanceof msg.RequestErrorMessage) {
       encodeCompactWithNameAndPayload(codec, CompactMessageType.RequestError, message);
-    } else if (message instanceof msg.RequestUnsubscribeMessage) {
       codec.encoder.writeArr(message.toCompact());
     } else if (message instanceof msg.ResponseCompleteMessage) {
       encodeCompactWithPayload(codec, CompactMessageType.ResponseComplete, message);
@@ -140,10 +139,8 @@ export class CompactMsgStreamCodec implements MsgStreamCodec {
       encodeCompactWithPayload(codec, CompactMessageType.ResponseData, message);
     } else if (message instanceof msg.ResponseErrorMessage) {
       encodeCompactWithPayload(codec, CompactMessageType.ResponseError, message);
-    } else if (message instanceof msg.ResponseUnsubscribeMessage) {
+    } else if (message instanceof msg.RequestUnsubscribeMessage || message instanceof msg.ResponseUnsubscribeMessage) {
       codec.encoder.writeArr(message.toCompact());
-    } else {
-      codec.encoder.writeArr((message as any).toCompact());
     }
   }
 
