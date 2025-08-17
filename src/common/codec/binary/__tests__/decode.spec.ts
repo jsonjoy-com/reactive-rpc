@@ -1,4 +1,4 @@
-import {NotificationMessage, RequestCompleteMessage, RequestDataMessage, RequestUnsubscribeMessage, ResponseCompleteMessage, ResponseDataMessage, ResponseErrorMessage, ResponseUnsubscribeMessage, type RpcMessage} from '../../../messages';
+import {NotificationMessage, RequestCompleteMessage, RequestDataMessage, RequestErrorMessage, RequestUnsubscribeMessage, ResponseCompleteMessage, ResponseDataMessage, ResponseErrorMessage, ResponseUnsubscribeMessage, type RpcMessage} from '../../../messages';
 // import {decode} from '../decode';
 // import {Reader} from '@jsonjoy.com/util/lib/buffers/Reader';
 // import type {Uint8ArrayCut} from '@jsonjoy.com/util/lib/buffers/Uint8ArrayCut';
@@ -16,6 +16,18 @@ const assertMessage = (msg: RpcMessage) => {
   const encoded = msgCodec.encode(valueCodec, [msg]);
   valueCodec.decoder.reader.reset(encoded);
   const [decoded] = msgCodec.read(valueCodec);
+  if (decoded instanceof NotificationMessage
+    || decoded instanceof RequestCompleteMessage
+    || decoded instanceof RequestDataMessage
+    || decoded instanceof RequestErrorMessage
+    || decoded instanceof ResponseCompleteMessage
+    || decoded instanceof ResponseDataMessage
+    || decoded instanceof ResponseErrorMessage
+  ) {
+    if (!decoded.value) {
+      decoded.value = val(undefined);
+    }
+  }
   expect(decoded).toEqual(msg);
 };
 

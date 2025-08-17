@@ -166,15 +166,18 @@ export class BinaryMsgStreamCodec implements MsgStreamCodec {
         const value = message.value;
         if (value) {
           const cut = value.data as Uint8ArrayCut;
-          if (!cut || cut.size === 0) message.value = unknown(undefined);
+          // if (!cut || cut.size === 0) message.value = unknown(undefined);
+          if (!cut || cut.size === 0) message.value = void 0;
           else {
             const arr = cut.uint8.subarray(cut.start, cut.start + cut.size);
             const data = arr.length ? decoder.read(arr) : undefined;
-            if (data === undefined) message.value = unknown(undefined);
+            // if (data === undefined) message.value = unknown(undefined);
+            if (data === undefined) message.value = void 0;
             else value.data = data;
           }
         } else
-          message.value = unknown(undefined);
+          // message.value = unknown(undefined);
+          message.value = void 0;
       }
     }
     return messages;
