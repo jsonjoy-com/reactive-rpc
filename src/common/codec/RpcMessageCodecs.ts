@@ -1,16 +1,16 @@
-import {BinaryRpcMessageCodec} from './binary';
-import {CompactRpcMessageCodec} from './compact';
-import {JsonRpc2RpcMessageCodec} from './json-rpc-2/JsonRpc2RpcMessageCodec';
-import type {RpcMessageCodec} from './types';
+import {BinaryMsgStreamCodec} from './binary/BinaryMsgStreamCodec';
+import {CompactMsgStreamCodec} from './compact/CompactMsgStreamCodec';
+import {JsonRpc2TypedMsgStreamCodec} from './json-rpc-2/JsonRpc2TypedMsgStreamCodec';
+import type {MsgStreamCodec} from './types';
 
 export class RpcMessageCodecs {
-  binary: RpcMessageCodec;
-  compact: RpcMessageCodec;
-  jsonRpc2: RpcMessageCodec;
+  binary: MsgStreamCodec;
+  compact: MsgStreamCodec;
+  jsonRpc2: MsgStreamCodec;
 
   constructor() {
-    this.binary = new BinaryRpcMessageCodec();
-    this.compact = new CompactRpcMessageCodec();
-    this.jsonRpc2 = new JsonRpc2RpcMessageCodec();
+    this.binary = new BinaryMsgStreamCodec();
+    this.compact = new CompactMsgStreamCodec();
+    this.jsonRpc2 = new JsonRpc2TypedMsgStreamCodec();
   }
 }

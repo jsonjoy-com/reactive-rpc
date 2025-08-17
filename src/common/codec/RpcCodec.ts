@@ -1,11 +1,11 @@
-import type {RpcSpecifier} from '../rpc';
-import type {ReactiveRpcMessage} from '../messages';
+import type {RpcSpecifier} from '../remote';
+import type {RpcMessage} from '../messages';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
-import type {RpcMessageCodec} from './types';
+import type {MsgStreamCodec} from './types';
 
 export class RpcCodec {
   constructor(
-    public readonly msg: RpcMessageCodec,
+    public readonly msg: MsgStreamCodec,
     public readonly req: JsonValueCodec,
     public readonly res: JsonValueCodec,
   ) {}
@@ -15,18 +15,18 @@ export class RpcCodec {
     return specifier as RpcSpecifier;
   }
 
-  public encode(messages: ReactiveRpcMessage[], valueCodec: JsonValueCodec): Uint8Array {
-    const encoder = valueCodec.encoder;
+  public encode(messages: RpcMessage[]): Uint8Array {
+    const encoder = this.req.encoder;
     const writer = encoder.writer;
     writer.reset();
-    this.msg.encodeBatch(valueCodec, messages);
+    this.msg.writeBatch(this.req, messages);
     return writer.flush();
   }
 
-  public decode(data: Uint8Array, valueCodec: JsonValueCodec): ReactiveRpcMessage[] {
+  public decode(data: Uint8Array, valueCodec: JsonValueCodec): RpcMessage[] {
     const decoder = valueCodec.decoder;
     const reader = decoder.reader;
     reader.reset(data);
-    return this.msg.decodeBatch(valueCodec, data);
+    return this.msg.readChunk(valueCodec, data);
   }
 }
