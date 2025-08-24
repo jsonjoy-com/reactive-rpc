@@ -113,21 +113,22 @@ export class RxClient<Methods extends RpcClientMethods<any> = RpcClientMethods> 
     const call = this.calls.get(id);
     if (!call) return;
     call.resFinalized = true;
-    if (value !== void 0) call.res$.next(value);
+    const data = value ? (value as any).data : undefined;
+    if (data !== void 0) call.res$.next(data);
     call.res$.complete();
   }
 
   public onResponseData({id, value}: msg.ResponseDataMessage): void {
     const call = this.calls.get(id);
     if (!call) return;
-    call.res$.next(value);
+    call.res$.next(value.data);
   }
 
   public onResponseError({id, value}: msg.ResponseErrorMessage): void {
     const call = this.calls.get(id);
     if (!call) return;
     call.resFinalized = true;
-    call.res$.error(value);
+    call.res$.error(value.data);
   }
 
   public onRequestUnsubscribe({id}: msg.RequestUnsubscribeMessage): void {
