@@ -1,9 +1,9 @@
-import {firstValueFrom, isObservable, Observable, type Observer, Subject} from 'rxjs';
+import {firstValueFrom, isObservable, Observable, type Observer, of, Subject, Subscription} from 'rxjs';
+import {unknown} from '@jsonjoy.com/json-type';
 import {subscribeCompleteObserver} from '../util/subscribeCompleteObserver';
-import {TimedQueue} from '../util/TimedQueue';
-import {CompactMessageType} from '../codec/compact/constants';
-import type * as compact from '../codec/compact';
+import * as msg from '../messages';
 import type {RpcClient, RpcClientMethods} from './types';
+import type {LogicalChannel} from '../channel/logical/types';
 
 /**
  * An in-flight RPC call record.
@@ -24,26 +24,9 @@ class Call {
  */
 export interface RxClientOptions {
   /**
-   * Method to be called by client when it wants to send messages to the server.
-   * This is usually connected to your WebSocket "send" method.
+   * Channel to send and receive messages.
    */
-  send: (messages: compact.CompactClientMessage[]) => void;
-
-  /**
-   * Number of messages to keep in buffer before sending them to the server.
-   * The buffer is flushed when the message reaches this limit or when the
-   * buffering time has reached the time specified in `bufferTime` parameter.
-   * Defaults to 100 messages.
-   */
-  bufferSize?: number;
-
-  /**
-   * Time in milliseconds for how long to buffer messages before sending them
-   * to the server. Defaults to 10 milliseconds.
-   */
-  bufferTime?: number;
-
-  onNotification?: (method: string, data: unknown) => void;
+  channel: LogicalChannel<msg.RpcServerMessage[], msg.RpcClientMessage[]>;
 }
 
 /**
@@ -77,22 +60,19 @@ export interface RxClientOptions {
  * ```
  */
 export class RxClient<Methods extends RpcClientMethods<any> = RpcClientMethods> implements RpcClient<Methods> {
-  private id = 1;
-  public readonly buffer: TimedQueue<compact.CompactClientMessage>;
-
-  /**
-   * In-flight RPC calls.
-   */
+  /** In-flight RPC calls. */
   private readonly calls = new Map<number, Call>();
+  /** Message ID counter. */
+  private id = 1;
+  private readonly _msgSub: Subscription | undefined;
+  public readonly channel: LogicalChannel<msg.RpcServerMessage[], msg.RpcClientMessage[]>;
+  public readonly notification$: Observable<msg.NotificationMessage> = new Subject<msg.NotificationMessage>();
 
-  private _notif: (method: string, data: unknown) => void;
-
-  constructor({send, bufferSize = 100, bufferTime = 10, onNotification = () => {}}: RxClientOptions) {
-    this.buffer = new TimedQueue();
-    this.buffer.itemLimit = bufferSize;
-    this.buffer.timeLimit = bufferTime;
-    this.buffer.onFlush = send;
-    this._notif = onNotification;
+  constructor({channel}: RxClientOptions) {
+    this.channel = channel;
+    this._msgSub = channel.msg$.subscribe({
+      next: (messages) => this.onMessages(messages),
+    });
   }
 
   /**
@@ -110,7 +90,7 @@ export class RxClient<Methods extends RpcClientMethods<any> = RpcClientMethods> 
    *
    * @param messages List of messages from server.
    */
-  public onMessages(messages: compact.CompactServerMessage[]): void {
+  public onMessages(messages: msg.RpcServerMessage[]): void {
     const length = messages.length;
     for (let i = 0; i < length; i++) this.onMessage(messages[i]);
   }
@@ -120,38 +100,37 @@ export class RxClient<Methods extends RpcClientMethods<any> = RpcClientMethods> 
    *
    * @param messages A message from the server.
    */
-  public onMessage(message: compact.CompactServerMessage): void {
-    const type = message[0];
-    if (type === CompactMessageType.ResponseComplete) this.onResponseComplete(message);
-    else if (type === CompactMessageType.ResponseData) this.onResponseData(message);
-    else if (type === CompactMessageType.ResponseError) this.onResponseError(message);
-    else if (type === CompactMessageType.RequestUnsubscribe) this.onRequestUnsubscribe(message);
-    else if (type === CompactMessageType.Notification) this._notif(message[1], message[2]);
-    else console.warn('Unknown message type', type, message);
+  public onMessage(message: msg.RpcServerMessage): void {
+    if (message instanceof msg.ResponseCompleteMessage) this.onResponseComplete(message);
+    else if (message instanceof msg.ResponseDataMessage) this.onResponseData(message);
+    else if (message instanceof msg.ResponseErrorMessage) this.onResponseError(message);
+    else if (message instanceof msg.RequestUnsubscribeMessage) this.onRequestUnsubscribe(message);
+    else if (message instanceof msg.NotificationMessage) (this.notification$ as Subject<msg.NotificationMessage>).next(message);
+    else console.warn('Unknown message type', message);
   }
 
-  public onResponseComplete([, id, data]: compact.CompactResponseCompleteMessage): void {
+  public onResponseComplete({id, value}: msg.ResponseCompleteMessage): void {
     const call = this.calls.get(id);
     if (!call) return;
     call.resFinalized = true;
-    if (data !== void 0) call.res$.next(data);
+    if (value !== void 0) call.res$.next(value);
     call.res$.complete();
   }
 
-  public onResponseData([, id, data]: compact.CompactResponseDataMessage): void {
+  public onResponseData({id, value}: msg.ResponseDataMessage): void {
     const call = this.calls.get(id);
     if (!call) return;
-    call.res$.next(data);
+    call.res$.next(value);
   }
 
-  public onResponseError([, id, data]: compact.CompactResponseErrorMessage): void {
+  public onResponseError({id, value}: msg.ResponseErrorMessage): void {
     const call = this.calls.get(id);
     if (!call) return;
     call.resFinalized = true;
-    call.res$.error(data);
+    call.res$.error(value);
   }
 
-  public onRequestUnsubscribe([, id]: compact.CompactRequestUnsubscribeMessage): void {
+  public onRequestUnsubscribe({id}: msg.RequestUnsubscribeMessage): void {
     const call = this.calls.get(id);
     if (!call) return;
     call.req$.complete();
@@ -187,33 +166,33 @@ export class RxClient<Methods extends RpcClientMethods<any> = RpcClientMethods> 
     res$.subscribe({error: cleanup, complete: cleanup});
     const entry = new Call(req$, res$, false);
     this.calls.set(id, entry);
+    const channel = this.channel;
     if (isObservable(data)) {
       let firstMessageSent = false;
       subscribeCompleteObserver<unknown>(req$, {
         next: (value) => {
           const messageMethod = firstMessageSent ? '' : method;
           firstMessageSent = true;
-          const message: compact.CompactRequestDataMessage = [CompactMessageType.RequestData, id, messageMethod as string, value];
-          this.buffer.push(message);
+          const message = new msg.RequestDataMessage(id, messageMethod as string, unknown(value));
+          channel.send([message]);
         },
         error: (error) => {
           cleanup();
           const messageMethod = firstMessageSent ? '' : method;
-          // TODO: Should normalize error to RpcError or POJO...
-          const message: compact.CompactRequestErrorMessage = [CompactMessageType.RequestError, id, messageMethod as string, error];
-          this.buffer.push(message);
+          const message = new msg.RequestErrorMessage(id, messageMethod as string, unknown(error));
+          channel.send([message]);
         },
         complete: (value) => {
           cleanup();
           const messageMethod = firstMessageSent ? '' : method;
-          const message: compact.CompactRequestCompleteMessage = [CompactMessageType.RequestComplete, id, messageMethod as string, value];
-          this.buffer.push(message);
+          const message = new msg.RequestCompleteMessage(id, messageMethod as string, unknown(value));
+          channel.send([message]);
         },
       });
       data.subscribe(req$);
     } else {
-      const message: compact.CompactRequestCompleteMessage = [CompactMessageType.RequestComplete, id, method as string, data];
-      this.buffer.push(message);
+      const message = new msg.RequestCompleteMessage(id, method as string, unknown(data));
+      channel.send([message]);
       req$.complete();
       cleanup();
     }
@@ -221,16 +200,16 @@ export class RxClient<Methods extends RpcClientMethods<any> = RpcClientMethods> 
       res$.subscribe(observer);
       return () => {
         if (!entry.resFinalized) {
-          const message: compact.CompactResponseUnsubscribeMessage = [CompactMessageType.ResponseUnsubscribe, id];
-          this.buffer.push(message);
+          const message = new msg.ResponseUnsubscribeMessage(id);
+          channel.send([message]);
         }
         res$.complete();
       };
     });
   }
 
-  public async call<K extends keyof Methods>(method: K, request: Observable<Methods[K][0]>): Promise<Methods[K][1]> {
-    return await firstValueFrom(this.call$(method, request));
+  public async call<K extends keyof Methods>(method: K, request: Methods[K][0]): Promise<Methods[K][1]> {
+    return await firstValueFrom(this.call$(method, of(request)));
   }
 
   /**
@@ -239,9 +218,9 @@ export class RxClient<Methods extends RpcClientMethods<any> = RpcClientMethods> 
    * @param method Remote method name.
    * @param data Static payload data.
    */
-  public notify<K extends keyof Methods>(method: K, data: Observable<Methods[K][0]>): void {
-    const message: compact.CompactNotificationMessage = [CompactMessageType.Notification, method as string, data];
-    this.buffer.push(message);
+  public notify<K extends keyof Methods>(method: K, data: Methods[K][0]): void {
+    const message = new msg.NotificationMessage(method as string, unknown(data));
+    this.channel.send([message]);
   }
 
   /**
@@ -249,7 +228,8 @@ export class RxClient<Methods extends RpcClientMethods<any> = RpcClientMethods> 
    * reversible, you cannot use the RPC client after this call.
    */
   public stop(reason = 'STOP'): void {
-    this.buffer.onFlush = () => {};
+    this._msgSub?.unsubscribe();
+    // this.buffer.onFlush = () => {};
     for (const call of this.calls.values()) {
       call.req$.error(new Error(reason));
       call.req$.error(new Error(reason));
