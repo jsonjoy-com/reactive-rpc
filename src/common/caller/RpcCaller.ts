@@ -44,14 +44,10 @@ export class RpcCaller<Ctx = unknown, P extends Procedures<any> = Procedures<Ctx
     return name in this.procedures;
   }
 
-  public getMethodStrict<K extends keyof P>(name: K): P[K] {
+  protected getMethodStrict<K extends keyof P>(name: K): P[K] {
     const method = this.procedures[name];
     if (method instanceof Procedure) return method;
     throw RpcError.fromErrno(RpcErrorCodes.METHOD_UNK);
-  }
-
-  public info(name: string): Pick<Procedure, 'pretty' | 'rx'> {
-    return this.getMethodStrict(name);
   }
 
   protected validate(method: Procedure, request: unknown): void {
@@ -186,6 +182,11 @@ export class RpcCaller<Ctx = unknown, P extends Procedures<any> = Procedures<Ctx
   }
 
   /** -------------------------------------------------------- {@link Caller} */
+
+  public info<K extends keyof P>(name: K): Pick<P[K], 'pretty' | 'rx'> | undefined {
+    const method = this.procedures[name];
+    return method instanceof Procedure ? method : void 0;
+  }
 
   /**
    * "call" executes degenerate version of RPC where both request and response data

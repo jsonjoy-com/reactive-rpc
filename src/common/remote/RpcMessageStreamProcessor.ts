@@ -1,16 +1,16 @@
 import * as msg from '../messages';
 import {TimedQueue} from '../util/TimedQueue';
-import {RpcErrorCodes, RpcError} from './caller/error/RpcError';
+import {RpcErrorCodes, RpcError} from 'rpc-error';
 import {subscribeCompleteObserver} from '../util/subscribeCompleteObserver';
-import {TypedRpcError} from './caller/error/typed';
-import type {RpcValue} from '../messages/Value';
-import type {RpcCaller} from './caller/RpcCaller';
-import type {Call, RpcApiMap} from './caller/types';
+import {TypedRpcError} from '../caller/error/typed';
+import type {Call} from '../caller/Call';
+import type {Value} from '@jsonjoy.com/json-type';
+import type {Caller} from '../caller';
 
-type Send = (messages: (msg.ReactiveRpcServerMessage | msg.NotificationMessage)[]) => void;
+type Send = (messages: (msg.RpcServerMessage | msg.NotificationMessage)[]) => void;
 
 export interface RpcMessageStreamProcessorOptions<Ctx = unknown> {
-  caller: RpcCaller<Ctx>;
+  caller: Caller<Ctx>;
 
   /**
    * Method to be called by server when it wants to send messages to the client.
@@ -33,15 +33,23 @@ export interface RpcMessageStreamProcessorOptions<Ctx = unknown> {
   bufferTime?: number;
 }
 
-export interface RpcMessageStreamProcessorFromApiOptions<Ctx = unknown>
-  extends Omit<RpcMessageStreamProcessorOptions<Ctx>, 'onCall'> {
-  api: RpcApiMap<Ctx>;
-}
+// export interface RpcMessageStreamProcessorFromApiOptions<Ctx = unknown>
+//   extends Omit<RpcMessageStreamProcessorOptions<Ctx>, 'onCall'> {
+//   api: RpcApiMap<Ctx>;
+// }
 
+/**
+ * Processes incoming Reactive-RPC messages and manages in-flight calls. Used
+ * for WebSocket servers to handle messages from clients. Implements server-side
+ * part of Reactive-RPC protocol. Can buffer outgoing messages to optimize
+ * network usage.
+ *
+ * @todo Rename this class.
+ */
 export class RpcMessageStreamProcessor<Ctx = unknown> {
-  protected readonly caller: RpcCaller<Ctx>;
+  protected readonly caller: Caller<Ctx>;
   private readonly activeStreamCalls: Map<number, Call<unknown, unknown>> = new Map();
-  protected send: (message: msg.ReactiveRpcServerMessage | msg.NotificationMessage) => void;
+  protected send: (message: msg.RpcServerMessage | msg.NotificationMessage) => void;
 
   /** Callback which sends message out of the server. */
   public onSend: Send;
@@ -51,7 +59,7 @@ export class RpcMessageStreamProcessor<Ctx = unknown> {
     this.onSend = send;
 
     if (bufferTime) {
-      const buffer = new TimedQueue<msg.ReactiveRpcServerMessage | msg.NotificationMessage>();
+      const buffer = new TimedQueue<msg.RpcServerMessage | msg.NotificationMessage>();
       buffer.itemLimit = bufferSize;
       buffer.timeLimit = bufferTime;
       buffer.onFlush = (messages) => this.onSend(messages as any);
@@ -71,7 +79,7 @@ export class RpcMessageStreamProcessor<Ctx = unknown> {
    * @param message A single Reactive-RPC message.
    * @param ctx Server context.
    */
-  public onMessage(message: msg.ReactiveRpcClientMessage, ctx: Ctx): void {
+  public onMessage(message: msg.RpcClientMessage, ctx: Ctx): void {
     if (message instanceof msg.RequestDataMessage) this.onRequestDataMessage(message, ctx);
     else if (message instanceof msg.RequestCompleteMessage) this.onRequestCompleteMessage(message, ctx);
     else if (message instanceof msg.RequestErrorMessage) this.onRequestErrorMessage(message, ctx);
@@ -85,27 +93,27 @@ export class RpcMessageStreamProcessor<Ctx = unknown> {
    * @param messages A list of received messages.
    * @param ctx Server context.
    */
-  public onMessages(messages: msg.ReactiveRpcClientMessage[], ctx: Ctx): void {
+  public onMessages(messages: msg.RpcClientMessage[], ctx: Ctx): void {
     const length = messages.length;
     for (let i = 0; i < length; i++) this.onMessage(messages[i], ctx);
   }
 
-  public sendNotification(method: string, value: RpcValue): void {
+  public sendNotification(method: string, value: Value): void {
     const message = new msg.NotificationMessage(method, value);
     this.send(message);
   }
 
-  protected sendCompleteMessage(id: number, value: RpcValue | undefined): void {
+  protected sendCompleteMessage(id: number, value: Value | undefined): void {
     const message = new msg.ResponseCompleteMessage(id, value);
     this.send(message);
   }
 
-  protected sendDataMessage(id: number, value: RpcValue): void {
+  protected sendDataMessage(id: number, value: Value): void {
     const message = new msg.ResponseDataMessage(id, value);
     this.send(message);
   }
 
-  protected sendErrorMessage(id: number, value: RpcValue): void {
+  protected sendErrorMessage(id: number, value: Value): void {
     const message = new msg.ResponseErrorMessage(id, value);
     this.send(message);
   }
@@ -120,10 +128,10 @@ export class RpcMessageStreamProcessor<Ctx = unknown> {
       .call(name, request as any, ctx)
       // .then((value: RpcValue) => this.sendCompleteMessage(id, value))
       .then((value: any) => this.sendCompleteMessage(id, value))
-      .catch((value: RpcValue) => this.sendErrorMessage(id, value));
+      .catch((value: Value) => this.sendErrorMessage(id, value));
   }
 
-  protected onStreamError = (id: number, error: RpcValue): void => {
+  protected onStreamError = (id: number, error: Value): void => {
     this.sendErrorMessage(id, error);
     this.activeStreamCalls.delete(id);
   };
@@ -162,12 +170,12 @@ export class RpcMessageStreamProcessor<Ctx = unknown> {
     //     this.sendCompleteMessage(id, undefined);
     //   },
     // });
-    subscribeCompleteObserver<RpcValue>(call.res$, {
-      next: (value: RpcValue) => {
+    subscribeCompleteObserver<Value>(call.res$, {
+      next: (value: Value) => {
         this.sendDataMessage(id, value);
       },
-      error: (error: unknown) => this.onStreamError(id, error as RpcValue),
-      complete: (value: RpcValue | undefined) => {
+      error: (error: unknown) => this.onStreamError(id, error as Value),
+      complete: (value: Value | undefined) => {
         this.activeStreamCalls.delete(id);
         this.sendCompleteMessage(id, value);
       },
@@ -191,7 +199,7 @@ export class RpcMessageStreamProcessor<Ctx = unknown> {
         this.sendError(id, RpcErrorCodes.METHOD_UNK);
         return;
       }
-      if (info.isStreaming) {
+      if (info.rx) {
         call = this.createStreamCall(id, method, ctx);
       } else {
         this.execStaticCall(id, method, value ? value.data : undefined, ctx);
@@ -221,13 +229,13 @@ export class RpcMessageStreamProcessor<Ctx = unknown> {
       return;
     }
     const caller = this.caller;
-    if (!caller.exists(method)) {
+    const info = caller.info(method);
+    if (!info) {
       this.sendError(id, RpcErrorCodes.METHOD_UNK);
       return;
     }
-    const {isStreaming} = caller.info(method);
     const data = value ? value.data : undefined;
-    if (isStreaming) {
+    if (info.rx) {
       const newCall = this.createStreamCall(id, method, ctx);
       if (newCall) {
         if (data !== undefined) {
@@ -249,12 +257,12 @@ export class RpcMessageStreamProcessor<Ctx = unknown> {
       this.sendError(id, RpcErrorCodes.METHOD_INV);
       return;
     }
-    if (!this.caller.exists(method)) {
+    const info = this.caller.info(method);
+    if (!info) {
       this.sendError(id, RpcErrorCodes.METHOD_UNK);
       return;
     }
-    const {isStreaming} = this.caller.info(method);
-    if (!isStreaming) {
+    if (!info.rx) {
       void this.sendError(id, RpcErrorCodes.METHOD_UNK);
       return;
     }
@@ -275,6 +283,6 @@ export class RpcMessageStreamProcessor<Ctx = unknown> {
     const {method, value} = message;
     if (!method || method.length > 128) throw RpcError.fromErrno(RpcErrorCodes.METHOD_INV);
     const request = value && typeof value === 'object' ? value?.data : undefined;
-    this.caller.notification(method, request, ctx).catch(() => {});
+    this.caller.notify(method, request, ctx).catch(() => {});
   }
 }

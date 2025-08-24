@@ -1,5 +1,6 @@
 import type {Observable} from 'rxjs';
 import type {Procedure} from '../procedures';
+import type {Call} from './Call';
 
 export type Procedures<Ctx = unknown> = Record<string, Procedure<any, any, Ctx>>;
 export type ProceduresCtx<P extends Procedures> = P extends Procedures<infer Ctx> ? Ctx : unknown;
@@ -12,6 +13,8 @@ export type ProcedureRes<P> = P extends Procedure<any, infer Res, any> ? Res : n
  * logical concept, it may be a remote server or a local one.
  */
 export interface Caller<Ctx = unknown, P extends Procedures<any> = Procedures<Ctx>> {
+  info<K extends keyof P>(name: K): Pick<P[K], 'pretty' | 'rx'> | undefined;
+  createCall<K extends keyof P>(name: K, ctx: Ctx): Call<ProcedureReq<P[K]>, ProcedureRes<P[K]>>;
   call<K extends keyof P>(name: K, request: ProcedureReq<P[K]>, ctx: Ctx): Promise<ProcedureRes<P[K]>>;
   call$<K extends keyof P>(name: K, request$: Observable<ProcedureReq<P[K]>> | ProcedureReq<P[K]>, ctx: Ctx): Observable<ProcedureRes<P[K]>>;
   notify<K extends keyof P>(method: K, data: ProcedureReq<P[K]>, ctx: Ctx): Promise<void>;

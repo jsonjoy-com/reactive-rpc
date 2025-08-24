@@ -4,6 +4,7 @@ import {RpcError} from './error/RpcError';
 import {RpcCaller, type RpcCallerOptions} from './RpcCaller';
 import {printTree} from 'tree-dump/lib/printTree';
 import {Procedure} from '../procedures';
+import {Call} from './Call';
 import {t, KeyType, Type, Value, type Schema} from '@jsonjoy.com/json-type';
 import {ValidatorCodegen} from '@jsonjoy.com/json-type/lib/codegen/validator/ValidatorCodegen';
 import {type AbsType, FnRxType, FnType} from '@jsonjoy.com/json-type/lib/type/classes';
@@ -91,15 +92,26 @@ export class TypedCaller<Ctx, V extends ObjValue<any>, P extends ObjectValueToPr
 
   /** -------------------------------------------------------- {@link Caller} */
 
+  public info<K extends keyof P>(name: K): Pick<P[K], 'pretty' | 'rx'> | undefined {
+    return this.rpc.info(name as string);
+  }
+
+  public createCall<K extends keyof P>(name: K, ctx: Ctx): Call<ProcedureReq<P[K]>, ProcedureRes<P[K]>> {
+    const call = this.rpc.createCall(name as string, ctx);
+    const type = this.getResType(name);
+    const res$ = call.res$.pipe(Rx.map(data => new Value(data, type))) as Rx.Observable<ProcedureRes<P[K]>>;
+    return new Call(call.req$, call.reqUnsubscribe$, call.stop$, res$);
+  }
+
   public async call<K extends keyof P>(name: K, request: ProcedureReq<P[K]>, ctx: Ctx): Promise<ProcedureRes<P[K]>> {
-    const type = this.getResType(name as any);
+    const type = this.getResType(name as string);
     const data = await this.rpc.call(name as any, request, ctx);
     const value = new Value(data, type);
     return value as ProcedureRes<P[K]>;
   }
 
   public call$<K extends keyof P>(name: K, request$: Rx.Observable<ProcedureReq<P[K]>>, ctx: Ctx): Rx.Observable<ProcedureRes<P[K]>> {
-    return Rx.of(this.getResType(name as any) as Type).pipe(
+    return Rx.of(this.getResType(name as string) as Type).pipe(
       Rx.switchMap((type) => this.rpc.call$(name as any, request$, ctx).pipe(
         Rx.map(data => new Value(data, type)))
       )
