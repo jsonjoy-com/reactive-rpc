@@ -16,6 +16,7 @@ export type RpcClientMessage =
  * Messages with which server can respond.
  */
 export type RpcServerMessage =
+  | msg.NotificationMessage
   | msg.ResponseDataMessage
   | msg.ResponseCompleteMessage
   | msg.ResponseErrorMessage
@@ -32,7 +33,7 @@ export interface Message {
    * The type of the message `value`.
    */
   type?: Type | undefined;
-  // validate(): void;
+  validate(): void;
   toCompact(): CompactMessage<unknown>;
   // encodeBinary(codec: JsonValueCodec): void;
 }

@@ -2,15 +2,15 @@ import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
 import type {RpcMessage} from '../messages';
 import type {RpcMessageFormat} from './constants';
 
-export interface MsgCodec<Chunk> {
+export interface MsgCodec<Chunk, Message> {
   id: string;
   format: RpcMessageFormat;
-  toChunk(messages: RpcMessage[]): Chunk;
-  fromChunk(chunk: Chunk): RpcMessage[];
+  toChunk(messages: Message[]): Chunk;
+  fromChunk(chunk: Chunk): Message[];
 }
 
-export type TextMsgCodec = MsgCodec<string>;
-export type BinaryMsgCodec = MsgCodec<Uint8Array>;
+export type TextMsgCodec<Message> = MsgCodec<string, Message>;
+export type BinaryMsgCodec<Message> = MsgCodec<Uint8Array, Message>;
 
 
 export interface MsgStreamCodec {

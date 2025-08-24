@@ -101,9 +101,9 @@ export class RequestUnsubscribeMessage implements Message {
     return [CompactMessageType.RequestUnsubscribe, this.id];
   }
 
-  // public validate(): void {
-  //   validateId(this.id);
-  // }
+  public validate(): void {
+    validateId(this.id);
+  }
 }
 
 /**
