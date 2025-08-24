@@ -1,5 +1,5 @@
-import {ObjValue} from '@jsonjoy.com/json-type';
 import {TypedCaller} from '../TypedCaller';
+import {ObjValue} from '@jsonjoy.com/json-type';
 import {procedures, SampleCtx} from './RpcCaller.fixtures';
 
 const base = ObjValue.new();
