@@ -1,6 +1,6 @@
-import {createWebSocketMock, type MockWebSocket} from '../mock';
-import {ChannelState, WebSocketChannel} from '../channel';
-import {WebSocketState} from '../constants';
+import {createWebSocketMock, type MockWebSocket} from './createWebSocketMock';
+import {ChannelState, WebSocketState} from '../constants';
+import {WebSocketChannel} from '../WebSocketChannel';
 
 test('creates raw socket and initializes it with listeners', () => {
   let ws: MockWebSocket;
@@ -201,7 +201,7 @@ describe('.close$', () => {
     ]);
   });
 
-  test('when constructor fails closes with "CONSTRUCTOR" reason', async () => {
+  test('when constructor fails closes with "INIT" reason', async () => {
     const newSocket = jest.fn(() => {
       throw new Error('lala');
     });
@@ -215,7 +215,7 @@ describe('.close$', () => {
       rx,
       {
         code: 0,
-        reason: 'CONSTRUCTOR',
+        reason: 'INIT',
         wasClean: true,
       },
     ]);

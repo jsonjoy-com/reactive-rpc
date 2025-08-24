@@ -1,5 +1,5 @@
 import {utf8Size} from '@jsonjoy.com/util/lib/strings/utf8';
-import {WebSocketState} from './constants';
+import {WebSocketState} from '../constants';
 
 export interface CreateWebSocketMockParams {
   onClose: (code?: number, reason?: string) => void;

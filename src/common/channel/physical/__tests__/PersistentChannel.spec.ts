@@ -1,8 +1,10 @@
-import {createWebSocketMock, type MockWebSocket} from '../mock';
-import {WebSocketChannel, PersistentChannel, type Channel, type PersistentChannelParams} from '../channel';
+import {createWebSocketMock, type MockWebSocket} from './createWebSocketMock';
 import {firstValueFrom} from 'rxjs';
 import {take} from 'rxjs/operators';
-import {of} from '../../util/of';
+import {of} from '../../../util/of';
+import {PersistentChannel, PersistentChannelParams} from '../PersistentChannel';
+import {WebSocketChannel} from '../WebSocketChannel';
+import {PhysicalChannel} from '../types';
 
 const setup = <T extends string | Uint8Array = string | Uint8Array>(
   params: Partial<PersistentChannelParams<T>> = {},
@@ -34,7 +36,7 @@ const setup = <T extends string | Uint8Array = string | Uint8Array>(
 
 test('when WebSocket connects open$ state is set to "true"', async () => {
   const {ws, persistent} = setup();
-  let channel: Channel<string | Uint8Array> | undefined;
+  let channel: PhysicalChannel<string | Uint8Array> | undefined;
   persistent.channel$.subscribe((ch) => {
     channel = ch;
   });
@@ -50,7 +52,7 @@ test('when WebSocket connects open$ state is set to "true"', async () => {
 describe('.start()', () => {
   test('initially persistent channel is not open, then automatically connects and sets the channel', async () => {
     const {persistent} = setup();
-    let channel: Channel<string | Uint8Array> | undefined;
+    let channel: PhysicalChannel<string | Uint8Array> | undefined;
     persistent.channel$.subscribe((ch) => {
       channel = ch;
     });
@@ -64,7 +66,7 @@ describe('.start()', () => {
 
   test('start life-cycle can be started using .start$ observable', async () => {
     const {ws, persistent} = setup();
-    let channel: Channel<string | Uint8Array> | undefined;
+    let channel: PhysicalChannel<string | Uint8Array> | undefined;
     persistent.channel$.subscribe((ch) => {
       channel = ch;
     });
@@ -87,7 +89,7 @@ describe('.stop()', () => {
   test('closes channel when .stop() is executed', async () => {
     const {ws, onSend, onClose, persistent} = setup();
     persistent.start();
-    let channel: Channel<string | Uint8Array> | undefined;
+    let channel: PhysicalChannel<string | Uint8Array> | undefined;
     persistent.channel$.subscribe((ch) => {
       channel = ch;
     });
@@ -112,7 +114,7 @@ describe('.send$() method', () => {
   test('sends out message to the channel when channel is connected', async () => {
     const {ws, onSend, persistent} = setup();
     persistent.start();
-    let channel: Channel<string | Uint8Array> | undefined;
+    let channel: PhysicalChannel<string | Uint8Array> | undefined;
     persistent.channel$.subscribe((ch) => {
       channel = ch;
     });
@@ -133,7 +135,7 @@ describe('.send$() method', () => {
   test('buffers and sends message out once channel is connected', async () => {
     const {ws, onSend, persistent} = setup();
     persistent.start();
-    let channel: Channel<string | Uint8Array> | undefined;
+    let channel: PhysicalChannel<string | Uint8Array> | undefined;
     persistent.channel$.subscribe((ch) => {
       channel = ch;
     });
@@ -152,7 +154,7 @@ describe('.send$() method', () => {
   test('does not send messages once .stop() is executed', async () => {
     const {ws, onSend, persistent} = setup();
     persistent.start();
-    let channel: Channel<string | Uint8Array> | undefined;
+    let channel: PhysicalChannel<string | Uint8Array> | undefined;
     persistent.channel$.subscribe((ch) => {
       channel = ch;
     });
