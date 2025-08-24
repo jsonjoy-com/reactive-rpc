@@ -1,5 +1,5 @@
 import {RpcError, type RpcErrorCodes} from 'rpc-error';
-import {RpcValue} from '../../messages/Value';
+import {Value} from '@jsonjoy.com/json-type';
 import {RpcErrorType} from './RpcErrorType';
 import type {RpcErrorValue} from './types';
 
@@ -12,11 +12,11 @@ import type {RpcErrorValue} from './types';
 
 export class TypedRpcError {
   public static value(error: RpcError): RpcErrorValue {
-    return new RpcValue(error, RpcErrorType);
+    return new Value(error, RpcErrorType);
   }
 
   public static valueFrom(error: unknown, def = TypedRpcError.internalErrorValue(error)): RpcErrorValue {
-    if (error instanceof RpcValue && error.data instanceof RpcError && error.type === RpcErrorType) return error;
+    if (error instanceof Value && error.data instanceof RpcError && error.type === RpcErrorType) return error;
     if (error instanceof RpcError) return TypedRpcError.value(error);
     return def;
   }

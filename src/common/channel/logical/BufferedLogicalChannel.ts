@@ -33,7 +33,7 @@ export class BufferedLogicalChannel<Incoming, Outgoing> implements LogicalChanne
     this.buffer.timeLimit = bufferTime;
     this.buffer.onFlush = (list: Outgoing[]) => {
       const promise = channel.send(list);
-      promise?.catch((error) => {
+      if (promise instanceof Promise) promise.catch((error) => {
         console.error(error);
       });
     }

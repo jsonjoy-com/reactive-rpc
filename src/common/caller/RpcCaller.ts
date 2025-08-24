@@ -61,6 +61,7 @@ export class RpcCaller<Ctx = unknown, P extends Procedures<any> = Procedures<Ctx
       const errors = validate(request);
       if (errors as any) throw errors;
     } catch (error) {
+      if (RpcError.isRpcError(error)) throw error;
       throw this.wrapValidationError(error);
     }
   }
@@ -102,6 +103,7 @@ export class RpcCaller<Ctx = unknown, P extends Procedures<any> = Procedures<Ctx
         // Format errors using custom error formatter.
         const $resWithErrorsFormatted = res$.pipe(
           catchError((error) => {
+            if (RpcError.isRpcError(error)) throw error;
             throw this.wrapInternalError(error);
           }),
         );
@@ -169,6 +171,7 @@ export class RpcCaller<Ctx = unknown, P extends Procedures<any> = Procedures<Ctx
           error$.complete();
         }),
         catchError((error) => {
+          if (RpcError.isRpcError(error)) throw error;
           throw this.wrapInternalError(error);
         }),
       );
@@ -205,6 +208,7 @@ export class RpcCaller<Ctx = unknown, P extends Procedures<any> = Procedures<Ctx
       const data = await method.call(request, ctx);
       return data;
     } catch (error) {
+      if (RpcError.isRpcError(error)) throw error;
       throw this.wrapInternalError(error);
     }
   }
@@ -227,6 +231,7 @@ export class RpcCaller<Ctx = unknown, P extends Procedures<any> = Procedures<Ctx
       if (method.preCall) await method.preCall(ctx, request);
       await method.call(request, ctx);
     } catch (error) {
+      if (RpcError.isRpcError(error)) throw error;
       throw this.wrapInternalError(error);
     }
   }
