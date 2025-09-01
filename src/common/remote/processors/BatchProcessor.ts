@@ -1,8 +1,8 @@
-import * as msg from '../messages';
-import {validateId, validateMethod} from './validation';
-import {TypedRpcError} from './caller/error/typed';
-import type {RpcCaller} from './caller/RpcCaller';
-import type {RpcErrorValue} from './caller/error/types';
+import * as msg from '../../messages';
+import {TypedRpcError} from '../../caller/error/typed';
+import {validateId, validateMethod} from '../../remote/validation';
+import type {RpcCaller} from '../../caller/RpcCaller';
+import type {RpcErrorValue} from '../../caller/error/types';
 
 export type IncomingBatchMessage =
   | msg.RequestDataMessage
@@ -11,7 +11,7 @@ export type IncomingBatchMessage =
   | msg.NotificationMessage;
 export type OutgoingBatchMessage = msg.ResponseCompleteMessage | msg.ResponseErrorMessage;
 
-export interface RpcMessageBatchProcessorOptions<Ctx = unknown> {
+export interface BatchProcessorOptions<Ctx = unknown> {
   caller: RpcCaller<Ctx>;
 }
 
@@ -22,10 +22,10 @@ export interface RpcMessageBatchProcessorOptions<Ctx = unknown> {
  * This processor can be shared across different connection/requests as "ctx"
  * is passed on each call and not state is held.
  */
-export class RpcMessageBatchProcessor<Ctx = unknown> {
+export class BatchProcessor<Ctx = unknown> {
   protected readonly caller: RpcCaller<Ctx>;
 
-  constructor({caller}: RpcMessageBatchProcessorOptions<Ctx>) {
+  constructor({caller}: BatchProcessorOptions<Ctx>) {
     this.caller = caller;
   }
 
@@ -68,7 +68,7 @@ export class RpcMessageBatchProcessor<Ctx = unknown> {
   public onNotification(message: msg.NotificationMessage, ctx: Ctx): void {
     const method = message.method;
     validateMethod(method);
-    this.caller.notify(method, message.value.data, ctx).catch(() => {});
+    this.caller.notify(method, message.value?.data, ctx).catch(() => {});
   }
 
   public async onRequest(

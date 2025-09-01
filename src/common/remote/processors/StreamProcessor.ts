@@ -1,16 +1,19 @@
-import * as msg from '../messages';
-import {TimedQueue} from '../util/TimedQueue';
+import * as msg from '../../messages';
+import {TimedQueue} from '../../util/TimedQueue';
 import {RpcErrorCodes, RpcError} from 'rpc-error';
-import {subscribeCompleteObserver} from '../util/subscribeCompleteObserver';
-import {TypedRpcError} from '../caller/error/typed';
-import type {Call} from '../caller/Call';
+import {subscribeCompleteObserver} from '../../util/subscribeCompleteObserver';
+import {TypedRpcError} from '../../caller/error/typed';
+import type {Call} from '../../caller/Call';
 import type {Value} from '@jsonjoy.com/json-type';
-import type {Caller} from '../caller';
+import type {Caller} from '../../caller';
+import type {ServerLogger} from '../types';
+import type {WsConnectionContext} from '../context/WsConnectionContext';
+import type {Observable} from 'rxjs';
 
 type Send = (messages: (msg.RpcServerMessage | msg.NotificationMessage)[]) => void;
 
-export interface RpcMessageStreamProcessorOptions<Ctx = unknown> {
-  caller: Caller<Ctx>;
+export interface StreamProcessorOptions<Ctx = unknown> {
+  caller: Caller<Ctx, any>;
 
   /**
    * Method to be called by server when it wants to send messages to the client.
@@ -43,18 +46,63 @@ export interface RpcMessageStreamProcessorOptions<Ctx = unknown> {
  * for WebSocket servers to handle messages from clients. Implements server-side
  * part of Reactive-RPC protocol. Can buffer outgoing messages to optimize
  * network usage.
- *
- * @todo Rename this class.
  */
-export class RpcMessageStreamProcessor<Ctx = unknown> {
-  protected readonly caller: Caller<Ctx>;
+export class StreamProcessor<Ctx = unknown> {
+  public static connect<Ctx extends WsConnectionContext>(
+    ctx: Ctx,
+    logger: ServerLogger,
+    opts: Omit<StreamProcessorOptions<Ctx>, 'send'>,
+  ) {
+    const connection = ctx.connection;
+    const msgCodec = ctx.msgCodec;
+    const reqCodec = ctx.reqCodec;
+    const resCodec = ctx.resCodec;
+    const writer = resCodec.encoder.writer;
+    const rpc = new StreamProcessor({
+      ...opts,
+      send: (messages: msg.RpcMessage[]) => {
+        try {
+          writer.reset();
+          msgCodec.encode(resCodec, messages);
+          const encoded = writer.flush();
+          connection.sendBinMsg(encoded);
+        } catch (error) {
+          logger.error('WS_SEND', error, {messages});
+          connection.close();
+        }
+      },
+    });
+    connection.onmessage = (uint8: Uint8Array) => {
+      let messages: msg.RpcClientMessage[];
+      try {
+        // messages = msgCodec.
+        messages = msgCodec.readChunk(reqCodec, uint8) as msg.RpcClientMessage[];
+      } catch (error) {
+        logger.error('RX_RPC_DECODING', error, {codec: reqCodec.id, buf: Buffer.from(uint8).toString('base64')});
+        connection.close();
+        return;
+      }
+      try {
+        rpc.onMessages(messages, ctx);
+      } catch (error) {
+        logger.error('RX_RPC_PROCESSING', error, messages!);
+        connection.close();
+        return;
+      }
+    };
+    connection.onclose = () => {
+      rpc.stop();
+    };
+  }
+
+  protected readonly caller: Caller<Ctx, any>;
   private readonly activeStreamCalls: Map<number, Call<unknown, unknown>> = new Map();
   protected send: (message: msg.RpcServerMessage | msg.NotificationMessage) => void;
 
   /** Callback which sends message out of the server. */
   public onSend: Send;
 
-  constructor({caller, send, bufferSize = 10, bufferTime = 1}: RpcMessageStreamProcessorOptions<Ctx>) {
+  constructor({caller, send, bufferSize = 10, bufferTime = 1}: StreamProcessorOptions<Ctx>) {
     this.caller = caller;
     this.onSend = send;
 
@@ -170,7 +218,7 @@ export class RpcMessageStreamProcessor<Ctx = unknown> {
     //     this.sendCompleteMessage(id, undefined);
     //   },
     // });
-    subscribeCompleteObserver<Value>(call.res$, {
+    subscribeCompleteObserver<Value>(call.res$ as Observable<Value>, {
       next: (value: Value) => {
         this.sendDataMessage(id, value);
       },
