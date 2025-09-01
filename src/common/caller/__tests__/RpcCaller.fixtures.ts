@@ -1,6 +1,6 @@
 import {timer, from, Observable} from 'rxjs';
 import {map, switchMap, take} from 'rxjs/operators';
-import {RpcError} from '..';
+import {RpcError} from 'rpc-error';
 import {Procedure} from '../../procedures';
 import {RpcCaller} from '../RpcCaller';
 

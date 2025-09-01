@@ -3,8 +3,8 @@ import {TimedQueue} from '../../util/TimedQueue';
 import {RpcErrorCodes, RpcError} from 'rpc-error';
 import {subscribeCompleteObserver} from '../../util/subscribeCompleteObserver';
 import {TypedRpcError} from '../../caller/error/typed';
-import type {Call} from '../../caller/Call';
 import {unknown, Value} from '@jsonjoy.com/json-type';
+import type {Call} from '../../caller/Call';
 import type {Caller} from '../../caller';
 import type {ServerLogger, WsConnection} from '../types';
 import type {WsConnectionContext} from '../context/WsConnectionContext';
@@ -150,7 +150,9 @@ export class StreamProcessor<Ctx extends WsConnectionContext = WsConnectionConte
   }
 
   protected sendErrorMessage(id: number, value: Value): void {
-    const message = new msg.ResponseErrorMessage(id, value instanceof Value ? value : unknown(value));
+    if (value instanceof RpcError) value = TypedRpcError.value(value);
+    if (!(value instanceof Value)) value = unknown(value);
+    const message = new msg.ResponseErrorMessage(id, value);
     this.send(message);
   }
 
@@ -163,7 +165,7 @@ export class StreamProcessor<Ctx extends WsConnectionContext = WsConnectionConte
     this.caller
       .call(name, request as any, ctx)
       .then((value: any) => this.sendCompleteMessage(id, value))
-      .catch((value: Value) => this.sendErrorMessage(id, value));
+      .catch((value: any) => this.sendErrorMessage(id, value));
   }
 
   protected onStreamError = (id: number, error: Value): void => {
@@ -205,12 +207,19 @@ export class StreamProcessor<Ctx extends WsConnectionContext = WsConnectionConte
     //     this.sendCompleteMessage(id, undefined);
     //   },
     // });
+    console.log('CREATE');
     subscribeCompleteObserver<Value>(call.res$ as Observable<Value>, {
       next: (value: Value) => {
+        console.log('NEXT');
         this.sendDataMessage(id, value);
       },
-      error: (error: unknown) => this.onStreamError(id, error as Value),
+      error: (error: unknown) => {
+        console.log('ERROR');
+        this.onStreamError(id, error as Value)
+      },
       complete: (value: Value | undefined) => {
+        console.log('COMPLETE');
+        console.log('COMPLETED');
         this.activeStreamCalls.delete(id);
         this.sendCompleteMessage(id, value);
       },
@@ -260,7 +269,9 @@ export class StreamProcessor<Ctx extends WsConnectionContext = WsConnectionConte
       return;
     }
     if (!method) {
-      this.sendError(id, RpcErrorCodes.METHOD_INV);
+      // If existing call not found, and method is not specified, it was
+      // a *RequestComplete* message sent to a previous call, which already
+      // completed, so we just ignore it.
       return;
     }
     const caller = this.caller;
@@ -270,15 +281,7 @@ export class StreamProcessor<Ctx extends WsConnectionContext = WsConnectionConte
       return;
     }
     const data = value ? value.data : undefined;
-    if (info.rx) {
-      const newCall = this.createStreamCall(id, method, ctx);
-      if (newCall) {
-        if (data !== undefined) {
-          newCall.req$.next(data);
-          newCall.req$.complete();
-        }
-      }
-    } else this.execStaticCall(id, method, data, ctx);
+    this.execStaticCall(id, method, data, ctx);
   }
 
   public onRequestErrorMessage(message: msg.RequestErrorMessage, ctx: Ctx): void {

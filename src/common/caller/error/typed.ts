@@ -12,7 +12,7 @@ import type {RpcErrorValue} from './types';
 
 export class TypedRpcError {
   public static value(error: RpcError): RpcErrorValue {
-    return new Value(error, RpcErrorType);
+    return new Value(error.toJson(), RpcErrorType);
   }
 
   public static valueFrom(error: unknown, def = TypedRpcError.internalErrorValue(error)): RpcErrorValue {
