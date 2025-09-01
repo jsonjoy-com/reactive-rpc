@@ -4,7 +4,7 @@ import {RpcErrorCodes, RpcError} from 'rpc-error';
 import {subscribeCompleteObserver} from '../../util/subscribeCompleteObserver';
 import {TypedRpcError} from '../../caller/error/typed';
 import type {Call} from '../../caller/Call';
-import type {Value} from '@jsonjoy.com/json-type';
+import {unknown, Value} from '@jsonjoy.com/json-type';
 import type {Caller} from '../../caller';
 import type {ServerLogger, WsConnection} from '../types';
 import type {WsConnectionContext} from '../context/WsConnectionContext';
@@ -65,13 +65,9 @@ export class StreamProcessor<Ctx extends WsConnectionContext = WsConnectionConte
     const msgCodec = ctx.codec.msg;
     const reqCodec = ctx.codec.req;
     const resCodec = ctx.codec.res;
-    const writer = resCodec.encoder.writer;
-
     const send = (messages: (msg.RpcServerMessage | msg.NotificationMessage)[]) => {
       try {
-        writer.reset();
-        msgCodec.encode(resCodec, messages as any);
-        const encoded = writer.flush();
+        const encoded = msgCodec.encode(resCodec, messages);
         connection.write(encoded);
       } catch (error) {
         logger.error('WS_SEND_', error, {messages});
@@ -139,22 +135,22 @@ export class StreamProcessor<Ctx extends WsConnectionContext = WsConnectionConte
   }
 
   public sendNotification(method: string, value: Value): void {
-    const message = new msg.NotificationMessage(method, value);
+    const message = new msg.NotificationMessage(method, value instanceof Value ? value : unknown(value));
     this.send(message);
   }
 
-  protected sendCompleteMessage(id: number, value: Value | undefined): void {
-    const message = new msg.ResponseCompleteMessage(id, value);
+  protected sendCompleteMessage(id: number, value: Value | unknown | undefined): void {
+    const message = new msg.ResponseCompleteMessage(id, value instanceof Value ? value : unknown(value));
     this.send(message);
   }
 
   protected sendDataMessage(id: number, value: Value): void {
-    const message = new msg.ResponseDataMessage(id, value);
+    const message = new msg.ResponseDataMessage(id, value instanceof Value ? value : unknown(value));
     this.send(message);
   }
 
   protected sendErrorMessage(id: number, value: Value): void {
-    const message = new msg.ResponseErrorMessage(id, value);
+    const message = new msg.ResponseErrorMessage(id, value instanceof Value ? value : unknown(value));
     this.send(message);
   }
 
@@ -166,7 +162,6 @@ export class StreamProcessor<Ctx extends WsConnectionContext = WsConnectionConte
   protected execStaticCall(id: number, name: string, request: unknown, ctx: Ctx): void {
     this.caller
       .call(name, request as any, ctx)
-      // .then((value: RpcValue) => this.sendCompleteMessage(id, value))
       .then((value: any) => this.sendCompleteMessage(id, value))
       .catch((value: Value) => this.sendErrorMessage(id, value));
   }
