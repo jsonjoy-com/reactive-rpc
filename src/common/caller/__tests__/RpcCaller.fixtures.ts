@@ -1,4 +1,4 @@
-import {timer, from, Observable} from 'rxjs';
+import {timer, from, Observable, of} from 'rxjs';
 import {map, switchMap, take} from 'rxjs/operators';
 import {RpcError} from 'rpc-error';
 import {Procedure} from '../../procedures';
@@ -126,6 +126,36 @@ export const procedures = {
   ),
 
   passthroughStream: Procedure.rx((req$) => req$),
+
+  emitOnceSync: Procedure.rx((request$, ctx) => {
+    return request$.pipe(
+      take(1),
+      switchMap(async (request) => {
+        return JSON.stringify({request, ctx});
+      }),
+    );
+  }),
+
+  emitThreeSync: Procedure.rx((request$) => {
+    return request$.pipe(
+      take(1),
+      switchMap(() => from([1, 2, 3])),
+    );
+  }),
+
+  promiseDelay: Procedure.unary(async () => {
+    await new Promise((r) => setTimeout(r, 5));
+    return {};
+  }),
+
+  streamDelay: Procedure.rx(() => {
+    return of({}).pipe(
+      switchMap(async () => {
+        await new Promise((r) => setTimeout(r, 5));
+        return {};
+      }),
+    );
+  }),
 };
 
 // Helper for value state

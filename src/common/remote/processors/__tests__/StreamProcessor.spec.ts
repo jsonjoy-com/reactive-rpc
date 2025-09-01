@@ -113,5 +113,19 @@ describe('StreamProcessor', () => {
       const decoded = JSON.parse(text);
       expect(decoded).toEqual([[CompactMessageType.ResponseComplete, 1, {value: 124}]]);
     });
+
+      test('sends complete message if observable immediately completes after emitting one value', async () => {
+      });
+
+      test('observable emits three values synchronously', async () => {
+      });
+
+      test('when observable completes asynchronously, sends empty complete message', async () => {
+
+      });
+
+      test('when observable completes asynchronously and emits asynchronously, sends empty complete message', async () => {
+
+      });
   });
 });
