@@ -1,7 +1,6 @@
-import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
 import type {ConnectionContext} from './types';
 import type {WsConnection} from '../types';
-import type {MsgStreamCodec} from '../../codec/types';
+import type {RpcCodec} from '../../codec/RpcCodec';
 
 export class WsConnectionContext<Meta = Record<string, unknown>> implements ConnectionContext<Meta> {
   constructor(
@@ -12,8 +11,6 @@ export class WsConnectionContext<Meta = Record<string, unknown>> implements Conn
     public token: string,
     public readonly params: string[] | null,
     public readonly meta: Meta,
-    public reqCodec: JsonValueCodec,
-    public resCodec: JsonValueCodec,
-    public msgCodec: MsgStreamCodec,
+    public readonly codec: RpcCodec,
   ) {}
 }

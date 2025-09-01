@@ -1,5 +1,4 @@
-import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
-import type {MsgStreamCodec} from '../../codec/types';
+import type {RpcCodec} from '../../codec/RpcCodec';
 
 export interface ConnectionContext<Meta = Record<string, unknown>> {
   path: string;
@@ -8,7 +7,5 @@ export interface ConnectionContext<Meta = Record<string, unknown>> {
   token: string;
   params: string[] | null;
   meta: Meta;
-  reqCodec: JsonValueCodec;
-  resCodec: JsonValueCodec;
-  msgCodec: MsgStreamCodec;
+  codec: RpcCodec;
 }

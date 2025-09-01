@@ -1,4 +1,4 @@
-import type {RpcSpecifier} from '../remote';
+import type {RpcSpecifier} from '../remote/types';
 import type {RpcMessage} from '../messages';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
 import type {MsgStreamCodec} from './types';

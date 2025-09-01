@@ -6,20 +6,22 @@ import {TypedRpcError} from '../../caller/error/typed';
 import type {Call} from '../../caller/Call';
 import type {Value} from '@jsonjoy.com/json-type';
 import type {Caller} from '../../caller';
-import type {ServerLogger} from '../types';
+import type {ServerLogger, WsConnection} from '../types';
 import type {WsConnectionContext} from '../context/WsConnectionContext';
 import type {Observable} from 'rxjs';
-
-type Send = (messages: (msg.RpcServerMessage | msg.NotificationMessage)[]) => void;
 
 export interface StreamProcessorOptions<Ctx = unknown> {
   caller: Caller<Ctx, any>;
 
   /**
-   * Method to be called by server when it wants to send messages to the client.
-   * This is usually your WebSocket "send" method.
+   * WebSocket connection for receiving and sending messages.
    */
-  send: Send;
+  connection: WsConnection;
+
+  /**
+   * Context for decoding and encoding messages.
+   */
+  ctx: Ctx;
 
   /**
    * Number of messages to keep in buffer before sending them out.
@@ -34,48 +36,64 @@ export interface StreamProcessorOptions<Ctx = unknown> {
    * out. Defaults to 1 milliseconds. Set it to zero to disable buffering.
    */
   bufferTime?: number;
-}
 
-// export interface RpcMessageStreamProcessorFromApiOptions<Ctx = unknown>
-//   extends Omit<RpcMessageStreamProcessorOptions<Ctx>, 'onCall'> {
-//   api: RpcApiMap<Ctx>;
-// }
+  /**
+   * Logger for the stream processor.
+   */
+  logger: ServerLogger;
+}
 
 /**
  * Processes incoming Reactive-RPC messages and manages in-flight calls. Used
- * for WebSocket servers to handle messages from clients. Implements server-side
+ * for WebSocket servers to handle messages. Implements server-side
  * part of Reactive-RPC protocol. Can buffer outgoing messages to optimize
  * network usage.
  */
-export class StreamProcessor<Ctx = unknown> {
-  public static connect<Ctx extends WsConnectionContext>(
-    ctx: Ctx,
-    logger: ServerLogger,
-    opts: Omit<StreamProcessorOptions<Ctx>, 'send'>,
-  ) {
-    const connection = ctx.connection;
-    const msgCodec = ctx.msgCodec;
-    const reqCodec = ctx.reqCodec;
-    const resCodec = ctx.resCodec;
+export class StreamProcessor<Ctx extends WsConnectionContext = WsConnectionContext> {
+  protected readonly caller: Caller<Ctx, any>;
+  protected readonly connection: WsConnection;
+  protected readonly ctx: Ctx;
+  private readonly activeStreamCalls: Map<number, Call<unknown, unknown>> = new Map();
+  protected send: (message: msg.RpcServerMessage | msg.NotificationMessage) => void;
+  protected logger: ServerLogger;
+
+  constructor({caller, connection, ctx, bufferSize = 10, bufferTime = 1, logger}: StreamProcessorOptions<Ctx>) {
+    this.caller = caller;
+    this.connection = connection;
+    this.ctx = ctx;
+    this.logger = logger;
+    const msgCodec = ctx.codec.msg;
+    const reqCodec = ctx.codec.req;
+    const resCodec = ctx.codec.res;
     const writer = resCodec.encoder.writer;
-    const rpc = new StreamProcessor({
-      ...opts,
-      send: (messages: msg.RpcMessage[]) => {
-        try {
-          writer.reset();
-          msgCodec.encode(resCodec, messages);
-          const encoded = writer.flush();
-          connection.sendBinMsg(encoded);
-        } catch (error) {
-          logger.error('WS_SEND', error, {messages});
-          connection.close();
-        }
-      },
-    });
+
+    const send = (messages: (msg.RpcServerMessage | msg.NotificationMessage)[]) => {
+      try {
+        writer.reset();
+        msgCodec.encode(resCodec, messages as any);
+        const encoded = writer.flush();
+        connection.write(encoded);
+      } catch (error) {
+        logger.error('WS_SEND_', error, {messages});
+        connection.close();
+      }
+    };
+
+    if (bufferTime) {
+      const buffer = new TimedQueue<msg.RpcServerMessage | msg.NotificationMessage>();
+      buffer.itemLimit = bufferSize;
+      buffer.timeLimit = bufferTime;
+      buffer.onFlush = (messages) => send(messages as any);
+      this.send = (message) => {
+        buffer.push(message as any);
+      };
+    } else {
+      this.send = (message) => send([message as any]);
+    }
+
     connection.onmessage = (uint8: Uint8Array) => {
       let messages: msg.RpcClientMessage[];
       try {
-        // messages = msgCodec.
         messages = msgCodec.readChunk(reqCodec, uint8) as msg.RpcClientMessage[];
       } catch (error) {
         logger.error('RX_RPC_DECODING', error, {codec: reqCodec.id, buf: Buffer.from(uint8).toString('base64')});
@@ -83,7 +101,7 @@ export class StreamProcessor<Ctx = unknown> {
         return;
       }
       try {
-        rpc.onMessages(messages, ctx);
+        this.onMessages(messages, ctx);
       } catch (error) {
         logger.error('RX_RPC_PROCESSING', error, messages!);
         connection.close();
@@ -91,34 +109,8 @@ export class StreamProcessor<Ctx = unknown> {
       }
     };
     connection.onclose = () => {
-      rpc.stop();
+      this.stop();
     };
-  }
-
-  protected readonly caller: Caller<Ctx, any>;
-  private readonly activeStreamCalls: Map<number, Call<unknown, unknown>> = new Map();
-  protected send: (message: msg.RpcServerMessage | msg.NotificationMessage) => void;
-
-  /** Callback which sends message out of the server. */
-  public onSend: Send;
-
-  constructor({caller, send, bufferSize = 10, bufferTime = 1}: StreamProcessorOptions<Ctx>) {
-    this.caller = caller;
-    this.onSend = send;
-
-    if (bufferTime) {
-      const buffer = new TimedQueue<msg.RpcServerMessage | msg.NotificationMessage>();
-      buffer.itemLimit = bufferSize;
-      buffer.timeLimit = bufferTime;
-      buffer.onFlush = (messages) => this.onSend(messages as any);
-      this.send = (message) => {
-        buffer.push(message as any);
-      };
-    } else {
-      this.send = (message) => {
-        this.onSend([message as any]);
-      };
-    }
   }
 
   /**
