@@ -1,5 +1,5 @@
 import {Subject, ReplaySubject, BehaviorSubject, type Observable, map} from 'rxjs';
-import {toUint8Array} from '@jsonjoy.com/util/lib/buffers/toUint8Array';
+import {toUint8Array} from '@jsonjoy.com/buffers/lib/toUint8Array';
 import {ChannelState} from './constants';
 import type {CloseEventBase, PhysicalChannel} from './types';
 

@@ -2,7 +2,7 @@ import * as http from 'http';
 import * as https from 'https';
 import type * as tls from 'tls';
 import type * as net from 'net';
-import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
+import {Writer} from '@jsonjoy.com/buffers/lib/Writer';
 import {Codecs} from '@jsonjoy.com/json-pack/lib/codecs/Codecs';
 import {WsServerConnection} from '../ws/server/WsServerConnection';
 import {WsFrameEncoder} from '../ws/codec/WsFrameEncoder';

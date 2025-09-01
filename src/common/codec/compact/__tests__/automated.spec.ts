@@ -1,5 +1,5 @@
 import {CborJsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/cbor';
-import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
+import {Writer} from '@jsonjoy.com/buffers/lib/Writer';
 import {compactMessages} from './compact-messages';
 import {CompactMsgStreamCodec} from '../CompactMsgStreamCodec';
 import {messages} from '../../../messages/__tests__/fixtures';

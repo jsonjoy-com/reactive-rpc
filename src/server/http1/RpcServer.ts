@@ -4,10 +4,9 @@ import {type Http1CreateServerOpts, Http1Server, type Http1ServerOpts} from './H
 import {RpcError} from '../../common/rpc/caller';
 import {
   type IncomingBatchMessage,
-  type ReactiveRpcClientMessage,
-  type ReactiveRpcMessage,
+  type RpcClientMessage,
+  type RpcMessage,
   RpcMessageBatchProcessor,
-  RpcMessageStreamProcessor,
 } from '../../common';
 import {ObjectValueCaller} from '../../common/rpc/caller/ObjectValueCaller';
 import {gzip} from '@jsonjoy.com/util/lib/compression/gzip';
@@ -16,6 +15,7 @@ import type {RpcCaller} from '../../common/rpc/caller/RpcCaller';
 import type {ServerLogger} from './types';
 import type {ConnectionContext} from '../types';
 import type {ObjType, ObjectValue} from '@jsonjoy.com/json-type';
+import {RpcMessageStreamProcessor} from '../../common/remote';
 
 const DEFAULT_MAX_PAYLOAD = 4 * 1024 * 1024;
 
@@ -150,48 +150,7 @@ export class RpcServer implements Printable {
       maxIncomingMessage: 2 * 1024 * 1024,
       maxOutgoingBackpressure: 2 * 1024 * 1024,
       handler: (ctx: WsConnectionContext) => {
-        const connection = ctx.connection;
-        const reqCodec = ctx.reqCodec;
-        const resCodec = ctx.resCodec;
-        const msgCodec = ctx.msgCodec;
-        const encoder = resCodec.encoder;
-        const rpc = new RpcMessageStreamProcessor({
-          caller,
-          send: (messages: ReactiveRpcMessage[]) => {
-            try {
-              const writer = encoder.writer;
-              writer.reset();
-              msgCodec.encodeBatch(resCodec, messages);
-              const encoded = writer.flush();
-              connection.sendBinMsg(encoded);
-            } catch (error) {
-              logger.error('WS_SEND', error, {messages});
-              connection.close();
-            }
-          },
-          bufferSize: 1,
-          bufferTime: 0,
-        });
-        connection.onmessage = (uint8: Uint8Array) => {
-          let messages: ReactiveRpcClientMessage[];
-          try {
-            messages = msgCodec.decodeBatch(reqCodec, uint8) as ReactiveRpcClientMessage[];
-          } catch (error) {
-            logger.error('RX_RPC_DECODING', error, {codec: reqCodec.id, buf: Buffer.from(uint8).toString('base64')});
-            connection.close();
-            return;
-          }
-          try {
-            rpc.onMessages(messages, ctx);
-          } catch (error) {
-            logger.error('RX_RPC_PROCESSING', error, messages!);
-            connection.close();
-            return;
-          }
-        };
-        connection.onclose = () => {
-          rpc.stop();
-        };
+        RpcMessageStreamProcessor.connect(ctx, logger, {caller, bufferSize: 1, bufferTime: 0});
       },
     });
   }

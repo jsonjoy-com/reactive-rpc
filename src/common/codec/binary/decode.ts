@@ -1,4 +1,4 @@
-import {Uint8ArrayCut} from '@jsonjoy.com/util/lib/buffers/Uint8ArrayCut';
+import {Uint8ArrayCut} from '@jsonjoy.com/buffers/lib/Uint8ArrayCut';
 import {
   NotificationMessage,
   type RpcMessage,
@@ -13,7 +13,7 @@ import {
 } from '../../messages';
 import {BinaryMessageType} from './constants';
 import {unknown} from '@jsonjoy.com/json-type';
-import type {Reader} from '@jsonjoy.com/util/lib/buffers/Reader';
+import type {Reader} from '@jsonjoy.com/buffers/lib/Reader';
 
 export const decode = (reader: Reader): RpcMessage => {
   const word = reader.u32();

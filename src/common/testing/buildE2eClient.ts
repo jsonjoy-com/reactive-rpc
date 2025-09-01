@@ -1,11 +1,11 @@
 import {Codecs} from '@jsonjoy.com/json-pack/lib/codecs/Codecs';
 import {Fuzzer} from '@jsonjoy.com/util/lib/Fuzzer';
-import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
+import {Writer} from '@jsonjoy.com/buffers/lib/Writer';
 import {ConnectionContext} from '../../server/context';
 import {RpcCodecs} from '../codec/RpcCodecs';
 import {RpcMessageCodecs} from '../codec/RpcMessageCodecs';
 import {RpcClient, RpcMessageStreamProcessor, StreamingRpcClient} from '../rpc';
-import type {ReactiveRpcClientMessage, ReactiveRpcMessage, ReactiveRpcServerMessage} from '../messages';
+import type {RpcClientMessage, RpcMessage, RpcServerMessage} from '../messages';
 import type {RpcCaller} from '../rpc/caller/RpcCaller';
 
 export interface BuildE2eClientOptions {
@@ -77,22 +77,22 @@ export const buildE2eClient = <Caller extends RpcCaller<any, any>>(caller: Calle
   let client: RpcClient<Methods>;
   const streamProcessor = new RpcMessageStreamProcessor({
     caller,
-    send: (messages: ReactiveRpcMessage[]) => {
+    send: (messages: RpcMessage[]) => {
       const encoded = ctx.msgCodec.encode(ctx.resCodec, messages);
       setTimeout(() => {
         const decoded = ctx.msgCodec.decodeBatch(ctx.resCodec, encoded);
-        (client as StreamingRpcClient<Methods>).onMessages(decoded as ReactiveRpcServerMessage[]);
+        (client as StreamingRpcClient<Methods>).onMessages(decoded as RpcServerMessage[]);
       }, 1);
     },
     bufferSize: Fuzzer.randomInt2(opt.serverBufferSize ?? [1, 1]),
     bufferTime: Fuzzer.randomInt2(opt.serverBufferTime ?? [0, 0]),
   });
   client = new StreamingRpcClient<Methods>({
-    send: (messages: ReactiveRpcClientMessage[]) => {
+    send: (messages: RpcClientMessage[]) => {
       const encoded = ctx.msgCodec.encode(ctx.reqCodec, messages);
       setTimeout(() => {
         const decoded = ctx.msgCodec.decodeBatch(ctx.reqCodec, encoded);
-        streamProcessor.onMessages(decoded as ReactiveRpcClientMessage[], {});
+        streamProcessor.onMessages(decoded as RpcClientMessage[], {});
       }, 1);
     },
     bufferSize: Fuzzer.randomInt2(opt.clientBufferSize ?? [1, 1]),

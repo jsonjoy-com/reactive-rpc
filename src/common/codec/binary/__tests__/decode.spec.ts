@@ -1,9 +1,9 @@
 import {NotificationMessage, RequestCompleteMessage, RequestDataMessage, RequestErrorMessage, RequestUnsubscribeMessage, ResponseCompleteMessage, ResponseDataMessage, ResponseErrorMessage, ResponseUnsubscribeMessage, type RpcMessage} from '../../../messages';
 // import {decode} from '../decode';
-// import {Reader} from '@jsonjoy.com/util/lib/buffers/Reader';
-// import type {Uint8ArrayCut} from '@jsonjoy.com/util/lib/buffers/Uint8ArrayCut';
+// import {Reader} from '@jsonjoy.com/buffers/lib/Reader';
+// import type {Uint8ArrayCut} from '@jsonjoy.com/buffers/lib/Uint8ArrayCut';
 import {CborJsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/cbor';
-import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
+import {Writer} from '@jsonjoy.com/buffers/lib/Writer';
 import {unknown} from '@jsonjoy.com/json-type';
 import {BinaryMsgStreamCodec} from '../BinaryMsgStreamCodec';
 

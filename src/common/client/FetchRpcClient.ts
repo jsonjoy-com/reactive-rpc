@@ -1,67 +1,63 @@
-import {UnaryClient, type StaticRpcClientOptions} from './StaticRpcClient';
-import {EncodedStaticRpcClient} from './EncodedStaticRpcClient';
-import type {RpcMessageCodec} from '../../codec/types';
-import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
-import type {Observable} from 'rxjs';
-import type {RpcClient} from './types';
+// import {UnaryClient, type UnaryClientOptions} from './UnaryClient';
+// import {EncodedStaticRpcClient} from './EncodedStaticRpcClient';
+// import type {RpcCodec} from '../codec/RpcCodec';
+// import type {Observable} from 'rxjs';
+// import type {RpcClient} from './types';
 
-type IFetch = typeof fetch;
+// type IFetch = typeof fetch;
 
-export interface FetchRpcClientOptions extends StaticRpcClientOptions {
-  url: string;
+// export interface FetchRpcClientOptions extends Omit<UnaryClientOptions, 'send'> {
+//   url: string;
 
-  // TODO: unify these 3 under `codec` option.
-  msgCodec: RpcMessageCodec;
-  reqCodec: JsonValueCodec;
-  resCodec?: JsonValueCodec;
+//   codec: RpcCodec;
 
-  fetch?: IFetch;
-}
+//   fetch?: IFetch;
+// }
 
-/**
- * Static method RPC client, which uses `fetch` to send requests.
- */
-export class FetchRpcClient implements RpcClient {
-  public readonly client: EncodedStaticRpcClient;
+// /**
+//  * Unary method RPC client, which uses `fetch` to send requests.
+//  */
+// export class FetchRpcClient implements RpcClient {
+//   public readonly client: EncodedStaticRpcClient;
 
-  constructor(options: FetchRpcClientOptions) {
-    const {msgCodec, reqCodec, resCodec = reqCodec, url} = options;
-    let contentType = `application/x.rpc.${msgCodec.id}.${reqCodec.id}`;
-    if (reqCodec.id !== resCodec.id) contentType += `-${resCodec.id}`;
-    const currentFetch = options.fetch || fetch;
-    this.client = new EncodedStaticRpcClient({
-      client: new UnaryClient({
-        bufferSize: options.bufferSize,
-        bufferTime: options.bufferTime,
-      }),
-      msgCodec,
-      reqCodec,
-      resCodec,
-      send: async (body) => {
-        const response = await currentFetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': contentType,
-          },
-          body,
-        });
-        const buffer = await response.arrayBuffer();
-        return new Uint8Array(buffer);
-      },
-    });
-  }
+//   constructor(options: FetchRpcClientOptions) {
+//     const {codec, url} = options;
+//     let contentType = `application/x.rpc.${codec.msg.id}.${codec.req.id}`;
+//     if (codec.req.id !== codec.res.id) contentType += `-${codec.res.id}`;
+//     const currentFetch = options.fetch || fetch;
+//     this.client = new EncodedStaticRpcClient({
+//       client: new UnaryClient({
+//         bufferSize: options.bufferSize,
+//         bufferTime: options.bufferTime,
+//       }),
+//       msgCodec,
+//       reqCodec,
+//       resCodec,
+//       send: async (body) => {
+//         const response = await currentFetch(url, {
+//           method: 'POST',
+//           headers: {
+//             'Content-Type': contentType,
+//           },
+//           body,
+//         });
+//         const buffer = await response.arrayBuffer();
+//         return new Uint8Array(buffer);
+//       },
+//     });
+//   }
 
-  public call$(method: string, data: unknown | Observable<unknown>): Observable<unknown> {
-    return this.client.call$(method, data);
-  }
+//   public call$(method: string, data: unknown | Observable<unknown>): Observable<unknown> {
+//     return this.client.call$(method, data);
+//   }
 
-  public async call(method: string, request: unknown): Promise<unknown> {
-    return this.client.call(method, request);
-  }
+//   public async call(method: string, request: unknown): Promise<unknown> {
+//     return this.client.call(method, request);
+//   }
 
-  public notify(method: string, data: undefined | unknown): void {
-    this.client.notify(method, data);
-  }
+//   public notify(method: string, data: undefined | unknown): void {
+//     this.client.notify(method, data);
+//   }
 
-  public stop() {}
-}
+//   public stop() {}
+// }

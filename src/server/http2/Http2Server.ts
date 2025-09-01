@@ -1,5 +1,5 @@
 import * as http2 from 'http2';
-import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
+import {Writer} from '@jsonjoy.com/buffers/lib/Writer';
 import {Codecs} from '@jsonjoy.com/json-pack/lib/codecs/Codecs';
 import {Router, type RouteMatcher} from '@jsonjoy.com/jit-router';
 import type {Printable} from 'tree-dump/lib/types';

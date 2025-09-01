@@ -3,7 +3,7 @@ import * as msg from '../../messages';
 import {decode} from './decode';
 import {BinaryMessageType} from './constants';
 import {writeType2, writeType3, writeType4} from './encode';
-import type {Uint8ArrayCut} from '@jsonjoy.com/util/lib/buffers/Uint8ArrayCut';
+import type {Uint8ArrayCut} from '@jsonjoy.com/buffers/lib/Uint8ArrayCut';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
 import type {MsgStreamCodec} from '../types';
 

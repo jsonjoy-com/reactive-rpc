@@ -1,6 +1,6 @@
 import {Codecs} from '@jsonjoy.com/json-pack/lib/codecs/Codecs';
-import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
-import {copy} from '@jsonjoy.com/util/lib/buffers/copy';
+import {Writer} from '@jsonjoy.com/buffers/lib/Writer';
+import {copy} from '@jsonjoy.com/buffers/lib/copy';
 import {type Match, Router} from '@jsonjoy.com/jit-router';
 import {enableCors} from './util';
 import {type IncomingBatchMessage, RpcMessageBatchProcessor} from '../../common/rpc/RpcMessageBatchProcessor';
@@ -10,10 +10,10 @@ import {ConnectionContext} from '../context';
 import {RpcMessageCodecs} from '../../common/codec/RpcMessageCodecs';
 import {RpcValue} from '../../common/messages/Value';
 import {RpcCodecs} from '../../common/codec/RpcCodecs';
-import type {Printable} from 'tree-dump/lib/types';
 import {printTree} from 'tree-dump/lib/printTree';
-import {type ReactiveRpcMessage, RpcMessageStreamProcessor, type ReactiveRpcClientMessage} from '../../common';
+import {type RpcMessage, RpcMessageStreamProcessor, type RpcClientMessage} from '../../common';
 import type {JsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/types';
+import type {Printable} from 'tree-dump/lib/types';
 import type * as types from './types';
 import type {RouteHandler} from './types';
 import type {RpcCaller} from '../../common/rpc/caller/RpcCaller';
@@ -170,7 +170,7 @@ export class RpcApp<Ctx extends ConnectionContext> implements Printable {
           const encoder = resCodec.encoder;
           ws.rpc = new RpcMessageStreamProcessor({
             caller,
-            send: (messages: ReactiveRpcMessage[]) => {
+            send: (messages: RpcMessage[]) => {
               try {
                 if (ws.getBufferedAmount() > maxBackpressure) return;
                 const writer = encoder.writer;
@@ -198,7 +198,7 @@ export class RpcApp<Ctx extends ConnectionContext> implements Printable {
           const uint8 = copy(new Uint8Array(buf));
           const rpc = ws.rpc!;
           try {
-            const messages = msgCodec.decodeBatch(reqCodec, uint8) as ReactiveRpcClientMessage[];
+            const messages = msgCodec.decodeBatch(reqCodec, uint8) as RpcClientMessage[];
             try {
               rpc.onMessages(messages, ctx);
             } catch (error) {

@@ -1,4 +1,4 @@
-export enum WsFrameOpcode {
+export const enum WsFrameOpcode {
   // Continuation fragment of a data frame
   CONTINUE = 0,
 

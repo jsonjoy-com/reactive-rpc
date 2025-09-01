@@ -1,5 +1,5 @@
 import {JsonJsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/json';
-import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
+import {Writer} from '@jsonjoy.com/buffers/lib/Writer';
 import {RpcCodec} from '../common/codec/RpcCodec';
 import {CompactRpcMessageCodec} from '../common/codec/compact';
 import {createClient} from './createClient';

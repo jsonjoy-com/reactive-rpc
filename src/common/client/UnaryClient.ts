@@ -60,7 +60,7 @@ export class UnaryClient<Methods extends RpcClientMethods<any> = RpcClientMethod
         .then((responses: compact.CompactServerMessage[]) => {
           for (const response of responses) {
             const type = response[0];
-            const id = response[1];
+            const id = response[1] as number;
             const calls = this.calls;
             const future = calls.get(id);
             calls.delete(id);
@@ -93,9 +93,9 @@ export class UnaryClient<Methods extends RpcClientMethods<any> = RpcClientMethod
     return (data instanceof Observable ? data : of(data)).pipe(switchMap((data) => this.call(method, data)));
   }
 
-  public async call<K extends keyof Methods>(method: K, request: Observable<Methods[K][0]>): Promise<Methods[K][1]> {
-    const id = this.id;
-    this.id = (id + 1) % 0xffff;
+  public async call<K extends keyof Methods>(method: K, request: Methods[K][0]): Promise<Methods[K][1]> {
+    const id = this.id++;
+    if (this.id >= 0xffff) this.id = 1;
     const message: compact.CompactRequestCompleteMessage = [CompactMessageType.RequestComplete, id, method as string, request];
     const future = new Defer<unknown>();
     this.calls.set(id, future);
@@ -109,7 +109,7 @@ export class UnaryClient<Methods extends RpcClientMethods<any> = RpcClientMethod
    * @param method Remote method name.
    * @param data Static payload data.
    */
-  public notify<K extends keyof Methods>(method: K, data: Observable<Methods[K][0]>): void {
+  public notify<K extends keyof Methods>(method: K, data: Methods[K][0]): void {
     const msg: compact.CompactNotificationMessage = [CompactMessageType.Notification, method as string, data];
     this.buffer.push(msg);
   }

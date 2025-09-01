@@ -1,6 +1,6 @@
 import {BinaryMsgStreamCodec} from '../BinaryMsgStreamCodec';
 import {CborJsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/cbor';
-import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
+import {Writer} from '@jsonjoy.com/buffers/lib/Writer';
 import {messages} from '../../../messages/__tests__/fixtures';
 
 const codec = new BinaryMsgStreamCodec();

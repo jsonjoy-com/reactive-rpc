@@ -1,5 +1,5 @@
-import {bufferToUint8Array} from '@jsonjoy.com/util/lib/buffers/bufferToUint8Array';
-import {listToUint8} from '@jsonjoy.com/util/lib/buffers/concat';
+import {bufferToUint8Array} from '@jsonjoy.com/buffers/lib/bufferToUint8Array';
+import {listToUint8} from '@jsonjoy.com/buffers/lib/concat';
 import * as stream from 'stream';
 import {WsServerConnection} from '../WsServerConnection';
 import {WsFrameEncoder} from '../../codec/WsFrameEncoder';

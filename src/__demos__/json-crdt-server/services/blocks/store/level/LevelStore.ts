@@ -1,4 +1,4 @@
-import {Writer} from '@jsonjoy.com/util/lib/buffers/Writer';
+import {Writer} from '@jsonjoy.com/buffers/lib/Writer';
 import {CborJsonValueCodec} from '@jsonjoy.com/json-pack/lib/codecs/cbor';
 import {AvlMap} from 'sonic-forest/lib/avl/AvlMap';
 import {Mutex} from '../../../../../../util/Mutex';

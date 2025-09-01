@@ -7,7 +7,7 @@ import type {CompactMessage} from './compact';
 
 type Chunk = string;
 
-export class JsonCompactMsgCodec implements TextMsgCodec {
+export class JsonCompactMsgCodec implements TextMsgCodec<RpcMessage> {
   id = 'binary-json-compact-lite';
   format = RpcMessageFormat.Compact;
 

@@ -1,13 +1,14 @@
 import * as crypto from 'crypto';
 import type * as stream from 'stream';
 import {utf8Size} from '@jsonjoy.com/util/lib/strings/utf8';
-import {listToUint8} from '@jsonjoy.com/util/lib/buffers/concat';
+import {listToUint8} from '@jsonjoy.com/buffers/lib/concat';
 import {WsCloseFrame, WsFrameDecoder, WsFrameHeader, WsFrameOpcode, WsPingFrame, WsPongFrame} from '../codec';
+import type {WsConnection} from '../../types';
 import type {WsFrameEncoder} from '../codec/WsFrameEncoder';
 
 export type WsServerConnectionSocket = stream.Duplex;
 
-export class WsServerConnection {
+export class WsServerConnection implements WsConnection {
   public closed = false;
   public maxIncomingMessage: number = 2 * 1024 * 1024;
   public maxBackpressure: number = 2 * 1024 * 1024;
