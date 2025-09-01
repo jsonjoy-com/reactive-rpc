@@ -1,21 +1,13 @@
 import type {Printable} from 'tree-dump/lib/types';
 import {printTree} from 'tree-dump/lib/printTree';
 import {type Http1CreateServerOpts, Http1Server, type Http1ServerOpts} from './Http1Server';
-import {RpcError} from '../../common/rpc/caller';
-import {
-  type IncomingBatchMessage,
-  type RpcClientMessage,
-  type RpcMessage,
-  RpcMessageBatchProcessor,
-} from '../../common';
-import {ObjectValueCaller} from '../../common/rpc/caller/ObjectValueCaller';
+import {RpcError} from 'rpc-error';
 import {gzip} from '@jsonjoy.com/util/lib/compression/gzip';
-import type {Http1ConnectionContext, WsConnectionContext} from './context';
-import type {RpcCaller} from '../../common/rpc/caller/RpcCaller';
-import type {ServerLogger} from './types';
-import type {ConnectionContext} from '../types';
-import type {ObjType, ObjectValue} from '@jsonjoy.com/json-type';
-import {RpcMessageStreamProcessor} from '../../common/remote';
+import type {RpcCaller} from '../../common/caller/RpcCaller';
+import type {ServerLogger} from '../uws';
+import {BatchProcessor} from '../../common/remote';
+import {ConnectionContext} from '../../common/remote/context/types';
+import {StreamProcessor} from '../../common/remote/processors/StreamProcessor';
 
 const DEFAULT_MAX_PAYLOAD = 4 * 1024 * 1024;
 
@@ -53,7 +45,7 @@ export class RpcServer implements Printable {
   };
 
   public readonly http1: Http1Server;
-  protected readonly batchProcessor: RpcMessageBatchProcessor<ConnectionContext>;
+  protected readonly batchProcessor: BatchProcessor<ConnectionContext>;
 
   constructor(protected readonly opts: RpcServerOpts) {
     const http1 = (this.http1 = opts.http1);
@@ -67,7 +59,7 @@ export class RpcServer implements Printable {
       }
       onInternalError(error, res, req);
     };
-    this.batchProcessor = new RpcMessageBatchProcessor<ConnectionContext>({caller: opts.caller});
+    this.batchProcessor = new BatchProcessor<ConnectionContext>({caller: opts.caller});
   }
 
   public enableHttpPing(): void {
@@ -150,7 +142,14 @@ export class RpcServer implements Printable {
       maxIncomingMessage: 2 * 1024 * 1024,
       maxOutgoingBackpressure: 2 * 1024 * 1024,
       handler: (ctx: WsConnectionContext) => {
-        RpcMessageStreamProcessor.connect(ctx, logger, {caller, bufferSize: 1, bufferTime: 0});
+        new StreamProcessor({
+          caller,
+          connection: ctx.connection,
+          ctx,
+          bufferSize: 25,
+          bufferTime: 5,
+          logger
+        });
       },
     });
   }
