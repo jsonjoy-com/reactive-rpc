@@ -1,6 +1,7 @@
 import * as msg from '../../messages';
 import {TypedRpcError} from '../../caller/error/typed';
 import {validateId, validateMethod} from '../../remote/validation';
+import {unknown, Value} from '@jsonjoy.com/json-type';
 import type {RpcCaller} from '../../caller/RpcCaller';
 import type {RpcErrorValue} from '../../caller/error/types';
 
@@ -12,7 +13,7 @@ export type IncomingBatchMessage =
 export type OutgoingBatchMessage = msg.ResponseCompleteMessage | msg.ResponseErrorMessage;
 
 export interface BatchProcessorOptions<Ctx = unknown> {
-  caller: RpcCaller<Ctx>;
+  caller: RpcCaller<Ctx, any>;
 }
 
 /**
@@ -82,8 +83,9 @@ export class BatchProcessor<Ctx = unknown> {
     try {
       const value = message.value;
       const data = value ? value.data : undefined;
-      const result = await this.caller.call(method, data as any, ctx);
-      return new msg.ResponseCompleteMessage(id, result as any);
+      const result = await this.caller.call(method, data, ctx);
+      const typedResult = result instanceof Value ? result : unknown(result);
+      return new msg.ResponseCompleteMessage(id, typedResult);
     } catch (error) {
       throw new msg.ResponseErrorMessage(id, error as RpcErrorValue);
     }
