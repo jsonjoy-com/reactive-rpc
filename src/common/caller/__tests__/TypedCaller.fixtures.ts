@@ -60,6 +60,7 @@ export const obj = base
     procedures.double.call.bind(procedures.double),
   )
   .add('error', t.fn.inp(t.undef).out(t.undef).ctx<SampleCtx>(), procedures.error.call.bind(procedures.error))
+  .add('streamError', t.fn.inp(t.undef).out(t.undef).ctx<SampleCtx>(), procedures.streamError.call.bind(procedures.streamError))
   .add(
     'auth.users.get',
     t.fn
@@ -68,7 +69,6 @@ export const obj = base
       .ctx<SampleCtx>(),
     procedures['auth.users.get'].call.bind(procedures['auth.users.get']),
   )
-  .add('streamError', t.fn.inp(t.undef).out(t.undef).ctx<SampleCtx>(), procedures.streamError.call.bind(procedures.streamError))
   .add('utilTimer', t.fn.inp(t.undef).out(t.num).ctx<SampleCtx>(), procedures.utilTimer.call.bind(procedures.utilTimer));
 
 export const createTypedCaller = () =>

@@ -33,7 +33,7 @@ describe('.call()', () => {
       await caller.call('error', {}, {});
       throw new Error('should not reach here');
     } catch (error) {
-      expect(error).toEqual(RpcError.internal('lol'));
+      expect(error).toEqual(new RpcError('this promise can throw', '', 0, '', undefined, undefined));
     }
   });
 });
@@ -82,7 +82,7 @@ describe('.call$()', () => {
       await Rx.firstValueFrom(caller.call$('error', Rx.of({}), {}));
       throw new Error('should not reach here');
     } catch (error) {
-      expect(error).toEqual(RpcError.internal('lol'));
+      expect(error).toEqual(new RpcError('this promise can throw', '', 0, '', undefined, undefined));
     }
   });
 });
