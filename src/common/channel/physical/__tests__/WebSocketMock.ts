@@ -19,18 +19,27 @@ export interface WebSocketMockParams {
   connection?: WebSocketMockServerConnection;
 }
 
-export interface MockWebSocket extends WebSocket {
-  readonly _protocol: string | string[];
-  _readyState: WebSocketState;
-  _bufferedAmount: number;
-  _extendParams(newParams: Partial<WebSocketMockParams>): void;
-  _open(): void;
-  _close(code: number, reason: string, wasClean: boolean): void;
-  _error(message: string): void;
-  _message(message: string | ArrayBuffer | ArrayBufferView): void;
-}
+// export interface MockWebSocket extends WebSocket {
+//   readonly _protocol: string | string[];
+//   _readyState: WebSocketState;
+//   _bufferedAmount: number;
+//   _extendParams(newParams: Partial<WebSocketMockParams>): void;
+//   controller.open(): void;
+//   _close(code: number, reason: string, wasClean: boolean): void;
+//   _error(message: string): void;
+//   _message(message: string | ArrayBuffer | ArrayBufferView): void;
+// }
 
-export class WebSocketMock extends EventEmitter implements MockWebSocket {
+export class WebSocketMock extends EventEmitter implements WebSocket {
+  public static create(
+    params: Partial<WebSocketMockParams>,
+    url: string = 'http://127.0.0.1',
+    _protocol: string | string[] = '',
+  ) {
+    const ws = new WebSocketMock(params, url, _protocol);
+    return [ws, ws.controller];
+  }
+
   public static readonly CONNECTING = 0;
   public static readonly OPEN = 1;
   public static readonly CLOSING = 2;
@@ -43,7 +52,7 @@ export class WebSocketMock extends EventEmitter implements MockWebSocket {
 
   public onclose = null;
   public onerror: null | ((event: Event) => void) = null;
-  public onmessage = null;
+  public onmessage: null | ((event: Event) => void) = null;
   public onopen: null | ((event: Event) => void) = null;
 
   public binaryType: 'arraybuffer' | 'blob' = 'blob';
@@ -69,6 +78,45 @@ export class WebSocketMock extends EventEmitter implements MockWebSocket {
 
   public _connectionSub: Subscription | null = null;
 
+  public readonly controller = {
+    readyState: WebSocketState.CLOSED,
+    bufferedAmount: 0,
+
+    open: (): void => {
+      this._readyState = WebSocketState.OPEN;
+      const event = new Event('open');
+      this.onopen?.(event);
+      this.emit('open', event);
+    },
+
+    close: (code: number, reason: string, wasClean: boolean): void =>{
+      this._connectionSub?.unsubscribe();
+      if (this.params.connection) {
+        this.params.connection.outgoing$.complete();
+        this.params.connection.incoming$.complete();
+      }
+      if (this._readyState === WebSocketState.CLOSED) throw new Error('Mock WebSocket already closed.');
+      this._readyState = WebSocketState.CLOSED;
+      const event = new CloseEvent(code, reason, wasClean);
+      (this.onclose as any).call(this, event);
+      this.emit('close', event);
+    },
+
+    error: (message: string): void => {
+      const event = new Event('error');
+      this.onerror?.(event);
+      this.emit('error', event);
+      this.controller.close(1000, message, false);
+    },
+
+    message: (message: string | ArrayBuffer | ArrayBufferView): void => {
+      if (!this.onmessage) return;
+      const event = new Event('message');
+      (event as any).data = message;
+      this.onmessage?.(event);
+    }
+  };
+
   constructor(
     public readonly params: Partial<WebSocketMockParams>,
     public readonly url: string = 'http://127.0.0.1',
@@ -78,40 +126,13 @@ export class WebSocketMock extends EventEmitter implements MockWebSocket {
     const {connection} = params;
     if (connection) {
       this._connectionSub = connection.outgoing$.subscribe(data => {
-        this._message(data);
+        this.controller.message(data);
       });
     }
   }
 
-  public _open() {
-    this._readyState = WebSocketState.OPEN;
-    const event = new Event('open');
-    this.onopen?.(event);
-    this.emit('open', event);
-  }
-
   public close(code?: number, reason?: string): void {
-    this._close(code ?? 0, reason ?? '', true);
-  }
-
-  public _close(code: number, reason: string, wasClean: boolean): void {
-    this._connectionSub?.unsubscribe();
-    if (this.params.connection) {
-      this.params.connection.outgoing$.complete();
-      this.params.connection.incoming$.complete();
-    }
-    if (this._readyState === WebSocketState.CLOSED) throw new Error('Mock WebSocket already closed.');
-    this._readyState = WebSocketState.CLOSED;
-    const event = new CloseEvent(code, reason, wasClean);
-    (this.onclose as any).call(this, event);
-    this.emit('close', event);
-  }
-
-  public _error(message: string) {
-    const event = new Event('error');
-    this.onerror?.(event);
-    this.emit('error', event);
-    this._close(1000, message, false);
+    this.controller.close(code ?? 0, reason ?? '', true);
   }
 
   public send(data: string | ArrayBufferLike | Blob | ArrayBufferView): void {
@@ -152,11 +173,5 @@ export class WebSocketMock extends EventEmitter implements MockWebSocket {
 
   public _extendParams(newParams: Partial<WebSocketMockParams>): void {
     Object.assign(this.params, newParams);
-  }
-
-  public _message(message: string | ArrayBuffer | ArrayBufferView): void {
-    if (!this.onmessage) return;
-    const event = {data: message};
-    (this.onmessage as any).call(this, event);
   }
 }

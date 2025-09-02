@@ -1,10 +1,10 @@
-import {CloseEvent, WebSocketMock, type MockWebSocket} from './WebSocketMock';
+import {CloseEvent, WebSocketMock} from './WebSocketMock';
 import {ChannelState, WebSocketState} from '../constants';
 import {WebSocketChannel} from '../WebSocketChannel';
 import {WebSocketMockServerConnection} from './WebSocketMockServerConnection';
 
 test('creates raw socket and initializes it with listeners', () => {
-  let ws: MockWebSocket;
+  let ws: WebSocketMock;
   const newSocket = jest.fn(() => {
     ws = new WebSocketMock({}, 'http://example.com');
     return ws;
@@ -43,11 +43,11 @@ test('passes through websocket ready state', () => {
   expect(ws.readyState).toBe(WebSocketState.CONNECTING);
   expect(channel.state$.getValue()).toBe(ChannelState.CONNECTING);
   expect(channel.isOpen()).toBe(false);
-  ws._open();
+  ws.controller.open();
   expect(ws.readyState).toBe(WebSocketState.OPEN);
   expect(channel.state$.getValue()).toBe(ChannelState.OPEN);
   expect(channel.isOpen()).toBe(true);
-  ws._close(0, '', true);
+  ws.controller.close(0, '', true);
   expect(ws.readyState).toBe(WebSocketState.CLOSED);
   expect(channel.state$.getValue()).toBe(ChannelState.CLOSED);
   expect(channel.isOpen()).toBe(false);
@@ -58,7 +58,7 @@ test('passes through websocket buffered amount', () => {
   expect(rx.buffer()).toBe(0);
   ws._bufferedAmount = 123;
   expect(rx.buffer()).toBe(123);
-  ws._open();
+  ws.controller.open();
   ws.send('test');
   expect(rx.buffer()).toBe(127);
 });
@@ -79,7 +79,7 @@ test('passes through "error" event', () => {
   t1.ws.on('error', () => {});
   t1.channel.error$.subscribe(err => onerror(err));
   expect(onerror).toHaveBeenCalledTimes(0);
-  t1.ws._error('msg');
+  t1.ws.controller.error('msg');
   expect(onerror).toHaveBeenCalledTimes(1);
   expect(onerror).toHaveBeenCalledWith(new Error('ERROR'));
 });
@@ -108,7 +108,7 @@ describe('.open$', () => {
     const {channel: rx, ws} = setup();
     const open = jest.fn();
     rx.open$.subscribe(open);
-    ws._open();
+    ws.controller.open();
     expect(open).toHaveBeenCalledTimes(1);
   });
 
@@ -116,21 +116,21 @@ describe('.open$', () => {
     const {channel: rx, ws} = setup();
     const complete = jest.fn();
     rx.open$.subscribe({complete});
-    ws._open();
+    ws.controller.open();
     expect(complete).toHaveBeenCalledTimes(1);
   });
 
   test('emits open event when subscription was late', async () => {
     const {channel: rx, ws} = setup();
     const open = jest.fn();
-    ws._open();
+    ws.controller.open();
     rx.open$.subscribe(open);
     expect(open).toHaveBeenCalledTimes(1);
   });
 
   test('notifies multiple subscribers on open event', async () => {
     const {channel: rx, ws} = setup();
-    ws._open();
+    ws.controller.open();
     const open1 = jest.fn();
     const open2 = jest.fn();
     rx.open$.subscribe(open1);
@@ -152,7 +152,7 @@ describe('.close$', () => {
     const {channel: rx, ws} = setup();
     const close = jest.fn();
     rx.close$.subscribe(close);
-    ws._close(0, 'test', true);
+    ws.controller.close(0, 'test', true);
     expect(close).toHaveBeenCalledTimes(1);
   });
 
@@ -162,7 +162,7 @@ describe('.close$', () => {
     const error = jest.fn();
     const complete = jest.fn();
     rx.close$.subscribe({next, error, complete});
-    ws._close(0, 'test', true);
+    ws.controller.close(0, 'test', true);
     expect(next).toHaveBeenCalledTimes(1);
     expect(error).toHaveBeenCalledTimes(0);
     expect(complete).toHaveBeenCalledTimes(1);
@@ -172,7 +172,7 @@ describe('.close$', () => {
     const {channel: rx, ws} = setup();
     const close = jest.fn();
     rx.close$.subscribe(close);
-    ws._close(123, 'test', true);
+    ws.controller.close(123, 'test', true);
     expect(close).toHaveBeenCalledTimes(1);
     expect(close).toHaveBeenCalledWith([
       rx,
@@ -203,14 +203,14 @@ describe('.close$', () => {
   test('emits close event when subscription was late', async () => {
     const {channel: rx, ws} = setup();
     const close = jest.fn();
-    ws._close(0, 'test', true);
+    ws.controller.close(0, 'test', true);
     rx.close$.subscribe(close);
     expect(close).toHaveBeenCalledTimes(1);
   });
 
   test('notifies multiple subscribers on close event', async () => {
     const {channel: rx, ws} = setup();
-    ws._close(0, 'test', true);
+    ws.controller.close(0, 'test', true);
     const close1 = jest.fn();
     const close2 = jest.fn();
     rx.close$.subscribe(close1);
@@ -233,7 +233,7 @@ describe('.error$', () => {
     const error = jest.fn();
     ws.on('error', () => {});
     rx.error$.subscribe(error);
-    ws._error('123');
+    ws.controller.error('123');
     expect(error).toHaveBeenCalledTimes(1);
   });
 });
@@ -250,14 +250,14 @@ describe('.message$', () => {
     const {channel: rx, ws} = setup();
     const message = jest.fn();
     rx.message$.subscribe(message);
-    ws._message('test');
+    ws.controller.message('test');
     expect(message).toHaveBeenCalledTimes(1);
     expect(message).toHaveBeenCalledWith('test');
-    ws._message('test2');
+    ws.controller.message('test2');
     expect(message).toHaveBeenCalledTimes(2);
     expect(message).toHaveBeenCalledWith('test2');
     const uint8 = new Uint8Array([1, 2, 3]);
-    ws._message(uint8);
+    ws.controller.message(uint8);
     expect(message).toHaveBeenCalledTimes(3);
     expect(message).toHaveBeenCalledWith(uint8);
   });
