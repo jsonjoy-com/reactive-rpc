@@ -1,12 +1,12 @@
-import {createWebSocketMock, type MockWebSocket} from './createWebSocketMock';
+import {CloseEvent, WebSocketMock, type MockWebSocket} from './WebSocketMock';
 import {ChannelState, WebSocketState} from '../constants';
 import {WebSocketChannel} from '../WebSocketChannel';
+import {WebSocketMockServerConnection} from './WebSocketMockServerConnection';
 
 test('creates raw socket and initializes it with listeners', () => {
   let ws: MockWebSocket;
   const newSocket = jest.fn(() => {
-    const Socket = createWebSocketMock({});
-    ws = new Socket('http://example.com');
+    ws = new WebSocketMock({}, 'http://example.com');
     return ws;
   });
 
@@ -26,51 +26,35 @@ test('creates raw socket and initializes it with listeners', () => {
 });
 
 const setup = () => {
-  let ws: MockWebSocket;
-  const onClose = jest.fn();
-  const onSend = jest.fn();
-  const newSocket = jest.fn(() => {
-    const Socket = createWebSocketMock({
-      onClose,
-      onSend,
-    });
-    ws = new Socket('http://example.com');
-    return ws;
+  const connection = new WebSocketMockServerConnection();
+  const ws = new WebSocketMock({connection}, 'http://example.com');
+  const channel = new WebSocketChannel({
+    newSocket: () => ws,
   });
-  const rx = new WebSocketChannel({
-    newSocket,
-  });
-
   return {
-    ws: ws!,
-    rx,
-    onClose,
-    onSend,
+    connection,
+    ws,
+    channel,
   };
 };
 
 test('passes through websocket ready state', () => {
-  const {ws, rx} = setup();
-
+  const {ws, channel} = setup();
   expect(ws.readyState).toBe(WebSocketState.CONNECTING);
-  expect(rx.state$.getValue()).toBe(ChannelState.CONNECTING);
-  expect(rx.isOpen()).toBe(false);
-
-  ws!._open();
-
+  expect(channel.state$.getValue()).toBe(ChannelState.CONNECTING);
+  expect(channel.isOpen()).toBe(false);
+  ws._open();
   expect(ws.readyState).toBe(WebSocketState.OPEN);
-  expect(rx.state$.getValue()).toBe(ChannelState.OPEN);
-  expect(rx.isOpen()).toBe(true);
-
-  ws!._close(0, '', true);
-
+  expect(channel.state$.getValue()).toBe(ChannelState.OPEN);
+  expect(channel.isOpen()).toBe(true);
+  ws._close(0, '', true);
   expect(ws.readyState).toBe(WebSocketState.CLOSED);
-  expect(rx.state$.getValue()).toBe(ChannelState.CLOSED);
-  expect(rx.isOpen()).toBe(false);
+  expect(channel.state$.getValue()).toBe(ChannelState.CLOSED);
+  expect(channel.isOpen()).toBe(false);
 });
 
 test('passes through websocket buffered amount', () => {
-  const {ws, rx} = setup();
+  const {ws, channel: rx} = setup();
   expect(rx.buffer()).toBe(0);
   ws._bufferedAmount = 123;
   expect(rx.buffer()).toBe(123);
@@ -79,50 +63,49 @@ test('passes through websocket buffered amount', () => {
   expect(rx.buffer()).toBe(127);
 });
 
-test('passes through .close() method', () => {
+test('passes through "close" event', () => {
   const t1 = setup();
-  expect(t1.onClose).toHaveBeenCalledTimes(0);
-  t1.rx.close();
-  expect(t1.onClose).toHaveBeenCalledTimes(1);
-  expect(t1.onClose).toHaveBeenCalledWith(undefined, undefined);
-
-  const t2 = setup();
-  expect(t2.onClose).toHaveBeenCalledTimes(0);
-  t2.rx.close(1, 'reason');
-  expect(t2.onClose).toHaveBeenCalledTimes(1);
-  expect(t2.onClose).toHaveBeenCalledWith(1, 'reason');
+  const onclose = jest.fn();
+  t1.ws.onclose = onclose as any;
+  expect(onclose).toHaveBeenCalledTimes(0);
+  t1.channel.close(123, 'msg');
+  expect(onclose).toHaveBeenCalledTimes(1);
+  expect(onclose).toHaveBeenCalledWith(new CloseEvent(123, 'msg', true));
 });
 
-test('passes through .send() method', () => {
+test('passes through "error" event', () => {
   const t1 = setup();
-  expect(t1.onSend).toHaveBeenCalledTimes(0);
-  t1.rx.send('asdf');
-  expect(t1.onSend).toHaveBeenCalledTimes(1);
-  expect(t1.onSend).toHaveBeenCalledWith('asdf');
+  const onerror = jest.fn();
+  t1.ws.on('error', () => {});
+  t1.channel.error$.subscribe(err => onerror(err));
+  expect(onerror).toHaveBeenCalledTimes(0);
+  t1.ws._error('msg');
+  expect(onerror).toHaveBeenCalledTimes(1);
+  expect(onerror).toHaveBeenCalledWith(new Error('ERROR'));
 });
 
 test('.send() returns buffered amount diff', () => {
   const t1 = setup();
-  const buffered = t1.rx.send('asdf');
+  const buffered = t1.channel.send('asdf');
   expect(buffered).toBe(4);
 });
 
 test('.send() returns buffered amount diff', () => {
   const t1 = setup();
-  const buffered = t1.rx.send('asdf');
+  const buffered = t1.channel.send('asdf');
   expect(buffered).toBe(4);
 });
 
 describe('.open$', () => {
   test('does not emit at the beginning', async () => {
-    const {rx} = setup();
+    const {channel: rx} = setup();
     const open = jest.fn();
     rx.open$.subscribe(open);
     expect(open).toHaveBeenCalledTimes(0);
   });
 
   test('emits when websocket opens', async () => {
-    const {rx, ws} = setup();
+    const {channel: rx, ws} = setup();
     const open = jest.fn();
     rx.open$.subscribe(open);
     ws._open();
@@ -130,7 +113,7 @@ describe('.open$', () => {
   });
 
   test('immediately completes observable when open emits', async () => {
-    const {rx, ws} = setup();
+    const {channel: rx, ws} = setup();
     const complete = jest.fn();
     rx.open$.subscribe({complete});
     ws._open();
@@ -138,7 +121,7 @@ describe('.open$', () => {
   });
 
   test('emits open event when subscription was late', async () => {
-    const {rx, ws} = setup();
+    const {channel: rx, ws} = setup();
     const open = jest.fn();
     ws._open();
     rx.open$.subscribe(open);
@@ -146,7 +129,7 @@ describe('.open$', () => {
   });
 
   test('notifies multiple subscribers on open event', async () => {
-    const {rx, ws} = setup();
+    const {channel: rx, ws} = setup();
     ws._open();
     const open1 = jest.fn();
     const open2 = jest.fn();
@@ -159,14 +142,14 @@ describe('.open$', () => {
 
 describe('.close$', () => {
   test('does not emit at the beginning', async () => {
-    const {rx} = setup();
+    const {channel: rx} = setup();
     const close = jest.fn();
     rx.close$.subscribe(close);
     expect(close).toHaveBeenCalledTimes(0);
   });
 
   test('emits when websocket closes', async () => {
-    const {rx, ws} = setup();
+    const {channel: rx, ws} = setup();
     const close = jest.fn();
     rx.close$.subscribe(close);
     ws._close(0, 'test', true);
@@ -174,7 +157,7 @@ describe('.close$', () => {
   });
 
   test('immediately completes the observable', async () => {
-    const {rx, ws} = setup();
+    const {channel: rx, ws} = setup();
     const next = jest.fn();
     const error = jest.fn();
     const complete = jest.fn();
@@ -186,18 +169,14 @@ describe('.close$', () => {
   });
 
   test('passes through closing information', async () => {
-    const {rx, ws} = setup();
+    const {channel: rx, ws} = setup();
     const close = jest.fn();
     rx.close$.subscribe(close);
     ws._close(123, 'test', true);
     expect(close).toHaveBeenCalledTimes(1);
     expect(close).toHaveBeenCalledWith([
       rx,
-      {
-        code: 123,
-        reason: 'test',
-        wasClean: true,
-      },
+      new CloseEvent(123, 'test', true),
     ]);
   });
 
@@ -222,7 +201,7 @@ describe('.close$', () => {
   });
 
   test('emits close event when subscription was late', async () => {
-    const {rx, ws} = setup();
+    const {channel: rx, ws} = setup();
     const close = jest.fn();
     ws._close(0, 'test', true);
     rx.close$.subscribe(close);
@@ -230,7 +209,7 @@ describe('.close$', () => {
   });
 
   test('notifies multiple subscribers on close event', async () => {
-    const {rx, ws} = setup();
+    const {channel: rx, ws} = setup();
     ws._close(0, 'test', true);
     const close1 = jest.fn();
     const close2 = jest.fn();
@@ -243,31 +222,32 @@ describe('.close$', () => {
 
 describe('.error$', () => {
   test('does not emit at the beginning', async () => {
-    const {rx} = setup();
+    const {channel: rx} = setup();
     const error = jest.fn();
     rx.error$.subscribe(error);
     expect(error).toHaveBeenCalledTimes(0);
   });
 
   test('emits when error happens', async () => {
-    const {rx, ws} = setup();
+    const {channel: rx, ws} = setup();
     const error = jest.fn();
+    ws.on('error', () => {});
     rx.error$.subscribe(error);
-    ws._error();
+    ws._error('123');
     expect(error).toHaveBeenCalledTimes(1);
   });
 });
 
 describe('.message$', () => {
   test('does not emit at the beginning', async () => {
-    const {rx} = setup();
+    const {channel: rx} = setup();
     const message = jest.fn();
     rx.message$.subscribe(message);
     expect(message).toHaveBeenCalledTimes(0);
   });
 
   test('emits when websocket receives a message', async () => {
-    const {rx, ws} = setup();
+    const {channel: rx, ws} = setup();
     const message = jest.fn();
     rx.message$.subscribe(message);
     ws._message('test');

@@ -50,7 +50,7 @@ export class WebSocketChannel<T extends string | Uint8Array = string | Uint8Arra
       ws.onerror = (event: Event) => {
         const errorEvent: Partial<ErrorEvent> = event as unknown as Partial<ErrorEvent>;
         const error: Error =
-          errorEvent.error instanceof Error ? errorEvent.error : new Error(String(errorEvent.message) || 'ERROR');
+          errorEvent.error instanceof Error ? errorEvent.error : new Error(String(errorEvent.message || 'ERROR'));
         this.error$.next(error);
       };
       ws.onmessage = (event) => {

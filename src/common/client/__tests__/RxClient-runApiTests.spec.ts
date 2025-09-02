@@ -11,7 +11,7 @@ import {Utf8Channel} from '../../channel/physical/Utf8Channel';
 import {WebSocketChannel} from '../../channel/physical/WebSocketChannel';
 import {RpcClientMessage, RpcMessage, RpcServerMessage} from '../../messages';
 import {WebSocketMockFactory} from '../../channel/physical/__tests__/WebSocketMockFactory';
-import {ServerConnection} from '../../channel/physical/__tests__/ServerConnection';
+import {WebSocketMockServerConnection} from '../../channel/physical/__tests__/ServerConnection';
 import {RpcMessageCodecs} from '../../codec/RpcMessageCodecs';
 import {RpcCodec} from '../../codec/RpcCodec';
 import {Writer} from '@jsonjoy.com/buffers/lib/Writer';
@@ -21,7 +21,7 @@ import {ProceduresToClientMethods} from '../types';
 
 
 const createRpcProcessor = <Ctx = unknown, P extends Procedures<any> = Procedures<Ctx>>(caller: Caller<Ctx, P>, ctx: Ctx) => {
-  const connection = new ServerConnection();
+  const connection = new WebSocketMockServerConnection();
   const socketFactory = new WebSocketMockFactory({newConnection: () => connection})
   const [socket] = socketFactory.create();
   const writer = new Writer();
@@ -46,7 +46,7 @@ runApiTests(async () => {
   // Server-side
   const caller = createRpcCaller();
   const ctx = {ip: '127.0.0.1'};
-  const connection = new ServerConnection();
+  const connection = new WebSocketMockServerConnection();
   const socketFactory = new WebSocketMockFactory({newConnection: () => connection})
   const [socket] = socketFactory.create();
   const writer = new Writer();
