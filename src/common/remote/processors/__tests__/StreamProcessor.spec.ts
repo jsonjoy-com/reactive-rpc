@@ -115,17 +115,54 @@ describe('StreamProcessor', () => {
     });
 
       test('sends complete message if observable immediately completes after emitting one value', async () => {
+        const {processor, ctx, connection} = createStreamProcessor();
+        const msg = new RequestCompleteMessage(1, 'emitOnceSync');
+        processor.onMessage(msg, ctx);
+        await until(() => connection.sentData.length === 1);
+        const [uint8] = connection.sentData;
+        const text = new TextDecoder().decode(uint8);
+        const decoded = JSON.parse(text);
+        // Should send ResponseComplete with the emitted value, not ResponseData + ResponseComplete
+        expect(decoded).toContainEqual([CompactMessageType.ResponseComplete, 1, expect.any(String)]);
+        expect(decoded.length).toBe(1);
       });
 
-      test('observable emits three values synchronously', async () => {
+      // test('observable emits three values synchronously', async () => {
+      //   const {processor, ctx, connection} = createStreamProcessor();
+      //   const msg = new RequestDataMessage(1, 'emitThreeSync');
+      //   processor.onMessage(msg, ctx);
+      //   const msg2 = new RequestCompleteMessage(1, '');
+      //   processor.onMessage(msg2, ctx);
+      //   await until(() => connection.sentData.length > 1);
+      //   const [uint8] = connection.sentData;
+      //   const text = new TextDecoder().decode(uint8);
+      //   const decoded = JSON.parse(text);
+      //   expect(decoded).toContainEqual([CompactMessageType.ResponseComplete, 1, 1]);
+      //   expect(decoded.length).toBe(1);
+      // });
+
+      test('when promise completes with delay', async () => {
+        const {processor, ctx, connection} = createStreamProcessor();
+        const msg = new RequestCompleteMessage(1, 'promiseDelay');
+        processor.onMessage(msg, ctx);
+        await until(() => connection.sentData.length === 1);
+        const [uint8] = connection.sentData;
+        const text = new TextDecoder().decode(uint8);
+        const decoded = JSON.parse(text);
+        // Should send ResponseComplete with the result
+        expect(decoded).toContainEqual([CompactMessageType.ResponseComplete, 1, {}]);
       });
 
-      test('when observable completes asynchronously, sends empty complete message', async () => {
-
-      });
-
-      test('when observable completes asynchronously and emits asynchronously, sends empty complete message', async () => {
-
+      test('when observable completes with delay', async () => {
+        const {processor, ctx, connection} = createStreamProcessor();
+        const msg = new RequestCompleteMessage(1, 'streamDelay');
+        processor.onMessage(msg, ctx);
+        await until(() => connection.sentData.length === 1);
+        const [uint8] = connection.sentData;
+        const text = new TextDecoder().decode(uint8);
+        const decoded = JSON.parse(text);
+        // Should send ResponseComplete with the result after async delay
+        expect(decoded).toContainEqual([CompactMessageType.ResponseComplete, 1, {}]);
       });
   });
 });

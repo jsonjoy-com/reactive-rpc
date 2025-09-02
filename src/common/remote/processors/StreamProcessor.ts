@@ -207,19 +207,14 @@ export class StreamProcessor<Ctx extends WsConnectionContext = WsConnectionConte
     //     this.sendCompleteMessage(id, undefined);
     //   },
     // });
-    console.log('CREATE');
     subscribeCompleteObserver<Value>(call.res$ as Observable<Value>, {
       next: (value: Value) => {
-        console.log('NEXT');
         this.sendDataMessage(id, value);
       },
       error: (error: unknown) => {
-        console.log('ERROR');
         this.onStreamError(id, error as Value)
       },
       complete: (value: Value | undefined) => {
-        console.log('COMPLETE');
-        console.log('COMPLETED');
         this.activeStreamCalls.delete(id);
         this.sendCompleteMessage(id, value);
       },
